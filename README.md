@@ -40,7 +40,40 @@ source .venv/bin/activate
 ```
 
 ### 3. Install Dependencies
+
+#### Standard Installation (Linux & macOS)
 ```bash
+pip install -e .
+```
+
+#### FreeBSD Installation Notes
+On FreeBSD, Python packages with native Rust extensions (such as `pydantic-core`) do not have pre-built wheel binaries on PyPI. Choose one of the following setup options:
+
+##### Method 1: FreeBSD Binary Packages (Recommended)
+Use FreeBSD `pkg` to install pre-compiled binaries, then enable `--system-site-packages` in your virtual environment:
+
+```bash
+# Install pre-compiled binary packages
+sudo pkg install py312-fastapi py312-pydantic py312-uvicorn py312-pillow py312-jinja2 py312-markdown py312-mutagen py312-pyyaml py312-h2
+
+# Create venv with system site packages enabled
+python3 -m venv --system-site-packages .venv
+source .venv/bin/activate
+
+# Install lissn package
+pip install --no-deps -e .
+```
+
+##### Method 2: Install Rust Compiler
+Alternatively, install the Rust compiler so `pip` can build Rust extensions from source:
+
+```bash
+# Install Rust toolchain via pkg
+sudo pkg install rust
+
+# Standard pip install in venv
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
 ```
 
