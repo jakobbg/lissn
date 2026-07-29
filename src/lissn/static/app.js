@@ -1090,7 +1090,7 @@ function openPasswordModal(pendingAction) {
   const errorEl = document.getElementById('password-error');
   const inputEl = document.getElementById('password-input');
 
-  if (errorEl) errorEl.hidden = true;
+  if (errorEl) errorEl.hidden = false;
   if (inputEl) inputEl.value = '';
   if (modal) {
     modal.removeAttribute('hidden');
