@@ -721,3 +721,17 @@ def test_subfolder_streaming_download_and_rss(client: TestClient, temp_library) 
     with zipfile.ZipFile(io.BytesIO(zip_res.content), "r") as zf:
         assert "Papaya.2026.1901-2101/Papaya.2026-01-19.mp3" in zf.namelist()
 
+
+def test_favicon_endpoints(client: TestClient) -> None:
+    """Test /favicon.ico and /favicon.svg endpoints return expected favicon content."""
+    res_ico = client.get("/favicon.ico")
+    assert res_ico.status_code == 200
+    assert "image/x-icon" in res_ico.headers.get("content-type", "")
+    assert len(res_ico.content) > 0
+
+    res_svg = client.get("/favicon.svg")
+    assert res_svg.status_code == 200
+    assert "image/svg+xml" in res_svg.headers.get("content-type", "")
+    assert "<svg" in res_svg.text
+
+

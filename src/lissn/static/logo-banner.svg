@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 220" width="100%" height="100%">
+  <defs>
+    <linearGradient id="b-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0f1d" />
+      <stop offset="50%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+
+    <linearGradient id="b-border" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#818cf8" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#c084fc" stop-opacity="0.8" />
+    </linearGradient>
+
+    <linearGradient id="b-hp" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+
+    <linearGradient id="b-pink" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#e11d48" />
+      <stop offset="100%" stop-color="#fb7185" />
+    </linearGradient>
+
+    <linearGradient id="b-cyan" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+
+    <linearGradient id="b-purple" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+
+    <linearGradient id="b-text-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="60%" stop-color="#f1f5f9" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+
+    <linearGradient id="b-subtext-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+
+    <filter id="b-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Banner Outer Frame -->
+  <rect x="8" y="8" width="784" height="204" rx="28" fill="url(#b-bg)" stroke="url(#b-border)" stroke-width="2" />
+
+  <!-- EMBLEM ICON (Left side offset X: 45, Y: 30, Scale: ~0.7) -->
+  <g transform="translate(45, 30)">
+    <!-- Background Circle -->
+    <rect x="0" y="0" width="160" height="160" rx="40" fill="#0f172a" stroke="url(#b-hp)" stroke-width="3" />
+
+    <!-- Headphones Arc -->
+    <path d="M 40,82 A 42,42 0 0,1 120,82" fill="none" stroke="url(#b-hp)" stroke-width="10" stroke-linecap="round" filter="url(#b-glow)" />
+
+    <!-- Left Ear Cushion -->
+    <rect x="31" y="74" width="13" height="28" rx="6.5" fill="url(#b-hp)" />
+    <rect x="34" y="77" width="7" height="22" rx="3.5" fill="#0f172a" opacity="0.8" />
+
+    <!-- Right Ear Cushion -->
+    <rect x="116" y="74" width="13" height="28" rx="6.5" fill="url(#b-hp)" />
+    <rect x="119" y="77" width="7" height="22" rx="3.5" fill="#0f172a" opacity="0.8" />
+
+    <!-- Sound Equalizer L-Shape -->
+    <rect x="56" y="58" width="9" height="46" rx="4.5" fill="url(#b-pink)" />
+    <rect x="56" y="95" width="25" height="9" rx="4.5" fill="url(#b-pink)" />
+
+    <rect x="71" y="73" width="7" height="18" rx="3.5" fill="url(#b-purple)" />
+    <rect x="83" y="52" width="8" height="39" rx="4" fill="url(#b-cyan)" />
+    <rect x="96" y="67" width="7" height="24" rx="3.5" fill="url(#b-purple)" />
+    <rect x="107" y="76" width="6" height="15" rx="3" fill="url(#b-pink)" opacity="0.9" />
+
+    <circle cx="87" cy="100" r="3" fill="#38bdf8" />
+  </g>
+
+  <!-- BRAND WORDMARK "lissn" -->
+  <text x="240" y="122" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="88" font-weight="900" letter-spacing="-3" fill="url(#b-text-grad)">lissn</text>
+
+  <!-- Glowing Sound Wave Accent behind dot on 'i' -->
+  <circle cx="360" cy="58" r="8" fill="#38bdf8" filter="url(#b-glow)" />
+
+  <!-- TAGLINE SUBTEXT -->
+  <text x="245" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="4" fill="url(#b-subtext-grad)">AUDIOBOOKS &amp; PODCASTS</text>
+
+  <!-- Right Side Decorative Audio Waves -->
+  <g transform="translate(680, 75)" opacity="0.85">
+    <rect x="0" y="20" width="5" height="30" rx="2.5" fill="#38bdf8" />
+    <rect x="12" y="10" width="5" height="50" rx="2.5" fill="#818cf8" />
+    <rect x="24" y="0" width="5" height="70" rx="2.5" fill="#c084fc" />
+    <rect x="36" y="15" width="5" height="40" rx="2.5" fill="#f43f5e" />
+    <rect x="48" y="25" width="5" height="20" rx="2.5" fill="#38bdf8" />
+  </g>
+</svg>

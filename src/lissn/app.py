@@ -46,6 +46,27 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 templates.env.filters["urlencode"] = lambda s: quote(str(s), safe="/")
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon_ico() -> FileResponse:
+    """Serve binary ICO favicon for browsers."""
+    return FileResponse(
+        BASE_DIR / "static" / "favicon.ico",
+        media_type="image/x-icon",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@app.get("/favicon.svg", include_in_schema=False)
+def favicon_svg() -> FileResponse:
+    """Serve SVG favicon for modern browsers."""
+    return FileResponse(
+        BASE_DIR / "static" / "favicon.svg",
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 scanner = LibraryScanner(
     books_dir=config.books_dir,
     podcasts_dir=config.podcasts_dir,

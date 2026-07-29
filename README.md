@@ -1,6 +1,10 @@
-# lissn 🎧
+<p align="center">
+  <img src="src/lissn/static/logo-banner.svg" alt="lissn logo banner" width="640">
+</p>
 
-**lissn** is a Python-based web application and RSS feed generator designed to index, serve, and share your personal **Audio Books** and **Podcasts**.
+<p align="center">
+  <b>Personal Audio Books &amp; Podcasts Server with RSS Feed Support</b>
+</p>
 
 ---
 
