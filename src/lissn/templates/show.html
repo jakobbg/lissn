@@ -74,15 +74,15 @@
         {% endif %}
         
         <div class="meta-row" style="font-size: 0.95rem; margin-bottom: 1.2rem;">
-          <span class="duration-badge">⏱️ {{ show.formatted_duration }} Total Length</span>
+          <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
+          <span>•</span>
+          <span>{{ show.episodes|length }} track{% if show.episodes|length != 1 %}s{% endif %}</span>
+          <span>•</span>
+          <span>📅 {{ show.fuzzy_added_date }}</span>
           {% if show.formatted_total_file_size %}
             <span>•</span>
             <span class="size-badge">💾 {{ show.formatted_total_file_size }} Total Size</span>
           {% endif %}
-          <span>•</span>
-          <span>{{ show.episodes|length }} Track{% if show.episodes|length != 1 %}s{% endif %}</span>
-          <span>•</span>
-          <span>Added {{ show.fuzzy_added_date }}</span>
         </div>
 
         {% if show.description_html %}
@@ -94,9 +94,12 @@
         {% endif %}
 
         <div class="detail-actions">
-          <a href="podcast://{{ host_header }}/rss/{{ show.show_id }}" class="btn btn-primary">
-            🎙️ Subscribe in Podcast App
+          <a href="podcast://{{ host_header }}/rss/{{ show.show_id }}" class="btn btn-secondary" title="Subscribe in podcast app">
+            🎙️ Subscribe
           </a>
+          <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Copy RSS Feed link">
+            📋 Copy RSS
+          </button>
           {% if show.episodes %}
             <a href="/download/show/{{ show.show_id }}" class="btn btn-secondary js-download-show" title="Download all tracks as a ZIP archive">
               📦 Download Show (.zip)
@@ -104,9 +107,6 @@
           {% endif %}
           <button type="button" class="btn btn-secondary js-edit-show" data-show-id="{{ show.show_id }}" data-title="{{ show.title }}" data-author="{{ show.author }}" data-description="{{ show.description }}">
             ✏️ Edit Details
-          </button>
-          <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}">
-            📋 Copy RSS Feed URL
           </button>
           <button type="button" class="btn btn-secondary js-share-show" data-title="{{ show.title }}" data-url="{{ base_url }}/show/{{ show.show_id }}">
             📲 Share Show

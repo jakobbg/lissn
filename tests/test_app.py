@@ -573,3 +573,29 @@ def test_static_app_js_track_match_logic(client: TestClient) -> None:
     assert "isCurrentlyLoadedTrack" in js_content
     assert "normCurrent === normTrack" in js_content
     assert "currentTrackIndex = foundIdx;" in js_content
+
+
+def test_single_line_metadata_and_dark_subscribe_button(client: TestClient) -> None:
+    """Test index and show detail pages render duration, track count, and added date on a single line, and Subscribe uses btn-secondary."""
+    res_index = client.get("/")
+    assert res_index.status_code == 200
+    html_index = res_index.text
+
+    assert 'class="meta-row"' in html_index
+    assert "duration-badge" in html_index
+    assert "track" in html_index
+    assert "📅" in html_index
+    assert 'class="btn btn-secondary"' in html_index
+    assert "🎙️ Subscribe" in html_index
+    assert "📋 Copy RSS" in html_index
+
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    res_show = client.get(f"/show/{show_id}")
+    assert res_show.status_code == 200
+    html_show = res_show.text
+
+    assert 'class="meta-row"' in html_show
+    assert "📅" in html_show
+    assert 'class="btn btn-secondary"' in html_show
+
