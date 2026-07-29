@@ -30,7 +30,7 @@ mimetypes.add_type("audio/aac", ".aac")
 app = FastAPI(
     title="lissn",
     description="Audiobook and Podcast Indexer & RSS Feed Generator",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 config = Config()
