@@ -33,6 +33,9 @@
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/app.js" defer></script>
+  <script id="lissn-auth-state" type="application/json">
+    {"authenticated": {{ 'true' if authenticated else 'false' }}, "password_required": {{ 'true' if password_required else 'false' }}}
+  </script>
 </head>
 <body style="{% if show_colors %}{{ show_colors.css_variables }}{% endif %}">
   {% if pattern_name and pattern_name != 'none' and pattern_opacity and pattern_opacity > 0 %}

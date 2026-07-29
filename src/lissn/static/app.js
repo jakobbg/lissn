@@ -941,6 +941,21 @@ function initMediaPlayer() {
       }
 
       if (!state.paused) {
+        if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+          openPasswordModal(() => {
+            const playPromise = audioElement.play();
+            if (playPromise !== undefined) {
+              playPromise.then(() => {
+                updatePlayButtonUI(true);
+              }).catch((err) => {
+                console.warn('Playback error after auth unlock:', err);
+                updatePlayButtonUI(false);
+              });
+            }
+          });
+          return;
+        }
+
         const playPromise = audioElement.play();
         if (playPromise !== undefined) {
           playPromise.then(() => {
@@ -1030,7 +1045,21 @@ function formatTime(seconds) {
 }
 
 /* Authentication & Password Protected Actions */
-let globalAuthState = { authenticated: true, passwordRequired: false };
+function getInitialAuthState() {
+  const el = document.getElementById('lissn-auth-state');
+  if (el) {
+    try {
+      const data = JSON.parse(el.textContent);
+      return {
+        authenticated: Boolean(data.authenticated),
+        passwordRequired: Boolean(data.password_required)
+      };
+    } catch (e) {}
+  }
+  return { authenticated: true, passwordRequired: false };
+}
+
+let globalAuthState = getInitialAuthState();
 let pendingAuthAction = null;
 
 async function checkAuthStatus() {
@@ -1131,7 +1160,14 @@ function initAuthSystem() {
   if (audioElement) {
     audioElement.addEventListener('error', () => {
       if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
-        openPasswordModal();
+        openPasswordModal(() => {
+          if (audioElement.src) {
+            const playPromise = audioElement.play();
+            if (playPromise !== undefined) {
+              playPromise.then(() => updatePlayButtonUI(true)).catch(() => updatePlayButtonUI(false));
+            }
+          }
+        });
       }
     });
   }

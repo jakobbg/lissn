@@ -774,6 +774,37 @@ def test_alt_click_podcast_new_window_logic(client: TestClient) -> None:
     assert ".show-card" in js_content
 
 
+def test_synchronous_auth_state_script_rendering(client: TestClient, unauthenticated_client: TestClient) -> None:
+    """Test index and show pages render synchronous lissn-auth-state JSON script tag with correct state."""
+    # Authenticated client
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert 'id="lissn-auth-state"' in index_res.text
+    assert '"authenticated": true' in index_res.text
+
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    assert len(shows) > 0
+    show_id = shows[0]["show_id"]
+
+    show_res = client.get(f"/show/{show_id}")
+    assert show_res.status_code == 200
+    assert 'id="lissn-auth-state"' in show_res.text
+    assert '"authenticated": true' in show_res.text
+
+    # Unauthenticated client
+    unauth_index = unauthenticated_client.get("/")
+    assert unauth_index.status_code == 200
+    assert 'id="lissn-auth-state"' in unauth_index.text
+    assert '"authenticated": false' in unauth_index.text
+
+    unauth_show = unauthenticated_client.get(f"/show/{show_id}")
+    assert unauth_show.status_code == 200
+    assert 'id="lissn-auth-state"' in unauth_show.text
+    assert '"authenticated": false' in unauth_show.text
+
+
+
 
 
 
