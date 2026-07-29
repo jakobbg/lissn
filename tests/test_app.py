@@ -35,6 +35,9 @@ def test_index_page(client: TestClient) -> None:
     assert "The Great Gatsby" in response.text
     assert "Tech Talk Podcast" in response.text
     assert 'data-section="all"' in response.text
+    # Verify cover wrapper is a clickable link to show page
+    assert 'class="cover-wrapper"' in response.text
+    assert 'href="/show/' in response.text
 
 
 def test_show_detail_page_with_opengraph_tags(client: TestClient) -> None:
@@ -52,6 +55,8 @@ def test_show_detail_page_with_opengraph_tags(client: TestClient) -> None:
     assert '<meta property="og:description"' in html
     assert '<meta name="twitter:card" content="summary_large_image"' in html
     assert f"/covers/{show_id}" in html
+    assert 'class="detail-cover-link"' in html
+    assert f'href="/covers/{show_id}"' in html
     assert "--show-color-1-rgb:" in html
     assert "--show-color-2-rgb:" in html
     assert "--show-color-3-rgb:" in html

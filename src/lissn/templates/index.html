@@ -44,7 +44,7 @@
         <div class="shows-grid">
           {% for show in books %}
             <article class="show-card" data-section="books">
-              <div class="cover-wrapper">
+              <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
                 {% else %}
@@ -54,7 +54,7 @@
                   </div>
                 {% endif %}
                 <span class="section-badge">Book</span>
-              </div>
+              </a>
               <div class="card-body">
                 <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
                 {% if show.author %}
@@ -91,7 +91,7 @@
         <div class="shows-grid">
           {% for show in podcasts %}
             <article class="show-card" data-section="podcasts">
-              <div class="cover-wrapper">
+              <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
                 {% else %}
@@ -101,7 +101,7 @@
                   </div>
                 {% endif %}
                 <span class="section-badge">Podcast</span>
-              </div>
+              </a>
               <div class="card-body">
                 <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
                 {% if show.author %}

@@ -52,7 +52,9 @@
     <header class="show-detail-header">
       <div>
         {% if show.cover_path %}
-          <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="detail-cover">
+          <a href="/covers/{{ show.show_id }}" target="_blank" rel="noopener" class="detail-cover-link" aria-label="View full cover image for {{ show.title }}" title="Click to open cover image">
+            <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="detail-cover">
+          </a>
         {% else %}
           <div class="placeholder-cover detail-cover">
             <span style="font-size: 3rem;">{% if show.section == 'books' %}📚{% else %}🎙️{% endif %}</span>

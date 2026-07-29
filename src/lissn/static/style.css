@@ -350,6 +350,18 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   position: relative;
   background-color: var(--bg-surface-elevated);
   overflow: hidden;
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cover-wrapper:hover .cover-image {
+  transform: scale(1.04);
+}
+
+.cover-wrapper:focus-visible {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: -3px;
 }
 
 .cover-image {
@@ -357,6 +369,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .placeholder-cover {
@@ -511,6 +524,25 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   .show-detail-header {
     grid-template-columns: 1fr;
   }
+}
+
+.detail-cover-link {
+  display: block;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+}
+
+.detail-cover-link:hover {
+  transform: scale(1.02);
+  filter: brightness(1.05);
+}
+
+.detail-cover-link:focus-visible {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 4px;
 }
 
 .detail-cover {
