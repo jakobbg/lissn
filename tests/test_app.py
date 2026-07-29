@@ -362,7 +362,7 @@ def test_show_page_displays_filesize_and_bitrate(client: TestClient) -> None:
     assert "Size" in html
     assert "Bitrate" in html
     assert "Download Show (.zip)" in html
-    assert "📥 Download" in html
+    assert "js-download-track" in html
     assert f"/download/show/{show_id}" in html
     assert f"/download/{show_id}/" in html
 
