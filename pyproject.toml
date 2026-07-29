@@ -28,3 +28,10 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+filterwarnings = [
+    "ignore:.*httpx.*:Warning",
+    "ignore:.*starlette.testclient.*:Warning",
+    "ignore::Warning:fastapi.testclient",
+]
+
+
