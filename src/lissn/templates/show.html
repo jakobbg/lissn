@@ -122,6 +122,9 @@
             <tbody>
               {% for ep in show.episodes %}
                 <tr class="track-row" 
+                    tabindex="0"
+                    role="button"
+                    aria-label="Play track {{ ep.title }}"
                     data-track-index="{{ loop.index0 }}" 
                     data-audio-src="/audio/{{ show.show_id }}/{{ ep.filename }}" 
                     data-track-title="{{ ep.title }}" 

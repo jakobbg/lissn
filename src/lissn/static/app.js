@@ -246,16 +246,36 @@ function initMediaPlayer() {
     }));
   }
 
-  // Play button click handlers on track table
+  // Track table click handler (clicking anywhere on a track row panel plays that track)
   document.addEventListener('click', (e) => {
-    const playTrackBtn = e.target.closest('.js-play-track');
-    if (playTrackBtn) {
-      const idx = parseInt(playTrackBtn.getAttribute('data-track-index'), 10);
+    if (e.target.closest('audio') || e.target.closest('a')) return;
+
+    const trackRow = e.target.closest('.track-row');
+    if (trackRow) {
+      const idx = parseInt(trackRow.getAttribute('data-track-index'), 10);
       if (!isNaN(idx) && playlist[idx]) {
         if (currentTrackIndex === idx && !audioElement.paused) {
           audioElement.pause();
         } else {
           playTrack(idx);
+        }
+      }
+    }
+  });
+
+  // Support Keyboard Enter & Space key on focused track row
+  document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+    if (document.activeElement && document.activeElement.classList.contains('track-row')) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const idx = parseInt(document.activeElement.getAttribute('data-track-index'), 10);
+        if (!isNaN(idx) && playlist[idx]) {
+          if (currentTrackIndex === idx && !audioElement.paused) {
+            audioElement.pause();
+          } else {
+            playTrack(idx);
+          }
         }
       }
     }
@@ -276,6 +296,7 @@ function initMediaPlayer() {
     });
 
     bottomPlayer.classList.add('visible');
+    document.body.classList.add('has-active-player');
 
     // Update metadata UI
     if (trackTitleEl) trackTitleEl.textContent = track.trackTitle;

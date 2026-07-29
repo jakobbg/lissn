@@ -663,10 +663,15 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   background-color: var(--bg-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  margin-bottom: 80px; /* Space for persistent bottom player */
+  transition: margin-bottom 0.3s ease;
+  margin-bottom: 0;
 }
 
-/* Floating Bottom Media Player */
+body.has-active-player .site-footer {
+  margin-bottom: 80px; /* Space for visible bottom player */
+}
+
+/* Floating Bottom Media Player - Hidden by default until playback starts */
 .bottom-player {
   position: fixed;
   bottom: 0;
@@ -678,7 +683,16 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-color);
   box-shadow: 0 -6px 25px -4px rgba(0, 0, 0, 0.25);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+}
+
+.bottom-player.visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .bottom-player-container {
@@ -904,6 +918,20 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .btn-play:hover {
   background-color: var(--accent-primary);
   color: #ffffff;
+}
+
+tr.track-row {
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+tr.track-row:hover {
+  background-color: var(--bg-surface-elevated);
+}
+
+tr.track-row:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
 }
 
 tr.track-row.active-track {
