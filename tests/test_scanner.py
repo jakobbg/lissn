@@ -213,3 +213,29 @@ def test_max_episodes_per_show_limit(tmp_path: Path) -> None:
     assert len(show_detail["episodes"]) == 3
     assert show_detail["episodes"][0]["filename"] == "episode_01.mp3"
     assert show_detail["episodes"][2]["filename"] == "episode_03.mp3"
+
+
+def test_decode_metadata_text() -> None:
+    """Test decode_metadata_text extracts strings and fixes double-encoded UTF-8 strings."""
+    from lissn.scanner import decode_metadata_text
+
+    assert decode_metadata_text(None) == ""
+    assert decode_metadata_text(["Blodsbrødre"]) == "Blodsbrødre"
+    assert decode_metadata_text("Blodsbrødre") == "Blodsbrødre"
+
+    # Test double-encoded UTF-8 string ('Blodsbr\xc3\xb8dre' read as Latin-1)
+    double_encoded = "Blodsbrødre".encode("utf-8").decode("latin-1")
+    assert decode_metadata_text(double_encoded) == "Blodsbrødre"
+
+
+def test_get_audio_title_and_norwegian_characters(tmp_path: Path) -> None:
+    """Test get_audio_title preserves Norwegian characters in titles and filenames."""
+    from lissn.scanner import get_audio_title
+
+    # Test filename stem fallback with Norwegian characters
+    audio_file = tmp_path / "Blodsbrødre.mp3"
+    audio_file.write_bytes(b"dummy mp3 data")
+
+    title = get_audio_title(audio_file)
+    assert title == "Blodsbrødre"
+

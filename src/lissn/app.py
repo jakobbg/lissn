@@ -157,6 +157,8 @@ def get_cover_image(show_id: str) -> Response:
     return FileResponse(path=cover_file, media_type=media_type, headers={"Accept-Ranges": "bytes"})
 
 
+from urllib.parse import quote, unquote
+
 @app.get("/audio/{show_id}/{filename}")
 @app.head("/audio/{show_id}/{filename}")
 def stream_audio(show_id: str, filename: str) -> Response:
@@ -167,6 +169,8 @@ def stream_audio(show_id: str, filename: str) -> Response:
 
     folder = Path(show["folder_path"])
     audio_file = (folder / filename).resolve()
+    if not audio_file.exists():
+        audio_file = (folder / unquote(filename)).resolve()
 
     # Prevent directory traversal attacks
     if not str(audio_file).startswith(str(folder.resolve())):
@@ -200,14 +204,15 @@ def download_show_zip(show_id: str) -> Response:
                 zf.write(ep_path, arcname=ep["filename"])
 
     buffer.seek(0)
-    # Sanitize title for filename
+    # Sanitize title for filename while preserving Unicode letters
     safe_title = "".join(c for c in show["title"] if c.isalnum() or c in (" ", "_", "-")).strip() or "show"
     zip_filename = f"{safe_title}.zip"
+    encoded_filename = quote(zip_filename)
 
     return Response(
         content=buffer.getvalue(),
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
+        headers={"Content-Disposition": f'attachment; filename="{safe_title}.zip"; filename*=UTF-8\'\'{encoded_filename}'},
     )
 
 
@@ -221,6 +226,8 @@ def download_episode(show_id: str, filename: str) -> Response:
 
     folder = Path(show["folder_path"])
     audio_file = (folder / filename).resolve()
+    if not audio_file.exists():
+        audio_file = (folder / unquote(filename)).resolve()
 
     # Prevent directory traversal attacks
     if not str(audio_file).startswith(str(folder.resolve())):
@@ -231,12 +238,13 @@ def download_episode(show_id: str, filename: str) -> Response:
 
     guessed_type, _ = mimetypes.guess_type(audio_file.name)
     media_type = guessed_type or "audio/mpeg"
+    encoded_filename = quote(audio_file.name)
 
     return FileResponse(
         path=audio_file,
         media_type=media_type,
         filename=audio_file.name,
-        headers={"Content-Disposition": f'attachment; filename="{audio_file.name}"'},
+        headers={"Content-Disposition": f'attachment; filename="{audio_file.name}"; filename*=UTF-8\'\'{encoded_filename}'},
     )
 
 

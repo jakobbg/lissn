@@ -135,6 +135,54 @@ def get_audio_duration(file_path: Path) -> float:
     return 0.0
 
 
+def decode_metadata_text(val: Any) -> str:
+    """Safely extract string from Mutagen tag values and fix Latin-1/UTF-8 double-encoding."""
+    if not val:
+        return ""
+    if isinstance(val, (list, tuple)) and len(val) > 0:
+        val = val[0]
+    if hasattr(val, "text") and isinstance(val.text, (list, tuple)) and len(val.text) > 0:
+        val = val.text[0]
+
+    s = str(val).strip()
+    if not s:
+        return ""
+
+    # Try fixing double-encoded UTF-8 strings (common in ID3v2 latin-1 frames storing UTF-8 bytes)
+    try:
+        if any(ord(c) >= 0x80 for c in s):
+            latin1_bytes = s.encode("latin-1")
+            decoded = latin1_bytes.decode("utf-8")
+            if decoded:
+                s = decoded
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        pass
+    return s
+
+
+def get_audio_title(file_path: Path) -> str:
+    """
+    Extract audio track title from ID3 / metadata tags with safe UTF-8 decoding.
+    Falls back to unquoted filename stem if metadata tag is missing or empty.
+    """
+    try:
+        audio = mutagen.File(file_path)
+        if audio is not None and hasattr(audio, "tags") and audio.tags:
+            # Check common tag keys for track title
+            for key in ["TIT2", "title", "TITLE", "\xa9nam", "TIT1"]:
+                val = audio.tags.get(key)
+                if val:
+                    title_str = decode_metadata_text(val)
+                    if title_str:
+                        return title_str
+    except Exception:
+        pass
+
+    from urllib.parse import unquote
+    return unquote(file_path.stem)
+
+
+
 def find_cover_image(folder_path: Path) -> Optional[Path]:
     """Locate the best available cover image file in the show folder."""
     for filename in COVER_NAMES:
@@ -453,7 +501,7 @@ class LibraryScanner:
                 total_file_size += stat.st_size
 
                 bitrate_kbps = get_audio_bitrate(audio_path, stat.st_size, duration)
-                title = audio_path.stem
+                title = get_audio_title(audio_path)
                 ep_id = f"{show_id}_ep_{idx}"
                 episodes.append(
                     {
