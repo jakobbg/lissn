@@ -60,7 +60,7 @@ def test_index_page(client: TestClient) -> None:
 
 
 def test_back_to_library_anchor_and_show_card_ids(client: TestClient) -> None:
-    """Test Back to Library button anchors to the specific show card ID for scroll positioning."""
+    """Test Back to Library button anchors to the show card ID while top-left brand title links to main page top without hash."""
     shows_res = client.get("/api/shows")
     shows = shows_res.json()["shows"]
     assert len(shows) > 0
@@ -72,6 +72,7 @@ def test_back_to_library_anchor_and_show_card_ids(client: TestClient) -> None:
     html = response.text
     assert f'href="/#show-{show_id}"' in html
     assert "← Back to Library" in html
+    assert 'href="/" class="brand-link"' in html
 
 
 def test_show_detail_page_with_opengraph_tags(client: TestClient) -> None:

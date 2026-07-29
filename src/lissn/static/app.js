@@ -211,12 +211,6 @@ function initClientNavigation() {
     const href = anchor.getAttribute('href');
     if (!href) return;
 
-    // Save show ID if navigating to a show detail page
-    const showMatch = href.match(/\/show\/([^\/?#]+)/);
-    if (showMatch) {
-      sessionStorage.setItem('lissn_last_show', showMatch[1]);
-    }
-
     // Skip external links, non-HTTP schemas, RSS, direct audio, cover downloads, or new window links
     if (
       href.startsWith('#') ||
@@ -320,11 +314,6 @@ function handleHashNavigation(urlStr) {
 
     if (targetUrl.hash) {
       targetId = targetUrl.hash.substring(1);
-    } else {
-      const savedShowId = sessionStorage.getItem('lissn_last_show');
-      if (savedShowId && (targetUrl.pathname === '/' || targetUrl.pathname === '')) {
-        targetId = `show-${savedShowId}`;
-      }
     }
 
     if (!targetId) {
