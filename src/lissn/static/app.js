@@ -320,6 +320,7 @@ function initMediaPlayer() {
   const speedSelect = document.getElementById('player-speed-select');
   const muteBtn = document.getElementById('player-mute-btn');
   const volumeSlider = document.getElementById('player-volume-slider');
+  const closeBtn = document.getElementById('player-close-btn');
   const trackTitleEl = document.getElementById('player-track-title');
   const showTitleEl = document.getElementById('player-show-title');
   const coverImg = document.getElementById('player-cover');
@@ -654,7 +655,34 @@ function initMediaPlayer() {
     }
   }
 
-  // Global Keyboard Shortcuts (Space play/pause, Left/Right seek, N next, P prev)
+  /**
+   * Terminate audio playback and remove player UI.
+   */
+  function closePlayer() {
+    audioElement.pause();
+    audioElement.removeAttribute('src');
+    audioElement.load();
+    currentTrackIndex = -1;
+
+    bottomPlayer.classList.remove('visible');
+    document.body.classList.remove('has-active-player');
+
+    sessionStorage.removeItem('lissn_player_state');
+
+    if (trackTitleEl) trackTitleEl.textContent = 'Select a track';
+    if (showTitleEl) showTitleEl.textContent = 'lissn player';
+    if (currentTimeEl) currentTimeEl.textContent = '0:00';
+    if (totalTimeEl) totalTimeEl.textContent = '0:00';
+    if (seekBar) seekBar.value = 0;
+
+    highlightActiveTrackRow();
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closePlayer);
+  }
+
+  // Global Keyboard Shortcuts (Space play/pause, Left/Right seek, N next, P prev, Esc close)
   document.addEventListener('keydown', (e) => {
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
@@ -671,6 +699,10 @@ function initMediaPlayer() {
       nextBtn?.click();
     } else if (e.key === 'p' || e.key === 'P') {
       prevBtn?.click();
+    } else if (e.key === 'Escape' || e.code === 'Escape') {
+      if (bottomPlayer.classList.contains('visible')) {
+        closePlayer();
+      }
     }
   });
 }

@@ -69,6 +69,8 @@ def test_bottom_media_player_and_auto_continue(client: TestClient) -> None:
     assert index_res.status_code == 200
     assert 'id="bottom-player"' in index_res.text
     assert 'id="auto-continue-btn"' in index_res.text
+    assert 'id="player-close-btn"' in index_res.text
+    assert "Close audio player" in index_res.text
     assert "Auto-Next" in index_res.text
 
     # Test show detail page with track rows and play buttons
@@ -80,6 +82,7 @@ def test_bottom_media_player_and_auto_continue(client: TestClient) -> None:
     html = show_res.text
     assert 'id="bottom-player"' in html
     assert 'id="auto-continue-btn"' in html
+    assert 'id="player-close-btn"' in html
     assert 'class="track-row"' in html
     assert 'data-track-index="' in html
     assert 'data-audio-src="' in html

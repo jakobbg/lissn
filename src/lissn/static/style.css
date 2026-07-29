@@ -835,6 +835,20 @@ body.has-active-player .site-footer {
   color: var(--accent-primary);
 }
 
+.player-close-btn {
+  padding: 0.35rem;
+  margin-left: 0.2rem;
+  color: var(--text-muted);
+  border-radius: var(--radius-full);
+}
+
+.player-close-btn:hover {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  transform: scale(1.1);
+}
+
 .player-icon {
   display: inline-block;
   vertical-align: middle;
