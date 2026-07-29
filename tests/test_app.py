@@ -735,3 +735,22 @@ def test_favicon_endpoints(client: TestClient) -> None:
     assert "<svg" in res_svg.text
 
 
+def test_player_restoration_script_elements(client: TestClient) -> None:
+    """Test index and show pages contain global audio element and bottom player structure for session state restoration."""
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert 'id="global-audio-element"' in index_res.text
+    assert 'id="bottom-player"' in index_res.text
+    assert 'id="player-play-btn"' in index_res.text
+
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    if shows:
+        show_id = shows[0]["show_id"]
+        show_res = client.get(f"/show/{show_id}")
+        assert show_res.status_code == 200
+        assert 'id="global-audio-element"' in show_res.text
+        assert 'id="bottom-player"' in show_res.text
+
+
+

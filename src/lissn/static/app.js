@@ -396,6 +396,7 @@ function initMediaPlayer() {
   let isRemainingTimeMode = localStorage.getItem('lissn_remaining_time_mode') === 'true';
   let sleepTimerInterval = null;
   let sleepTimerEndTime = null;
+  let pendingRestoreTime = null;
 
   // Toggle duration display between total length and remaining time
   function toggleDurationMode() {
@@ -622,6 +623,7 @@ function initMediaPlayer() {
       return;
     }
 
+    pendingRestoreTime = null;
     currentTrackIndex = index;
     const track = activePlaylist[index];
 
@@ -828,15 +830,47 @@ function initMediaPlayer() {
     muteBtn.setAttribute('aria-label', isMuted ? 'Unmute audio' : 'Mute audio');
   }
 
+  // Helper to safely apply pending seek position when audio metadata is ready
+  function applyPendingRestoreTime() {
+    if (pendingRestoreTime === null || pendingRestoreTime <= 0) return;
+    try {
+      if (audioElement.readyState >= 1) {
+        audioElement.currentTime = pendingRestoreTime;
+        if (currentTimeEl) currentTimeEl.textContent = formatTime(pendingRestoreTime);
+        if (!isNaN(audioElement.duration) && audioElement.duration > 0 && seekBar) {
+          seekBar.value = (pendingRestoreTime / audioElement.duration) * 100;
+        }
+        pendingRestoreTime = null;
+      }
+    } catch (e) {
+      console.warn('Failed to apply pending restore time on audio element:', e);
+    }
+  }
+
+  audioElement.addEventListener('loadedmetadata', () => {
+    updateTotalTimeDisplay();
+    applyPendingRestoreTime();
+  });
+
+  audioElement.addEventListener('canplay', () => {
+    applyPendingRestoreTime();
+  });
+
   // Save current player state to sessionStorage
   function savePlayerState() {
     if (!audioElement.src) return;
+
+    let timeToSave = audioElement.currentTime || 0;
+    if (pendingRestoreTime !== null && pendingRestoreTime > 0 && timeToSave === 0) {
+      timeToSave = pendingRestoreTime;
+    }
+
     const state = {
       src: audioElement.getAttribute('src') || audioElement.src,
       trackTitle: trackTitleEl ? trackTitleEl.textContent : '',
       showTitle: showTitleEl ? showTitleEl.textContent : '',
       coverUrl: (coverImg && coverImg.style.display !== 'none') ? coverImg.src : null,
-      currentTime: audioElement.currentTime || 0,
+      currentTime: timeToSave,
       paused: audioElement.paused
     };
     try {
@@ -852,25 +886,47 @@ function initMediaPlayer() {
       const raw = sessionStorage.getItem('lissn_player_state');
       if (!raw) return;
       const state = JSON.parse(raw);
-      if (state && state.src) {
-        audioElement.src = state.src;
-        if (state.currentTime) audioElement.currentTime = state.currentTime;
+      if (!state || !state.src) return;
 
-        if (trackTitleEl && state.trackTitle) trackTitleEl.textContent = state.trackTitle;
-        if (showTitleEl && state.showTitle) showTitleEl.textContent = state.showTitle;
+      audioElement.setAttribute('src', state.src);
+      audioElement.src = state.src;
 
-        if (state.coverUrl) {
-          coverImg.src = state.coverUrl;
-          coverImg.style.display = 'block';
-          if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+      if (trackTitleEl && state.trackTitle) trackTitleEl.textContent = state.trackTitle;
+      if (showTitleEl && state.showTitle) showTitleEl.textContent = state.showTitle;
+
+      if (state.coverUrl) {
+        coverImg.src = state.coverUrl;
+        coverImg.style.display = 'block';
+        if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+      }
+
+      bottomPlayer.classList.add('visible');
+      document.body.classList.add('has-active-player');
+
+      const restoreTime = state.currentTime || 0;
+      if (restoreTime > 0) {
+        pendingRestoreTime = restoreTime;
+        if (currentTimeEl) currentTimeEl.textContent = formatTime(restoreTime);
+        applyPendingRestoreTime();
+      }
+
+      if (!state.paused) {
+        const playPromise = audioElement.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            updatePlayButtonUI(true);
+          }).catch((err) => {
+            console.warn('Autoplay on restore blocked by browser policy:', err);
+            updatePlayButtonUI(false);
+          });
+        } else {
+          updatePlayButtonUI(false);
         }
-
-        bottomPlayer.classList.add('visible');
-        document.body.classList.add('has-active-player');
-        updatePlayButtonUI(!state.paused);
+      } else {
+        updatePlayButtonUI(false);
       }
     } catch (e) {
-      // Ignore restoration errors
+      console.warn('Error restoring player state:', e);
     }
   }
 
@@ -878,6 +934,7 @@ function initMediaPlayer() {
    * Terminate audio playback and remove player UI.
    */
   function closePlayer() {
+    pendingRestoreTime = null;
     audioElement.pause();
     audioElement.removeAttribute('src');
     audioElement.load();
