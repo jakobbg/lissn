@@ -57,12 +57,12 @@ def favicon_ico() -> FileResponse:
     )
 
 
-@app.get("/favicon.svg", include_in_schema=False)
-def favicon_svg() -> FileResponse:
-    """Serve SVG favicon for modern browsers."""
+@app.get("/apple-touch-icon.png", include_in_schema=False)
+def apple_touch_icon() -> FileResponse:
+    """Serve high-DPI apple-touch-icon for iOS home screen shortcuts."""
     return FileResponse(
-        BASE_DIR / "static" / "favicon.svg",
-        media_type="image/svg+xml",
+        BASE_DIR / "static" / "apple-touch-icon.png",
+        media_type="image/png",
         headers={"Cache-Control": "public, max-age=86400"},
     )
 

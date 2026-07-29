@@ -723,16 +723,16 @@ def test_subfolder_streaming_download_and_rss(client: TestClient, temp_library) 
 
 
 def test_favicon_endpoints(client: TestClient) -> None:
-    """Test /favicon.ico and /favicon.svg endpoints return expected favicon content."""
+    """Test /favicon.ico and /apple-touch-icon.png endpoints return expected favicon image content."""
     res_ico = client.get("/favicon.ico")
     assert res_ico.status_code == 200
     assert "image/x-icon" in res_ico.headers.get("content-type", "")
     assert len(res_ico.content) > 0
 
-    res_svg = client.get("/favicon.svg")
-    assert res_svg.status_code == 200
-    assert "image/svg+xml" in res_svg.headers.get("content-type", "")
-    assert "<svg" in res_svg.text
+    res_png = client.get("/apple-touch-icon.png")
+    assert res_png.status_code == 200
+    assert "image/png" in res_png.headers.get("content-type", "")
+    assert len(res_png.content) > 0
 
 
 def test_player_restoration_script_elements(client: TestClient) -> None:

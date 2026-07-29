@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/lissn/static/logo-banner.svg" alt="lissn logo banner" width="640">
+  <img src="src/lissn/static/logo.png" alt="lissn logo" width="220">
 </p>
 
 <p align="center">
