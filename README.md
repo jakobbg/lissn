@@ -58,7 +58,7 @@ Use FreeBSD `pkg` to install pre-compiled binaries, then enable `--system-site-p
 
 ```bash
 # Install pre-compiled binary packages
-sudo pkg install py312-fastapi py312-pydantic py312-uvicorn py312-pillow py312-Jinja2 py312-markdown py312-mutagen py312-pyyaml py312-h2 py312-pytest py312-httpx
+sudo pkg install py312-fastapi py312-pydantic py312-uvicorn py312-pillow py312-Jinja2 py312-markdown py312-mutagen py312-pyyaml py312-h2 py312-pytest py312-httpx py312-python-multipart
 
 # Create venv with system site packages enabled
 python3 -m venv --system-site-packages .venv
