@@ -44,7 +44,7 @@
       {% if books %}
         <div class="shows-grid">
           {% for show in books %}
-            <article class="show-card" data-section="books">
+            <article class="show-card" id="show-{{ show.show_id }}" data-section="books" tabindex="-1">
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
@@ -91,7 +91,7 @@
       {% if podcasts %}
         <div class="shows-grid">
           {% for show in podcasts %}
-            <article class="show-card" data-section="podcasts">
+            <article class="show-card" id="show-{{ show.show_id }}" data-section="podcasts" tabindex="-1">
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">

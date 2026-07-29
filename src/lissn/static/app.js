@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initRescanButton();
   initMediaPlayer();
   initClientNavigation();
+  handleHashNavigation(window.location.href);
 });
 
 /**
@@ -207,6 +208,12 @@ function initClientNavigation() {
     const href = anchor.getAttribute('href');
     if (!href) return;
 
+    // Save show ID if navigating to a show detail page
+    const showMatch = href.match(/\/show\/([^\/?#]+)/);
+    if (showMatch) {
+      sessionStorage.setItem('lissn_last_show', showMatch[1]);
+    }
+
     // Skip external links, non-HTTP schemas, RSS, direct audio, cover downloads, or new window links
     if (
       href.startsWith('#') ||
@@ -277,9 +284,6 @@ async function navigateTo(urlStr, isPushState = true) {
       window.history.pushState({}, '', urlStr);
     }
 
-    // Scroll window to top
-    window.scrollTo({ top: 0, behavior: 'instant' });
-
     // Announce page title change for screen readers
     const announcer = document.getElementById('aria-announcer');
     if (announcer) {
@@ -293,9 +297,72 @@ async function navigateTo(urlStr, isPushState = true) {
     if (window.syncPlayerWithPage) {
       window.syncPlayerWithPage();
     }
+
+    // Scroll down to and focus target show card if returning to library
+    handleHashNavigation(urlStr);
   } catch (err) {
     console.warn('Navigation fetch error, falling back to full page load:', err);
     window.location.href = urlStr;
+  }
+}
+
+/**
+ * Handle scrolling down to and focusing on a relevant show card when returning to library.
+ */
+function handleHashNavigation(urlStr) {
+  try {
+    const targetUrl = new URL(urlStr || window.location.href, window.location.origin);
+    let targetId = null;
+
+    if (targetUrl.hash) {
+      targetId = targetUrl.hash.substring(1);
+    } else {
+      const savedShowId = sessionStorage.getItem('lissn_last_show');
+      if (savedShowId && (targetUrl.pathname === '/' || targetUrl.pathname === '')) {
+        targetId = `show-${savedShowId}`;
+      }
+    }
+
+    if (!targetId) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
+
+    const targetCard = document.getElementById(targetId);
+    if (!targetCard) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
+
+    // Ensure section filter displays the card if currently hidden by tab filter
+    const cardSection = targetCard.getAttribute('data-section');
+    if (cardSection) {
+      const activeTab = document.querySelector('.tab-btn.active');
+      const activeSection = activeTab ? activeTab.getAttribute('data-section') : 'all';
+      if (activeSection !== 'all' && activeSection !== cardSection) {
+        applyFilter('all');
+      }
+    }
+
+    const scrollAndFocus = () => {
+      targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      try {
+        targetCard.focus({ preventScroll: true });
+      } catch (e) {
+        targetCard.focus();
+      }
+      targetCard.classList.add('show-card-highlighted');
+
+      setTimeout(() => {
+        targetCard.classList.remove('show-card-highlighted');
+      }, 2500);
+    };
+
+    setTimeout(scrollAndFocus, 60);
+
+  } catch (err) {
+    console.warn('Error handling hash navigation:', err);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }
 }
 

@@ -344,6 +344,32 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   box-shadow: var(--card-shadow-hover);
 }
 
+.show-card:focus-visible,
+.show-card:focus {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+
+.show-card-highlighted {
+  animation: cardHighlightPulse 2.5s ease-out;
+  border-color: var(--accent-primary) !important;
+}
+
+@keyframes cardHighlightPulse {
+  0% {
+    box-shadow: 0 0 0 4px var(--accent-subtle), var(--card-shadow-hover);
+    transform: translateY(-4px);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--accent-subtle), var(--card-shadow-hover);
+    transform: translateY(-4px);
+  }
+  100% {
+    box-shadow: var(--card-shadow);
+    transform: translateY(0);
+  }
+}
+
 .cover-wrapper {
   aspect-ratio: 1 / 1;
   width: 100%;
