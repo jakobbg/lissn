@@ -559,19 +559,23 @@ def test_protected_endpoints_require_auth(unauthenticated_client: TestClient, mo
     ep = show_detail["episodes"][0]
     filename = ep["filename"]
 
-    # 1. Accessing audio stream without auth
-    res_audio = client.get(f"/audio/{show_id}/{filename}")
-    assert res_audio.status_code == 401
+    # 1. Accessing RSS feed without auth when password configured
+    res_rss = client.get(f"/rss/{show_id}")
+    assert res_rss.status_code == 401
 
-    # 2. Accessing download show zip without auth
+    # 2. Accessing audio stream without auth (allowed for RSS & podcast apps)
+    res_audio = client.get(f"/audio/{show_id}/{filename}")
+    assert res_audio.status_code in (200, 206)
+
+    # 3. Accessing download show zip without auth
     res_zip = client.get(f"/download/show/{show_id}")
     assert res_zip.status_code == 401
 
-    # 3. Accessing download episode without auth
+    # 4. Accessing download episode without auth
     res_ep = client.get(f"/download/{show_id}/{filename}")
     assert res_ep.status_code == 401
 
-    # 4. Accessing edit show endpoint without auth
+    # 5. Accessing edit show endpoint without auth
     res_edit = client.post(
         f"/api/shows/{show_id}/edit",
         json={"title": "New Title", "author": "New Author", "description": "New Desc"},
@@ -583,8 +587,8 @@ def test_protected_endpoints_require_auth(unauthenticated_client: TestClient, mo
     assert login_res.status_code == 200
 
     # Repeat requests with authenticated session client
-    res_audio_auth = client.get(f"/audio/{show_id}/{filename}")
-    assert res_audio_auth.status_code in (200, 206)
+    res_rss_auth = client.get(f"/rss/{show_id}")
+    assert res_rss_auth.status_code == 200
 
     res_zip_auth = client.get(f"/download/show/{show_id}")
     assert res_zip_auth.status_code == 200

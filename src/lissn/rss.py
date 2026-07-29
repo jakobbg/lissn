@@ -51,8 +51,14 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
         XML string representing the podcast RSS feed.
     """
     show_id = show_data["show_id"]
-    title = show_data["title"]
-    description = show_data.get("description") or f"{title} ({show_data['section'].capitalize()})"
+    raw_title = show_data["title"]
+    author = (show_data.get("author") or "").strip()
+    if author:
+        title = f"{raw_title} ({author})"
+    else:
+        title = raw_title
+
+    description = show_data.get("description") or f"{raw_title} ({show_data['section'].capitalize()})"
     clean_base = base_url.rstrip("/")
 
     feed_url = f"{clean_base}/rss/{show_id}"
@@ -73,6 +79,9 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     ET.SubElement(channel, "description").text = description
     ET.SubElement(channel, "language").text = "en-us"
     ET.SubElement(channel, "generator").text = "lissn v0.1"
+
+    if author:
+        ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}author").text = author
 
     itunes_summary = ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}summary")
     itunes_summary.text = description

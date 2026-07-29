@@ -254,9 +254,8 @@ from urllib.parse import quote, unquote
 
 @app.get("/audio/{show_id}/{filename:path}")
 @app.head("/audio/{show_id}/{filename:path}")
-def stream_audio(show_id: str, filename: str, request: Request) -> Response:
+def stream_audio(show_id: str, filename: str) -> Response:
     """Stream audio file supporting partial HTTP range requests (206/416) and HEAD method."""
-    require_auth(request)
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
@@ -376,6 +375,7 @@ def download_episode(show_id: str, filename: str, request: Request) -> Response:
 @app.head("/rss/{show_id}")
 def get_podcast_rss(show_id: str, request: Request) -> Response:
     """Generate and return RSS 2.0 Podcast XML feed for a show."""
+    require_auth(request)
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
