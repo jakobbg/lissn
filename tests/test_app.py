@@ -2,6 +2,7 @@
 Integration tests for FastAPI application endpoints in app.py.
 """
 
+from pathlib import Path
 from typing import Generator
 from fastapi.testclient import TestClient
 import pytest
@@ -802,6 +803,97 @@ def test_synchronous_auth_state_script_rendering(client: TestClient, unauthentic
     assert unauth_show.status_code == 200
     assert 'id="lissn-auth-state"' in unauth_show.text
     assert '"authenticated": false' in unauth_show.text
+
+
+def test_cover_image_selection_and_upload(client: TestClient, unauthenticated_client: TestClient) -> None:
+    """Test cover image listing, folder image selection, and max 5MB WebP/PNG/JPEG upload endpoints."""
+    shows_res = client.get("/api/shows")
+    assert shows_res.status_code == 200
+    shows = shows_res.json()["shows"]
+    assert len(shows) > 0
+    show = shows[0]
+    show_id = show["show_id"]
+    folder_path = Path(show["folder_path"])
+
+    # Create dummy images in show folder
+    img1 = folder_path / "alternate_cover.jpg"
+    img1.write_bytes(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xd9")
+    img2 = folder_path / "secondary_cover.png"
+    img2.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89")
+
+    try:
+        # Unauthenticated GET /images -> 401
+        unauth_imgs = unauthenticated_client.get(f"/api/shows/{show_id}/images")
+        assert unauth_imgs.status_code == 401
+
+        # Authenticated GET /images -> 200
+        imgs_res = client.get(f"/api/shows/{show_id}/images")
+        assert imgs_res.status_code == 200
+        img_data = imgs_res.json()
+        assert img_data["show_id"] == show_id
+        filenames = [img["filename"] for img in img_data["images"]]
+        assert "alternate_cover.jpg" in filenames
+        assert "secondary_cover.png" in filenames
+
+        # Unauthenticated select cover -> 401
+        unauth_select = unauthenticated_client.post(f"/api/shows/{show_id}/select-cover", json={"filename": "alternate_cover.jpg"})
+        assert unauth_select.status_code == 401
+
+        # Path traversal attack attempt -> 400
+        bad_select = client.post(f"/api/shows/{show_id}/select-cover", json={"filename": "../../../etc/passwd"})
+        assert bad_select.status_code == 400
+
+        # Authenticated valid cover selection -> 200
+        select_res = client.post(f"/api/shows/{show_id}/select-cover", json={"filename": "alternate_cover.jpg"})
+        assert select_res.status_code == 200
+        assert select_res.json()["status"] == "success"
+
+        # Verify show cover updated
+        updated_show_res = client.get(f"/api/shows/{show_id}")
+        assert updated_show_res.json()["cover_path"] == str(img1.resolve())
+
+        # Unauthenticated cover upload -> 401
+        unauth_up = unauthenticated_client.post(
+            f"/api/shows/{show_id}/upload-cover",
+            files={"file": ("test_cover.webp", b"RIFF....WEBP", "image/webp")},
+        )
+        assert unauth_up.status_code == 401
+
+        # Invalid extension upload -> 400
+        bad_ext_up = client.post(
+            f"/api/shows/{show_id}/upload-cover",
+            files={"file": ("malicious.exe", b"MZ...", "application/x-msdownload")},
+        )
+        assert bad_ext_up.status_code == 400
+
+        # Oversized file upload (> 5MB) -> 413
+        oversized_data = b"0" * (5 * 1024 * 1024 + 1)
+        oversized_up = client.post(
+            f"/api/shows/{show_id}/upload-cover",
+            files={"file": ("large_cover.jpg", oversized_data, "image/jpeg")},
+        )
+        assert oversized_up.status_code == 413
+
+        # Valid WebP upload under 5MB -> 200
+        valid_data = b"\xff\xd8\xff\xe0\x00\x10JFIF"
+        valid_up = client.post(
+            f"/api/shows/{show_id}/upload-cover",
+            files={"file": ("new_uploaded.jpg", valid_data, "image/jpeg")},
+        )
+        assert valid_up.status_code == 200
+        up_json = valid_up.json()
+        assert up_json["status"] == "success"
+        uploaded_file = Path(up_json["cover_path"])
+        assert uploaded_file.exists()
+        assert uploaded_file.read_bytes() == valid_data
+    finally:
+        # Cleanup temporary test files
+        if img1.exists():
+            img1.unlink()
+        if img2.exists():
+            img2.unlink()
+        if 'uploaded_file' in locals() and uploaded_file.exists():
+            uploaded_file.unlink()
 
 
 

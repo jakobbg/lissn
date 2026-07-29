@@ -1297,11 +1297,51 @@ function initMarkdownEditor() {
       const author = document.getElementById('edit-author-input')?.value || '';
       const descInput = document.getElementById('edit-description-input');
       const description = descInput ? descInput.value : '';
+      const coverFileInput = document.getElementById('edit-cover-file');
+      const coverSelect = document.getElementById('edit-cover-select');
       const errorEl = document.getElementById('edit-form-error');
 
       if (!showId) return;
 
       try {
+        // Handle cover file upload if selected
+        if (coverFileInput && coverFileInput.files && coverFileInput.files.length > 0) {
+          const file = coverFileInput.files[0];
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const uploadRes = await fetch(`/api/shows/${showId}/upload-cover`, {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!uploadRes.ok) {
+            const errData = await uploadRes.json().catch(() => ({}));
+            if (errorEl) {
+              errorEl.textContent = errData.detail || 'Failed to upload cover image.';
+              errorEl.hidden = false;
+            }
+            return;
+          }
+        } else if (coverSelect && coverSelect.value) {
+          // Handle existing image selection
+          const selectRes = await fetch(`/api/shows/${showId}/select-cover`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: coverSelect.value })
+          });
+
+          if (!selectRes.ok) {
+            const errData = await selectRes.json().catch(() => ({}));
+            if (errorEl) {
+              errorEl.textContent = errData.detail || 'Failed to select cover image.';
+              errorEl.hidden = false;
+            }
+            return;
+          }
+        }
+
+        // Save text metadata
         const res = await fetch(`/api/shows/${showId}/edit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1331,9 +1371,40 @@ function initMarkdownEditor() {
       }
     }
   });
+
+  // Client-side validation for cover image file upload
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'edit-cover-file') {
+      const file = e.target.files && e.target.files[0];
+      const errorEl = document.getElementById('edit-form-error');
+      if (!file) return;
+
+      const allowedExts = ['.webp', '.png', '.jpg', '.jpeg'];
+      const ext = '.' + file.name.split('.').pop().toLowerCase();
+      if (!allowedExts.includes(ext)) {
+        if (errorEl) {
+          errorEl.textContent = 'Invalid file format. Please choose a WebP, PNG, or JPEG image.';
+          errorEl.hidden = false;
+        }
+        e.target.value = '';
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        if (errorEl) {
+          errorEl.textContent = 'File size exceeds maximum limit of 5MB.';
+          errorEl.hidden = false;
+        }
+        e.target.value = '';
+        return;
+      }
+
+      if (errorEl) errorEl.hidden = true;
+    }
+  });
 }
 
-function openEditModal(btn) {
+async function openEditModal(btn) {
   const editModal = document.getElementById('edit-modal');
   if (!editModal) return;
 
@@ -1346,12 +1417,45 @@ function openEditModal(btn) {
   const titleInput = document.getElementById('edit-title-input');
   const authorInput = document.getElementById('edit-author-input');
   const descInput = document.getElementById('edit-description-input');
+  const coverSelect = document.getElementById('edit-cover-select');
+  const coverFileInput = document.getElementById('edit-cover-file');
+  const coverPreview = document.getElementById('edit-cover-preview');
+  const coverPlaceholder = document.getElementById('edit-cover-placeholder');
   const errorEl = document.getElementById('edit-form-error');
 
   if (showIdInput) showIdInput.value = showId;
   if (titleInput) titleInput.value = title;
   if (authorInput) authorInput.value = author;
   if (descInput) descInput.value = description;
+  if (coverFileInput) coverFileInput.value = '';
+
+  if (coverPreview) {
+    coverPreview.src = `/covers/${showId}?t=${Date.now()}`;
+    coverPreview.style.display = 'block';
+    coverPreview.onerror = () => {
+      coverPreview.style.display = 'none';
+      if (coverPlaceholder) coverPlaceholder.style.display = 'flex';
+    };
+  }
+  if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+
+  if (coverSelect) {
+    coverSelect.innerHTML = '<option value="">-- Keep current cover --</option>';
+    try {
+      const imgRes = await fetch(`/api/shows/${showId}/images`);
+      if (imgRes.ok) {
+        const imgData = await imgRes.json();
+        if (imgData.images && imgData.images.length > 0) {
+          imgData.images.forEach(img => {
+            const opt = document.createElement('option');
+            opt.value = img.filename;
+            opt.textContent = `${img.filename} (${img.formatted_size})`;
+            coverSelect.appendChild(opt);
+          });
+        }
+      }
+    } catch (e) {}
+  }
 
   switchToWriteTab();
   if (errorEl) errorEl.hidden = true;
@@ -1426,6 +1530,13 @@ function updateShowPageDOM(show) {
   const detailDesc = document.querySelector('.detail-description');
   if (detailDesc) {
     detailDesc.innerHTML = show.description_html || show.description || '';
+  }
+
+  if (show.show_id) {
+    const coverImgs = document.querySelectorAll(`.cover-image, #show-${show.show_id} .cover-image, .detail-cover-img`);
+    coverImgs.forEach(img => {
+      img.src = `/covers/${show.show_id}?t=${Date.now()}`;
+    });
   }
 
   const editBtn = document.querySelector('.js-edit-show');

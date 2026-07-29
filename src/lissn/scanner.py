@@ -183,6 +183,9 @@ def get_audio_title(file_path: Path) -> str:
 
 
 
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
+
 def find_cover_image(folder_path: Path) -> Optional[Path]:
     """Locate the best available cover image file in the show folder."""
     for filename in COVER_NAMES:
@@ -191,10 +194,30 @@ def find_cover_image(folder_path: Path) -> Optional[Path]:
             return candidate
 
     for candidate in sorted(folder_path.iterdir()):
-        if candidate.is_file() and candidate.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}:
+        if candidate.is_file() and candidate.suffix.lower() in IMAGE_EXTENSIONS:
             return candidate
 
     return None
+
+
+def list_show_images(folder_path: Path) -> List[Dict[str, Any]]:
+    """List all available image files in the show folder."""
+    images = []
+    if not folder_path.exists() or not folder_path.is_dir():
+        return images
+
+    for item in sorted(folder_path.iterdir()):
+        if item.is_file() and item.suffix.lower() in IMAGE_EXTENSIONS:
+            stat = item.stat()
+            images.append(
+                {
+                    "filename": item.name,
+                    "file_path": str(item.resolve()),
+                    "size": stat.st_size,
+                    "formatted_size": format_file_size(stat.st_size),
+                }
+            )
+    return images
 
 
 def get_or_create_notes(cache_dir: Path, section: str, show_name: str) -> Dict[str, Any]:
@@ -600,6 +623,16 @@ class LibraryScanner:
         show["description_html"] = html_description
         show["notes_path"] = str(notes_file.resolve())
 
+        self.cache.save_show(show, show["episodes"])
+        return show
+
+    def update_show_cover(self, show_id: str, new_cover_path: Path) -> Optional[Dict[str, Any]]:
+        """Update cover_path for a show in database cache."""
+        show = self.cache.get_show(show_id)
+        if not show:
+            return None
+
+        show["cover_path"] = str(new_cover_path.resolve())
         self.cache.save_show(show, show["episodes"])
         return show
 

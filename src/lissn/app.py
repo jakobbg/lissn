@@ -4,6 +4,7 @@ Serves index pages, show detail views with OpenGraph meta tags,
 podcast RSS 2.0 feeds, audio file streaming, and JSON APIs.
 """
 
+from datetime import datetime, timezone
 import hashlib
 import io
 import mimetypes
@@ -11,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 import zipfile
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -20,7 +21,7 @@ from pydantic import BaseModel
 from lissn.colors import get_show_colors
 from lissn.config import Config
 from lissn.rss import generate_rss_feed
-from lissn.scanner import LibraryScanner
+from lissn.scanner import LibraryScanner, IMAGE_EXTENSIONS, list_show_images
 
 # Register audio MIME types for audiobook and podcast formats
 mimetypes.add_type("audio/mp4", ".m4b")
@@ -122,6 +123,10 @@ class EditShowRequest(BaseModel):
     title: str
     author: str = ""
     description: str = ""
+
+
+class SelectCoverRequest(BaseModel):
+    filename: str
 
 
 @app.middleware("http")
@@ -402,6 +407,75 @@ def api_edit_show(show_id: str, payload: EditShowRequest, request: Request) -> D
     if not updated_show:
         raise HTTPException(status_code=404, detail="Show not found")
     return {"status": "success", "show": updated_show}
+
+
+@app.get("/api/shows/{show_id}/images")
+def api_get_show_images(show_id: str, request: Request) -> Dict[str, Any]:
+    """Get list of available image files in the show folder."""
+    require_auth(request)
+    show = scanner.cache.get_show(show_id)
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+    folder = Path(show["folder_path"])
+    images = list_show_images(folder)
+    return {
+        "show_id": show_id,
+        "current_cover": show.get("cover_path"),
+        "images": images,
+    }
+
+
+@app.post("/api/shows/{show_id}/select-cover")
+def api_select_show_cover(show_id: str, payload: SelectCoverRequest, request: Request) -> Dict[str, Any]:
+    """Select an existing image from show folder as active cover art."""
+    require_auth(request)
+    show = scanner.cache.get_show(show_id)
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    folder = Path(show["folder_path"]).resolve()
+    target_file = (folder / payload.filename).resolve()
+
+    if not target_file.is_relative_to(folder) or not target_file.is_file() or target_file.suffix.lower() not in IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Invalid image file or path outside show directory")
+
+    updated = scanner.update_show_cover(show_id, target_file)
+    return {"status": "success", "cover_path": str(target_file)}
+
+
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB limit
+
+
+@app.post("/api/shows/{show_id}/upload-cover")
+async def api_upload_show_cover(show_id: str, request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
+    """Upload a new cover image file (WebP, PNG, JPEG; max 5MB) for a show."""
+    require_auth(request)
+    show = scanner.cache.get_show(show_id)
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid image format. Allowed formats: WebP, PNG, JPEG (.webp, .png, .jpg, .jpeg).",
+        )
+
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail="Image file exceeds maximum allowed size of 5MB.",
+        )
+
+    folder = Path(show["folder_path"])
+    timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    safe_filename = f"cover_{timestamp_str}{ext}"
+    dest_path = (folder / safe_filename).resolve()
+    dest_path.write_bytes(content)
+
+    updated = scanner.update_show_cover(show_id, dest_path)
+    return {"status": "success", "cover_path": str(dest_path), "filename": safe_filename}
 
 
 @app.post("/api/login")

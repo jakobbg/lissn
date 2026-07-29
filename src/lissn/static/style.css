@@ -1594,5 +1594,93 @@ tr.track-row.active-track {
   transform: scale(1.1);
 }
 
+/* Cover Image Edit Controls */
+.cover-edit-container {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  background: var(--bg-card-subtle, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+@media (max-width: 640px) {
+  .cover-edit-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.cover-preview-wrapper {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-input, #0f172a);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edit-cover-placeholder {
+  font-size: 2rem;
+  opacity: 0.6;
+}
+
+.cover-options-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cover-option-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-sublabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.cover-option-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.cover-option-divider::before,
+.cover-option-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.cover-option-divider span {
+  padding: 0 0.5rem;
+}
+
+.form-text-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
 
 
