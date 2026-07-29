@@ -78,8 +78,24 @@ Run the test suite using `pytest`:
 pytest
 ```
 
+## 🛠️ Local Development & IDE Debugging
+
+### 1. Seed Sample Media Library (No real files required)
+Populate `./data/Books` and `./data/Podcasts` with dummy audio files and cover art for instant local testing without needing to download external files:
+```bash
+python scripts/seed_dev_data.py
+```
+
+### 2. IDE Integration (VS Code / Cursor)
+The repository includes `.vscode/launch.json` pre-configured for **Run & Debug** (`F5`):
+- **`lissn: Run & Debug Web Server`**: Launches the web server with live debugging and breakpoints at `http://localhost:8000`.
+- **`lissn: Seed Dev Media Library`**: Runs the sample data generator script.
+- **`pytest: Debug All Tests`**: Debugs the pytest automated test suite.
+- **`pytest: Debug Current Test File`**: Debugs the test file currently active in your editor.
+
 ---
 
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for details.
+
