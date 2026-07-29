@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/app.js" defer></script>
 </head>
-<body>
+<body style="{% if show_colors %}{{ show_colors.css_variables }}{% endif %}">
   <header class="site-header">
     <div class="header-container">
       <a href="/" class="brand-link" aria-label="lissn homepage">

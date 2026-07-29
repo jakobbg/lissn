@@ -1,11 +1,16 @@
 /* lissn Design System & Modern Responsive Styles */
 
 :root {
+  /* Ambient Background Gradient Colors - Light Theme Default */
+  --bg-gradient-color1: 99, 102, 241;   /* #6366f1 Indigo */
+  --bg-gradient-color2: 168, 85, 247;  /* #a855f7 Purple */
+  --bg-gradient-color3: 56, 189, 248;   /* #38bdf8 Sky */
+
   /* Color Palette - Light Theme */
   --bg-color: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #f1f5f9;
-  --border-color: #e2e8f0;
+  --bg-surface: rgba(255, 255, 255, 0.85);
+  --bg-surface-elevated: rgba(241, 245, 249, 0.88);
+  --border-color: rgba(226, 232, 240, 0.8);
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
@@ -33,11 +38,16 @@
 }
 
 [data-theme="dark"] {
+  /* Ambient Background Gradient Colors - Dark Theme Default */
+  --bg-gradient-color1: 99, 102, 241;
+  --bg-gradient-color2: 168, 85, 247;
+  --bg-gradient-color3: 14, 165, 233;
+
   /* Color Palette - Dark Theme */
   --bg-color: #0b0f19;
-  --bg-surface: #131b2e;
-  --bg-surface-elevated: #1e293b;
-  --border-color: #334155;
+  --bg-surface: rgba(19, 27, 46, 0.85);
+  --bg-surface-elevated: rgba(30, 41, 59, 0.88);
+  --border-color: rgba(51, 65, 85, 0.8);
 
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
@@ -58,10 +68,14 @@
 /* System dark mode fallback if no explicit theme override */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    --bg-gradient-color1: 99, 102, 241;
+    --bg-gradient-color2: 168, 85, 247;
+    --bg-gradient-color3: 14, 165, 233;
+
     --bg-color: #0b0f19;
-    --bg-surface: #131b2e;
-    --bg-surface-elevated: #1e293b;
-    --border-color: #334155;
+    --bg-surface: rgba(19, 27, 46, 0.85);
+    --bg-surface-elevated: rgba(30, 41, 59, 0.88);
+    --border-color: rgba(51, 65, 85, 0.8);
 
     --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
@@ -95,7 +109,34 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
   transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* Modern Fluent Static Background Overlay */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  background: 
+    radial-gradient(ellipse at 15% 15%, rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 85%, rgba(var(--show-color-2-rgb, var(--bg-gradient-color2)), 0.24) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, rgba(var(--bg-gradient-color3), 0.12) 0%, transparent 70%),
+    linear-gradient(135deg, var(--bg-color) 0%, var(--bg-color) 100%);
+  transition: background 0.4s ease;
+}
+
+[data-theme="dark"] body::before {
+  background: 
+    radial-gradient(ellipse at 15% 15%, rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.42) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 85%, rgba(var(--show-color-2-rgb, var(--bg-gradient-color2)), 0.36) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, rgba(var(--bg-gradient-color3), 0.18) 0%, transparent 70%),
+    linear-gradient(135deg, var(--bg-color) 0%, #060911 100%);
 }
 
 /* Accessibility Focus States */
@@ -112,6 +153,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   top: 0;
   z-index: 100;
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .header-container {
@@ -259,6 +301,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   display: flex;
   flex-direction: column;
   box-shadow: var(--card-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
 
@@ -304,6 +348,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   background: rgba(15, 23, 42, 0.75);
   color: #ffffff;
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 0.2rem 0.6rem;
   border-radius: var(--radius-full);
   font-size: 0.75rem;
@@ -407,6 +452,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   border-radius: var(--radius-lg);
   padding: 2rem;
   box-shadow: var(--card-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   margin-bottom: 2rem;
 }
 
@@ -455,6 +502,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--card-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .track-table {
@@ -528,4 +577,6 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   color: var(--text-muted);
   font-size: 0.85rem;
   background-color: var(--bg-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }

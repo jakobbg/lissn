@@ -52,6 +52,8 @@ def test_show_detail_page_with_opengraph_tags(client: TestClient) -> None:
     assert '<meta property="og:description"' in html
     assert '<meta name="twitter:card" content="summary_large_image"' in html
     assert f"/covers/{show_id}" in html
+    assert "--show-color-1-rgb:" in html
+    assert "--show-color-2-rgb:" in html
 
 
 def test_get_cover_image(client: TestClient) -> None:

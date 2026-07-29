@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from lissn.colors import get_show_colors
 from lissn.config import Config
 from lissn.rss import generate_rss_feed
 from lissn.scanner import LibraryScanner
@@ -84,11 +85,15 @@ def show_detail_page(show_id: str, request: Request) -> Response:
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
 
+    cover_path = Path(show["cover_path"]) if show.get("cover_path") else None
+    colors = get_show_colors(cover_path, show["show_id"])
+
     return templates.TemplateResponse(
         request,
         "show.html",
         context={
             "show": show,
+            "show_colors": colors,
             "base_url": get_base_url(request),
             "host_header": get_host_header(request),
         },
