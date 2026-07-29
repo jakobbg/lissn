@@ -4,6 +4,7 @@ Serves index pages, show detail views with OpenGraph meta tags,
 podcast RSS 2.0 feeds, audio file streaming, and JSON APIs.
 """
 
+import mimetypes
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -15,6 +16,16 @@ from lissn.colors import get_show_colors
 from lissn.config import Config
 from lissn.rss import generate_rss_feed
 from lissn.scanner import LibraryScanner
+
+# Register audio MIME types for audiobook and podcast formats
+mimetypes.add_type("audio/mp4", ".m4b")
+mimetypes.add_type("audio/mp4", ".m4a")
+mimetypes.add_type("audio/mpeg", ".mp3")
+mimetypes.add_type("audio/ogg", ".ogg")
+mimetypes.add_type("audio/opus", ".opus")
+mimetypes.add_type("audio/flac", ".flac")
+mimetypes.add_type("audio/wav", ".wav")
+mimetypes.add_type("audio/aac", ".aac")
 
 app = FastAPI(
     title="lissn",
@@ -35,6 +46,17 @@ scanner = LibraryScanner(
     cache_dir=config.cache_dir,
     db_path=config.cache_db_path,
 )
+
+
+@app.middleware("http")
+async def add_protocol_security_headers(request: Request, call_next):
+    """Middleware attaching modern web protocol and security headers to HTTP responses."""
+    response: Response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    return response
 
 
 from contextlib import asynccontextmanager
@@ -61,6 +83,7 @@ def get_host_header(request: Request) -> str:
 
 
 @app.get("/", response_class=HTMLResponse)
+@app.head("/", response_class=HTMLResponse)
 def index_page(request: Request) -> Response:
     """Front page displaying indexed Books and Podcasts with filter tabs."""
     books = scanner.cache.get_all_shows(section="books")
@@ -79,6 +102,7 @@ def index_page(request: Request) -> Response:
 
 
 @app.get("/show/{show_id}", response_class=HTMLResponse)
+@app.head("/show/{show_id}", response_class=HTMLResponse)
 def show_detail_page(show_id: str, request: Request) -> Response:
     """Show detail page with tracks and OpenGraph meta tags for social media sharing."""
     show = scanner.cache.get_show(show_id)
@@ -101,8 +125,9 @@ def show_detail_page(show_id: str, request: Request) -> Response:
 
 
 @app.get("/covers/{show_id}")
+@app.head("/covers/{show_id}")
 def get_cover_image(show_id: str) -> Response:
-    """Serve cover art image for a show."""
+    """Serve cover art image for a show with byte range and HEAD support."""
     show = scanner.cache.get_show(show_id)
     if not show or not show.get("cover_path"):
         # Return fallback SVG cover image
@@ -113,7 +138,7 @@ def get_cover_image(show_id: str) -> Response:
                 {show['title'] if show else 'lissn'}
             </text>
         </svg>"""
-        return Response(content=svg_content, media_type="image/svg+xml")
+        return Response(content=svg_content, media_type="image/svg+xml", headers={"Accept-Ranges": "bytes"})
 
     cover_file = Path(show["cover_path"])
     if not cover_file.exists():
@@ -126,12 +151,13 @@ def get_cover_image(show_id: str) -> Response:
     elif suffix in [".webp"]:
         media_type = "image/webp"
 
-    return FileResponse(path=cover_file, media_type=media_type)
+    return FileResponse(path=cover_file, media_type=media_type, headers={"Accept-Ranges": "bytes"})
 
 
 @app.get("/audio/{show_id}/{filename}")
+@app.head("/audio/{show_id}/{filename}")
 def stream_audio(show_id: str, filename: str) -> Response:
-    """Stream audio file from show directory."""
+    """Stream audio file supporting partial HTTP range requests (206/416) and HEAD method."""
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
@@ -146,10 +172,18 @@ def stream_audio(show_id: str, filename: str) -> Response:
     if not audio_file.exists() or not audio_file.is_file():
         raise HTTPException(status_code=404, detail="Audio file not found")
 
-    return FileResponse(path=audio_file)
+    guessed_type, _ = mimetypes.guess_type(audio_file.name)
+    media_type = guessed_type or "audio/mpeg"
+
+    return FileResponse(
+        path=audio_file,
+        media_type=media_type,
+        headers={"Accept-Ranges": "bytes"},
+    )
 
 
 @app.get("/rss/{show_id}")
+@app.head("/rss/{show_id}")
 def get_podcast_rss(show_id: str, request: Request) -> Response:
     """Generate and return RSS 2.0 Podcast XML feed for a show."""
     show = scanner.cache.get_show(show_id)
@@ -186,4 +220,10 @@ def api_rescan_library() -> Response:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host=config.host, port=config.port)
+    # Run Uvicorn ASGI server with HTTP/2 and modern web protocol standards
+    uvicorn.run(
+        "lissn.app:app",
+        host=config.host,
+        port=config.port,
+        http="auto",
+    )

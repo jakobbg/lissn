@@ -224,3 +224,75 @@ def test_api_rescan(client: TestClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
+
+
+def test_partial_http_range_requests(client: TestClient) -> None:
+    """Test partial HTTP Range requests return status 206 Partial Content and Content-Range header."""
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    book_info = next(s for s in shows if s["section"] == "books")
+    show_id = book_info["show_id"]
+    show_detail = client.get(f"/api/shows/{show_id}").json()
+    filename = show_detail["episodes"][0]["filename"]
+
+    # Request first 10 bytes
+    response = client.get(f"/audio/{show_id}/{filename}", headers={"Range": "bytes=0-9"})
+    assert response.status_code == 206
+    assert response.headers["accept-ranges"] == "bytes"
+    assert "content-range" in response.headers
+    assert response.headers["content-range"].startswith("bytes 0-9/")
+    assert len(response.content) == 10
+
+    # Request tail range
+    res_tail = client.get(f"/audio/{show_id}/{filename}", headers={"Range": "bytes=-5"})
+    assert res_tail.status_code == 206
+    assert len(res_tail.content) == 5
+
+
+def test_unsatisfiable_http_range_request(client: TestClient) -> None:
+    """Test invalid HTTP Range request returns 416 Range Not Satisfiable."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_detail = client.get(f"/api/shows/{show_id}").json()
+    filename = show_detail["episodes"][0]["filename"]
+
+    response = client.get(f"/audio/{show_id}/{filename}", headers={"Range": "bytes=9999999-99999999"})
+    assert response.status_code == 416
+    assert "content-range" in response.headers
+
+
+def test_head_requests(client: TestClient) -> None:
+    """Test HTTP HEAD method requests return metadata headers with empty body."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_detail = client.get(f"/api/shows/{show_id}").json()
+    filename = show_detail["episodes"][0]["filename"]
+
+    # HEAD audio stream
+    res_audio = client.head(f"/audio/{show_id}/{filename}")
+    assert res_audio.status_code == 200
+    assert res_audio.headers["accept-ranges"] == "bytes"
+    assert "content-length" in res_audio.headers
+    assert len(res_audio.content) == 0
+
+    # HEAD index page
+    res_index = client.head("/")
+    assert res_index.status_code == 200
+    assert len(res_index.content) == 0
+
+
+def test_security_and_protocol_headers(client: TestClient) -> None:
+    """Test response middleware injects modern web security headers."""
+    response = client.get("/")
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "SAMEORIGIN"
+    assert response.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+    assert "permissions-policy" in response.headers
+
+
+def test_audiobook_m4b_m4a_mime_types(client: TestClient) -> None:
+    """Test custom audio MIME types for .m4b and .m4a audiobooks."""
+    import mimetypes
+    assert mimetypes.guess_type("audiobook.m4b")[0] == "audio/mp4"
+    assert mimetypes.guess_type("podcast.m4a")[0] == "audio/mp4"
+
