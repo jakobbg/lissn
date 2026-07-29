@@ -763,5 +763,17 @@ def test_opengraph_logo_social_preview_tags(client: TestClient) -> None:
     assert 'name="twitter:image" content="' in index_res.text
 
 
+def test_alt_click_podcast_new_window_logic(client: TestClient) -> None:
+    """Test that app.js includes alt-click handler to open podcast show in a new window."""
+    response = client.get("/static/app.js")
+    assert response.status_code == 200
+    js_content = response.text
+    assert "e.altKey" in js_content
+    assert "window.open(targetUrl.href, '_blank')" in js_content
+    assert "e.preventDefault()" in js_content
+    assert ".show-card" in js_content
+
+
+
 
 

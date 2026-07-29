@@ -202,9 +202,27 @@ function showToast(message) {
 
 /**
  * Initialize Client-Side PJAX Navigation to preserve media player across page changes.
+ * Supports Alt-click on podcast show cards and show links to open show in a new window.
  */
 function initClientNavigation() {
   document.addEventListener('click', (e) => {
+    // Handle Alt-click (Option key on macOS) on podcast show cards or show elements to open show in new window
+    if (e.altKey) {
+      const showCard = e.target.closest('.show-card');
+      if (showCard && !e.target.closest('.card-actions, .js-copy-rss, a[href^="podcast:"]')) {
+        const showLink = showCard.querySelector('a[href^="/show/"]');
+        if (showLink) {
+          const href = showLink.getAttribute('href');
+          if (href) {
+            const targetUrl = new URL(href, window.location.origin);
+            e.preventDefault();
+            window.open(targetUrl.href, '_blank');
+            return;
+          }
+        }
+      }
+    }
+
     const anchor = e.target.closest('a');
     if (!anchor) return;
 
@@ -229,6 +247,18 @@ function initClientNavigation() {
 
     const targetUrl = new URL(href, window.location.origin);
     if (targetUrl.origin !== window.location.origin) return;
+
+    // Open link target in new window when alt-clicked
+    if (e.altKey) {
+      e.preventDefault();
+      window.open(targetUrl.href, '_blank');
+      return;
+    }
+
+    // Let default browser behavior execute for Cmd / Ctrl / Shift clicks
+    if (e.metaKey || e.ctrlKey || e.shiftKey) {
+      return;
+    }
 
     // Perform smooth client-side page load
     e.preventDefault();
