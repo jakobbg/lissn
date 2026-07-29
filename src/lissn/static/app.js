@@ -474,6 +474,11 @@ function initMediaPlayer() {
     showToast(`🌙 Sleep timer set for ${labelStr}`);
     updateSleepTimerUI(minutes * 60);
 
+    // Restore select to the active timer value so that choosing "Off"
+    // later fires a change event (the select was reset to 'off' by
+    // cancelSleepTimer above, which would make selecting "Off" a no-op).
+    if (sleepTimerSelect) sleepTimerSelect.value = String(minutes);
+
     sleepTimerInterval = setInterval(tickSleepTimer, 1000);
   }
 
