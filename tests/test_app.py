@@ -644,7 +644,7 @@ def test_static_app_js_track_match_logic(client: TestClient) -> None:
 
 
 def test_single_line_metadata_and_dark_subscribe_button(client: TestClient) -> None:
-    """Test index and show detail pages render duration, track count, and added date on a single line, and Subscribe uses btn-secondary."""
+    """Test index and show detail pages render duration, track count, and added date on a single line, and Subscribe uses btn-secondary on show page."""
     res_index = client.get("/")
     assert res_index.status_code == 200
     html_index = res_index.text
@@ -653,9 +653,8 @@ def test_single_line_metadata_and_dark_subscribe_button(client: TestClient) -> N
     assert "duration-badge" in html_index
     assert "track" in html_index
     assert "📅" in html_index
-    assert 'class="btn btn-secondary"' in html_index
-    assert "🎙️ Subscribe" in html_index
-    assert "📋 Copy RSS" in html_index
+    assert "🎙️ Subscribe" not in html_index
+    assert "📋 Copy RSS" not in html_index
 
     shows_res = client.get("/api/shows")
     show_id = shows_res.json()["shows"][0]["show_id"]
@@ -666,6 +665,8 @@ def test_single_line_metadata_and_dark_subscribe_button(client: TestClient) -> N
     assert 'class="meta-row"' in html_show
     assert "📅" in html_show
     assert 'class="btn btn-secondary"' in html_show
+    assert "🎙️ Subscribe" in html_show
+    assert "📋 Copy RSS" in html_show
     assert "🎵 Tracks (" in html_show
 
 
@@ -928,6 +929,21 @@ def test_edit_modal_cover_preview_js_handlers(client: TestClient) -> None:
     assert "/covers/${showId}?file=${encodeURIComponent(selectedFilename)}" in js_content
     assert "'edit-cover-file'" in js_content
     assert "URL.createObjectURL(file)" in js_content
+
+
+def test_subscribe_and_copy_rss_only_on_show_page(client: TestClient) -> None:
+    """Test that Subscribe and Copy RSS buttons are removed from main page and present only on show detail page."""
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert "js-copy-rss" not in index_res.text
+    assert 'title="Subscribe in podcast app"' not in index_res.text
+
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_res = client.get(f"/show/{show_id}")
+    assert show_res.status_code == 200
+    assert "js-copy-rss" in show_res.text
+    assert 'title="Subscribe in podcast app"' in show_res.text
 
 
 
