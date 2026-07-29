@@ -123,12 +123,13 @@
           <table class="track-table">
             <thead>
               <tr>
-                <th style="width: 50px;">#</th>
+                <th style="width: 40px; text-align: center;" aria-label="Play"></th>
+                <th style="width: 40px; text-align: center;">#</th>
                 <th>Track Title</th>
                 <th>Duration</th>
                 <th>Size</th>
                 <th>Bitrate</th>
-                <th>Actions</th>
+                <th style="text-align: right; width: 40px;" aria-label="Download"></th>
               </tr>
             </thead>
             <tbody>
@@ -142,29 +143,28 @@
                     data-track-title="{{ ep.title }}" 
                     data-show-title="{{ show.title }}"
                     {% if show.cover_path %}data-cover-url="/covers/{{ show.show_id }}"{% endif %}>
-                  <td style="color: var(--text-muted);">{{ loop.index }}</td>
-                  <td>
-                    <strong>{{ ep.title }}</strong>
-                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ ep.filename }}</div>
+                  <td style="width: 40px; text-align: center; vertical-align: middle;">
+                    <button type="button" class="btn btn-sm btn-icon btn-play js-play-track" data-track-index="{{ loop.index0 }}" aria-label="Play {{ ep.title }}" title="Play {{ ep.title }}">
+                      <svg class="btn-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                    </button>
                   </td>
-                  <td><span class="duration-badge">{{ ep.formatted_duration }}</span></td>
-                  <td><span class="size-badge">{{ ep.formatted_file_size or '—' }}</span></td>
-                  <td><span class="bitrate-badge">{{ ep.formatted_bitrate or '—' }}</span></td>
-                  <td>
-                    <div class="track-actions-cell">
-                      <button type="button" class="btn btn-sm btn-icon btn-play js-play-track" data-track-index="{{ loop.index0 }}" aria-label="Play {{ ep.title }}" title="Play {{ ep.title }}">
-                        <svg class="btn-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                          <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                        </svg>
-                      </button>
-                      <a href="/download/{{ show.show_id }}/{{ ep.filename }}" class="btn btn-sm btn-icon btn-secondary js-download-track" aria-label="Download {{ ep.title }}" title="Download {{ ep.filename }}" download>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                          <polyline points="7 10 12 15 17 10"></polyline>
-                          <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                      </a>
-                    </div>
+                  <td style="width: 40px; text-align: center; color: var(--text-muted); vertical-align: middle;">{{ loop.index }}</td>
+                  <td style="vertical-align: middle;" title="{{ ep.filename }}">
+                    <strong class="track-title-text" title="File: {{ ep.filename }}">{{ ep.title }}</strong>
+                  </td>
+                  <td style="vertical-align: middle;"><span class="duration-badge">{{ ep.formatted_duration }}</span></td>
+                  <td style="vertical-align: middle;"><span class="size-badge">{{ ep.formatted_file_size or '—' }}</span></td>
+                  <td style="vertical-align: middle;"><span class="bitrate-badge">{{ ep.formatted_bitrate or '—' }}</span></td>
+                  <td style="text-align: right; width: 40px; vertical-align: middle;">
+                    <a href="/download/{{ show.show_id }}/{{ ep.filename }}" class="btn btn-sm btn-icon btn-secondary js-download-track" aria-label="Download {{ ep.title }}" title="Download {{ ep.filename }}" download>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                    </a>
                   </td>
                 </tr>
               {% endfor %}

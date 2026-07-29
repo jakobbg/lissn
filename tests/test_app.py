@@ -367,3 +367,25 @@ def test_show_page_displays_filesize_and_bitrate(client: TestClient) -> None:
     assert f"/download/{show_id}/" in html
 
 
+def test_compact_track_layout(client: TestClient) -> None:
+    """Test compact track layout has play button on the left before track #, title tooltip, and download on the right."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    response = client.get(f"/show/{show_id}")
+    assert response.status_code == 200
+
+    html = response.text
+    assert 'class="track-table"' in html
+    assert 'class="track-row"' in html
+    assert 'track-title-text' in html
+    # Check play button appears before track index inside row
+    play_idx = html.find('js-play-track')
+    dl_idx = html.find('js-download-track')
+    assert play_idx != -1
+    assert dl_idx != -1
+    assert play_idx < dl_idx
+    # Check title hover attribute
+    assert 'title="File: ' in html
+
+
+

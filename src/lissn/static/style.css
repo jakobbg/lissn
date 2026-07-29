@@ -619,19 +619,26 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 }
 
 .track-table th {
-  padding: 0.8rem 1rem;
+  padding: 0.55rem 0.75rem;
   border-bottom: 2px solid var(--border-color);
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  vertical-align: middle;
 }
 
 .track-table td {
-  padding: 0.9rem 1rem;
+  padding: 0.55rem 0.75rem;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.track-title-text {
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .track-table tr:last-child td {
