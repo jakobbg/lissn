@@ -1053,3 +1053,34 @@ def test_favicon_etag_and_304_caching(client: TestClient) -> None:
         cond_res = client.get("/favicon.ico", headers={"If-None-Match": etag})
         assert cond_res.status_code == 304
 
+
+def test_html_pages_etag_and_304_caching(client: TestClient) -> None:
+    """Test HTML pages (/ and /show/{show_id}) generate ETags, set Vary & Cache-Control, and return 304 Not Modified."""
+    # Index page testing
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert "etag" in index_res.headers
+    assert "no-cache, must-revalidate" in index_res.headers.get("cache-control", "")
+    assert "Cookie" in index_res.headers.get("vary", "")
+    index_etag = index_res.headers["etag"]
+
+    index_cond = client.get("/", headers={"If-None-Match": index_etag})
+    assert index_cond.status_code == 304
+    assert index_cond.text == ""
+
+    # Show detail page testing
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    show_res = client.get(f"/show/{show_id}")
+    assert show_res.status_code == 200
+    assert "etag" in show_res.headers
+    assert "no-cache, must-revalidate" in show_res.headers.get("cache-control", "")
+    assert "Cookie" in show_res.headers.get("vary", "")
+    show_etag = show_res.headers["etag"]
+
+    show_cond = client.get(f"/show/{show_id}", headers={"If-None-Match": show_etag})
+    assert show_cond.status_code == 304
+    assert show_cond.text == ""
+
+

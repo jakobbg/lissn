@@ -231,7 +231,7 @@ def index_page(request: Request) -> Response:
     books = scanner.cache.get_all_shows(section="books")
     podcasts = scanner.cache.get_all_shows(section="podcasts")
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request,
         "index.html",
         context={
@@ -246,6 +246,19 @@ def index_page(request: Request) -> Response:
         },
     )
 
+    etag = f'"{hashlib.md5(response.body).hexdigest()}"'
+    headers = {
+        "ETag": etag,
+        "Cache-Control": "no-cache, must-revalidate",
+        "Vary": "Cookie, Authorization",
+    }
+    response.headers.update(headers)
+
+    if check_conditional_headers(request, etag=etag):
+        return Response(status_code=304, headers=headers)
+
+    return response
+
 
 @app.get("/show/{show_id}", response_class=HTMLResponse)
 @app.head("/show/{show_id}", response_class=HTMLResponse)
@@ -258,7 +271,7 @@ def show_detail_page(show_id: str, request: Request) -> Response:
     cover_path = Path(show["cover_path"]) if show.get("cover_path") else None
     colors = get_show_colors(cover_path, show["show_id"])
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request,
         "show.html",
         context={
@@ -272,6 +285,19 @@ def show_detail_page(show_id: str, request: Request) -> Response:
             "pattern_opacity": config.pattern_opacity,
         },
     )
+
+    etag = f'"{hashlib.md5(response.body).hexdigest()}"'
+    headers = {
+        "ETag": etag,
+        "Cache-Control": "no-cache, must-revalidate",
+        "Vary": "Cookie, Authorization",
+    }
+    response.headers.update(headers)
+
+    if check_conditional_headers(request, etag=etag):
+        return Response(status_code=304, headers=headers)
+
+    return response
 
 
 @app.get("/covers/{show_id}")
