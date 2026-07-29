@@ -443,7 +443,7 @@ function initMediaPlayer() {
   if (totalTimeEl) {
     totalTimeEl.addEventListener('click', toggleDurationMode);
     totalTimeEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'Enter') {
         e.preventDefault();
         toggleDurationMode();
       }
@@ -622,11 +622,11 @@ function initMediaPlayer() {
     }
   });
 
-  // Support Keyboard Enter & Space key on focused track row
+  // Support Keyboard Enter key on focused track row
   document.addEventListener('keydown', (e) => {
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
     if (document.activeElement && document.activeElement.classList.contains('track-row')) {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'Enter') {
         e.preventDefault();
         const idx = parseInt(document.activeElement.getAttribute('data-track-index'), 10);
         if (!isNaN(idx) && activePlaylist[idx]) {
@@ -1005,14 +1005,11 @@ function initMediaPlayer() {
     closeBtn.addEventListener('click', closePlayer);
   }
 
-  // Global Keyboard Shortcuts (Space play/pause, Left/Right seek, N next, P prev, Esc close)
+  // Global Keyboard Shortcuts (Left/Right seek, N next, P prev, Esc close)
   document.addEventListener('keydown', (e) => {
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
-    if (e.code === 'Space') {
-      e.preventDefault();
-      playBtn?.click();
-    } else if (e.code === 'ArrowLeft') {
+    if (e.code === 'ArrowLeft') {
       e.preventDefault();
       skipBackBtn?.click();
     } else if (e.code === 'ArrowRight') {

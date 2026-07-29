@@ -950,7 +950,29 @@ def test_subscribe_and_copy_rss_only_on_show_page(client: TestClient) -> None:
     assert 'title="Subscribe in podcast app"' in show_res.text
 
 
+def test_spacebar_not_hijacked_in_app_js(client: TestClient) -> None:
+    """Test that app.js does not intercept spacebar so spacebar functions as page down."""
+    response = client.get("/static/app.js")
+    assert response.status_code == 200
+    js_content = response.text
+
+    # Ensure global keyboard shortcuts do not hijack spacebar
+    assert "if (e.code === 'Space')" not in js_content
+    # Ensure track row keydown handler does not intercept spacebar
+    assert "e.key === ' ' || e.key === 'Enter'" not in js_content
+    assert "e.key === 'Enter' || e.key === ' '" not in js_content
 
 
+def test_play_button_title_tooltips(client: TestClient) -> None:
+    """Test that index and show pages present 'Play / Pause' title without '(Space)' shortcut."""
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert 'title="Play / Pause"' in index_res.text
+    assert 'title="Play / Pause (Space)"' not in index_res.text
 
-
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_res = client.get(f"/show/{show_id}")
+    assert show_res.status_code == 200
+    assert 'title="Play / Pause"' in show_res.text
+    assert 'title="Play / Pause (Space)"' not in show_res.text
