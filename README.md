@@ -151,6 +151,33 @@ server {
 }
 ```
 
+### Option 4: Apache HTTP Server (`mod_proxy`)
+Example Apache VirtualHost configuration requiring `mod_proxy`, `mod_proxy_http`, `mod_ssl`, and `mod_headers`:
+
+```apache
+<VirtualHost *:443>
+    ServerName lissn.example.com
+
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/lissn.example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/lissn.example.com/privkey.pem
+
+    Protocols h2 http/1.1
+
+    # Preserve host and pass client headers
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "https"
+
+    # Reverse proxy setup
+    ProxyPass / http://127.0.0.1:8000/
+    ProxyPassReverse / http://127.0.0.1:8000/
+</VirtualHost>
+```
+
+> **Note:** Ensure required modules are enabled:
+> - **Debian / Ubuntu**: `sudo a2enmod proxy proxy_http ssl headers http2 && sudo systemctl restart apache2`
+> - **FreeBSD**: Enable `mod_proxy`, `mod_proxy_http`, `mod_ssl`, `mod_headers`, and `mod_http2` in `/usr/local/etc/apache24/httpd.conf`.
+
 ---
 
 ## 🧪 Running Automated Tests
