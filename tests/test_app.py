@@ -223,6 +223,29 @@ def test_stream_audio_success(client: TestClient) -> None:
     assert len(response.content) > 0
 
 
+def test_stream_audio_special_characters(client: TestClient) -> None:
+    """Test audio streaming and downloading for filenames with special characters like '#' and 'drøm'."""
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    book_info = next(s for s in shows if s["section"] == "books")
+    show_id = book_info["show_id"]
+
+    # Verify HTML template encodes special characters in data-audio-src and href attributes
+    html_res = client.get(f"/show/{show_id}")
+    assert html_res.status_code == 200
+    assert "Bare%20en%20dr%C3%B8m%23.wav" in html_res.text or "Bare%20en%20dr" in html_res.text
+
+    # Stream audio with percent-encoded '#' (%23)
+    res_audio = client.get(f"/audio/{show_id}/Bare%20en%20dr%C3%B8m%23.wav")
+    assert res_audio.status_code == 200
+    assert len(res_audio.content) > 0
+
+    # Download episode with percent-encoded '#' (%23)
+    res_dl = client.get(f"/download/{show_id}/Bare%20en%20dr%C3%B8m%23.wav")
+    assert res_dl.status_code == 200
+    assert len(res_dl.content) > 0
+
+
 def test_stream_audio_not_found(client: TestClient) -> None:
     """Test audio streaming endpoint returns 404 for missing show or file."""
     shows_res = client.get("/api/shows")

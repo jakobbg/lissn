@@ -227,6 +227,7 @@ function initClientNavigation() {
       anchor.hasAttribute('download') ||
       href.includes('/rss/') ||
       href.includes('/audio/') ||
+      href.includes('/download/') ||
       href.includes('/covers/')
     ) {
       return;

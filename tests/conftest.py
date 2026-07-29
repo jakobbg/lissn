@@ -54,6 +54,7 @@ def temp_library() -> Generator[Tuple[Path, Path, Path, Path], None, None]:
         # Audio tracks
         create_dummy_wav(book_show / "01_chapter1.wav", duration_seconds=5.0)
         create_dummy_wav(book_show / "02_chapter2.wav", duration_seconds=10.0)
+        create_dummy_wav(book_show / "Bare en drøm#.wav", duration_seconds=3.0)
 
         # 2. Create a sample Podcast show: "Tech Talk Podcast"
         podcast_show = podcasts_dir / "Tech Talk Podcast"

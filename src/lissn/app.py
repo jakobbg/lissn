@@ -43,6 +43,7 @@ config.ensure_directories()
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+templates.env.filters["urlencode"] = lambda s: quote(str(s), safe="")
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 scanner = LibraryScanner(
@@ -296,13 +297,13 @@ def download_episode(show_id: str, filename: str, request: Request) -> Response:
 
     guessed_type, _ = mimetypes.guess_type(audio_file.name)
     media_type = guessed_type or "audio/mpeg"
+    safe_ascii_name = "".join(c for c in audio_file.name if c.isascii() and c not in '"\\').strip() or "audio"
     encoded_filename = quote(audio_file.name)
 
     return FileResponse(
         path=audio_file,
         media_type=media_type,
-        filename=audio_file.name,
-        headers={"Content-Disposition": f'attachment; filename="{audio_file.name}"; filename*=UTF-8\'\'{encoded_filename}'},
+        headers={"Content-Disposition": f'attachment; filename="{safe_ascii_name}"; filename*=UTF-8\'\'{encoded_filename}'},
     )
 
 

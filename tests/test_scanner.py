@@ -65,7 +65,7 @@ def test_library_scanner_and_cache(temp_library) -> None:
     book_show_data = result["books"][0]
     assert book_show_data["title"] == "The Great Gatsby"
     assert book_show_data["section"] == "books"
-    assert book_show_data["total_duration"] == 15.0
+    assert book_show_data["total_duration"] == 18.0
     assert book_show_data["cover_path"] is not None
 
     # Verify auto-created notes.md file in cache_dir
@@ -81,7 +81,7 @@ def test_library_scanner_and_cache(temp_library) -> None:
     show_id = book_show_data["show_id"]
     cached_show = scanner.cache.get_show(show_id)
     assert cached_show is not None
-    assert len(cached_show["episodes"]) == 2
+    assert len(cached_show["episodes"]) == 3
     assert cached_show["episodes"][0]["filename"] == "01_chapter1.wav"
 
 
