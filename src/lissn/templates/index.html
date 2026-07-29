@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>lissn - Audio Books & Podcasts</title>
+  <meta name="description" content="Personal audio library for indexed Audio Books and Podcasts with RSS podcast feed support.">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand-link" aria-label="lissn homepage">
+        <svg class="brand-logo" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-7c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5z"/>
+        </svg>
+        <span>lissn</span>
+      </a>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Switch light/dark theme">
+          🌙 Dark
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="toolbar">
+      <div class="section-tabs" role="tablist" aria-label="Library section filter">
+        <button class="tab-btn active" data-section="all" role="tab" aria-selected="true">All Shows</button>
+        <button class="tab-btn" data-section="books" role="tab" aria-selected="false">📚 Audio Books ({{ books|length }})</button>
+        <button class="tab-btn" data-section="podcasts" role="tab" aria-selected="false">🎙️ Podcasts ({{ podcasts|length }})</button>
+      </div>
+      <button id="rescan-btn" class="rescan-btn">
+        🔄 Rescan Library
+      </button>
+    </div>
+
+    <!-- Audio Books Section -->
+    <section id="section-books" aria-labelledby="heading-books">
+      <h2 id="heading-books" class="section-title">📚 Audio Books</h2>
+      {% if books %}
+        <div class="shows-grid">
+          {% for show in books %}
+            <article class="show-card" data-section="books">
+              <div class="cover-wrapper">
+                {% if show.cover_path %}
+                  <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
+                {% else %}
+                  <div class="placeholder-cover">
+                    <span>📚</span>
+                    <span>{{ show.title }}</span>
+                  </div>
+                {% endif %}
+                <span class="section-badge">Book</span>
+              </div>
+              <div class="card-body">
+                <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
+                <div class="meta-row">
+                  <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
+                  <span>•</span>
+                  <span>{{ show.episode_count }} track{% if show.episode_count != 1 %}s{% endif %}</span>
+                  <span>•</span>
+                  <span>📅 {{ show.fuzzy_added_date }}</span>
+                </div>
+                <div class="card-actions">
+                  <a href="podcast://{{ host_header }}/rss/{{ show.show_id }}" class="btn btn-primary" title="Subscribe in podcast app">
+                    🎙️ Subscribe
+                  </a>
+                  <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Copy RSS Feed link">
+                    📋 Copy RSS
+                  </button>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted" style="margin-bottom: 2rem;">No Audio Books found in library folder.</p>
+      {% endif %}
+    </section>
+
+    <!-- Podcasts Section -->
+    <section id="section-podcasts" aria-labelledby="heading-podcasts">
+      <h2 id="heading-podcasts" class="section-title">🎙️ Podcasts</h2>
+      {% if podcasts %}
+        <div class="shows-grid">
+          {% for show in podcasts %}
+            <article class="show-card" data-section="podcasts">
+              <div class="cover-wrapper">
+                {% if show.cover_path %}
+                  <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
+                {% else %}
+                  <div class="placeholder-cover">
+                    <span>🎙️</span>
+                    <span>{{ show.title }}</span>
+                  </div>
+                {% endif %}
+                <span class="section-badge">Podcast</span>
+              </div>
+              <div class="card-body">
+                <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
+                <div class="meta-row">
+                  <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
+                  <span>•</span>
+                  <span>{{ show.episode_count }} episode{% if show.episode_count != 1 %}s{% endif %}</span>
+                  <span>•</span>
+                  <span>📅 {{ show.fuzzy_added_date }}</span>
+                </div>
+                <div class="card-actions">
+                  <a href="podcast://{{ host_header }}/rss/{{ show.show_id }}" class="btn btn-primary" title="Subscribe in podcast app">
+                    🎙️ Subscribe
+                  </a>
+                  <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Copy RSS Feed link">
+                    📋 Copy RSS
+                  </button>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted">No Podcasts found in library folder.</p>
+      {% endif %}
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>lissn &bull; Personal Audiobook & Podcast Hub</p>
+  </footer>
+</body>
+</html>

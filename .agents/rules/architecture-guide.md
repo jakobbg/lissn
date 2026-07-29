@@ -2,6 +2,9 @@
 trigger: always_on
 ---
 
+* All code should be in python
+* Frontend code must support both mobile and desktop features, with good failover, including accessibility features and support both dark and light mode (and configurable switching)
+* Avoid advanced javascript when possible, try to keep frontend using less javascript
 * Use API-based approach when developing
 * Hosting to support FreeBSD and Linux, with modern Python features
 * Create automatic tests as part of development

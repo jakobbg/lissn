@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ show.title }} - lissn</title>
+  <meta name="description" content="Listen to {{ show.title }}. Total duration: {{ show.formatted_duration }}.">
+
+  <!-- OpenGraph Social Meta Tags for iMessage, Instagram, and Twitter -->
+  <meta property="og:type" content="music.playlist">
+  <meta property="og:site_name" content="lissn">
+  <meta property="og:title" content="{{ show.title }}">
+  <meta property="og:description" content="Duration: {{ show.formatted_duration }} • {{ show.episodes|length }} file{% if show.episodes|length != 1 %}s{% endif %}. {{ show.description }}">
+  {% if show.cover_path %}
+    <meta property="og:image" content="{{ base_url }}/covers/{{ show.show_id }}">
+    <meta property="og:image:width" content="600">
+    <meta property="og:image:height" content="600">
+    <meta name="twitter:image" content="{{ base_url }}/covers/{{ show.show_id }}">
+  {% endif %}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ show.title }}">
+  <meta name="twitter:description" content="Duration: {{ show.formatted_duration }} • {{ show.episodes|length }} tracks on lissn.">
+
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand-link" aria-label="lissn homepage">
+        <svg class="brand-logo" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-7c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5z"/>
+        </svg>
+        <span>lissn</span>
+      </a>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Switch light/dark theme">
+          🌙 Dark
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div style="margin-bottom: 1.5rem;">
+      <a href="/" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+        ← Back to Library
+      </a>
+    </div>
+
+    <!-- Show Detail Banner Header -->
+    <header class="show-detail-header">
+      <div>
+        {% if show.cover_path %}
+          <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="detail-cover">
+        {% else %}
+          <div class="placeholder-cover detail-cover">
+            <span style="font-size: 3rem;">{% if show.section == 'books' %}📚{% else %}🎙️{% endif %}</span>
+          </div>
+        {% endif %}
+      </div>
+      <div class="detail-info">
+        <div style="margin-bottom: 0.5rem;">
+          <span class="section-badge" style="position: static;">{{ show.section }}</span>
+        </div>
+        <h1 class="detail-title">{{ show.title }}</h1>
+        
+        <div class="meta-row" style="font-size: 0.95rem; margin-bottom: 1.2rem;">
+          <span class="duration-badge">⏱️ {{ show.formatted_duration }} Total Length</span>
+          <span>•</span>
+          <span>{{ show.episodes|length }} Track{% if show.episodes|length != 1 %}s{% endif %}</span>
+          <span>•</span>
+          <span>Added {{ show.fuzzy_added_date }}</span>
+        </div>
+
+        {% if show.description %}
+          <p class="detail-description">{{ show.description }}</p>
+        {% endif %}
+
+        <div class="detail-actions">
+          <a href="podcast://{{ host_header }}/rss/{{ show.show_id }}" class="btn btn-primary">
+            🎙️ Subscribe in Podcast App
+          </a>
+          <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}">
+            📋 Copy RSS Feed URL
+          </button>
+          <button type="button" class="btn btn-secondary js-share-show" data-title="{{ show.title }}" data-url="{{ base_url }}/show/{{ show.show_id }}">
+            📲 Share Show
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Track List -->
+    <section class="track-list-container" aria-labelledby="heading-tracks">
+      <h2 id="heading-tracks" class="section-title" style="margin-bottom: 1.2rem;">
+        🎵 Audio Tracks ({{ show.episodes|length }})
+      </h2>
+
+      {% if show.episodes %}
+        <div style="overflow-x: auto;">
+          <table class="track-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Track Title</th>
+                <th>Duration</th>
+                <th>Preview Player</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ep in show.episodes %}
+                <tr>
+                  <td style="color: var(--text-muted);">{{ loop.index }}</td>
+                  <td>
+                    <strong>{{ ep.title }}</strong>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ ep.filename }}</div>
+                  </td>
+                  <td><span class="duration-badge">{{ ep.formatted_duration }}</span></td>
+                  <td>
+                    <audio controls preload="none" class="audio-player-mini">
+                      <source src="/audio/{{ show.show_id }}/{{ ep.filename }}" type="audio/mpeg">
+                      Your browser does not support audio playback.
+                    </audio>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted">No audio files found for this show.</p>
+      {% endif %}
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>lissn &bull; Personal Audiobook & Podcast Hub</p>
+  </footer>
+</body>
+</html>
