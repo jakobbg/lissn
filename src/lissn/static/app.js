@@ -1372,11 +1372,40 @@ function initMarkdownEditor() {
     }
   });
 
-  // Client-side validation for cover image file upload
+  // Dynamic cover preview update when selecting image from show folder dropdown
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'edit-cover-select') {
+      const showId = document.getElementById('edit-show-id')?.value;
+      const coverPreview = document.getElementById('edit-cover-preview');
+      const coverPlaceholder = document.getElementById('edit-cover-placeholder');
+      const coverFileInput = document.getElementById('edit-cover-file');
+      const errorEl = document.getElementById('edit-form-error');
+
+      if (errorEl) errorEl.hidden = true;
+      if (coverFileInput) coverFileInput.value = '';
+
+      const selectedFilename = e.target.value;
+      if (selectedFilename && showId && coverPreview) {
+        coverPreview.src = `/covers/${showId}?file=${encodeURIComponent(selectedFilename)}&t=${Date.now()}`;
+        coverPreview.style.display = 'block';
+        if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+      } else if (showId && coverPreview) {
+        coverPreview.src = `/covers/${showId}?t=${Date.now()}`;
+        coverPreview.style.display = 'block';
+      }
+    }
+  });
+
+  // Client-side validation and dynamic preview update for cover image file upload
   document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'edit-cover-file') {
       const file = e.target.files && e.target.files[0];
       const errorEl = document.getElementById('edit-form-error');
+      const coverSelect = document.getElementById('edit-cover-select');
+      const coverPreview = document.getElementById('edit-cover-preview');
+      const coverPlaceholder = document.getElementById('edit-cover-placeholder');
+
+      if (coverSelect) coverSelect.value = '';
       if (!file) return;
 
       const allowedExts = ['.webp', '.png', '.jpg', '.jpeg'];
@@ -1400,6 +1429,12 @@ function initMarkdownEditor() {
       }
 
       if (errorEl) errorEl.hidden = true;
+
+      if (coverPreview) {
+        coverPreview.src = URL.createObjectURL(file);
+        coverPreview.style.display = 'block';
+        if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+      }
     }
   });
 }

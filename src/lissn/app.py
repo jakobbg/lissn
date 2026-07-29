@@ -215,10 +215,21 @@ def show_detail_page(show_id: str, request: Request) -> Response:
 
 @app.get("/covers/{show_id}")
 @app.head("/covers/{show_id}")
-def get_cover_image(show_id: str) -> Response:
-    """Serve cover art image for a show with byte range and HEAD support."""
+def get_cover_image(show_id: str, file: Optional[str] = None) -> Response:
+    """Serve cover art image for a show (or specific image file in show folder) with byte range and HEAD support."""
     show = scanner.cache.get_show(show_id)
-    if not show or not show.get("cover_path"):
+    cover_file = None
+    if show:
+        if file:
+            folder = Path(show["folder_path"]).resolve()
+            candidate = (folder / file).resolve()
+            if candidate.is_relative_to(folder) and candidate.is_file() and candidate.suffix.lower() in IMAGE_EXTENSIONS:
+                cover_file = candidate
+
+        if not cover_file and show.get("cover_path"):
+            cover_file = Path(show["cover_path"])
+
+    if not cover_file or not cover_file.exists():
         # Return fallback SVG cover image
         svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
             <rect width="600" height="600" fill="#1e293b"/>
@@ -228,10 +239,6 @@ def get_cover_image(show_id: str) -> Response:
             </text>
         </svg>"""
         return Response(content=svg_content, media_type="image/svg+xml", headers={"Accept-Ranges": "bytes"})
-
-    cover_file = Path(show["cover_path"])
-    if not cover_file.exists():
-        raise HTTPException(status_code=404, detail="Cover image file not found")
 
     suffix = cover_file.suffix.lower()
     media_type = "image/jpeg"

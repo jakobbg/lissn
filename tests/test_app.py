@@ -896,6 +896,40 @@ def test_cover_image_selection_and_upload(client: TestClient, unauthenticated_cl
             uploaded_file.unlink()
 
 
+def test_cover_image_file_param_preview(client: TestClient) -> None:
+    """Test GET /covers/{show_id}?file={filename} serves specified image from show folder for modal preview."""
+    shows_res = client.get("/api/shows")
+    assert shows_res.status_code == 200
+    show = shows_res.json()["shows"][0]
+    show_id = show["show_id"]
+    folder_path = Path(show["folder_path"])
+
+    custom_img = folder_path / "custom_preview.png"
+    custom_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+    custom_img.write_bytes(custom_bytes)
+
+    try:
+        preview_res = client.get(f"/covers/{show_id}?file=custom_preview.png")
+        assert preview_res.status_code == 200
+        assert preview_res.headers["content-type"] == "image/png"
+        assert preview_res.content == custom_bytes
+    finally:
+        if custom_img.exists():
+            custom_img.unlink()
+
+
+def test_edit_modal_cover_preview_js_handlers(client: TestClient) -> None:
+    """Test that app.js contains event handlers for updating cover preview image on dropdown and file upload changes."""
+    response = client.get("/static/app.js")
+    assert response.status_code == 200
+    js_content = response.text
+
+    assert "'edit-cover-select'" in js_content
+    assert "/covers/${showId}?file=${encodeURIComponent(selectedFilename)}" in js_content
+    assert "'edit-cover-file'" in js_content
+    assert "URL.createObjectURL(file)" in js_content
+
+
 
 
 
