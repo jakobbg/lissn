@@ -64,6 +64,11 @@
           <span class="section-badge" style="position: static;">{{ show.section }}</span>
         </div>
         <h1 class="detail-title">{{ show.title }}</h1>
+        {% if show.author %}
+          <div style="font-size: 1.1rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.8rem; font-weight: 500;">
+            by {{ show.author }}
+          </div>
+        {% endif %}
         
         <div class="meta-row" style="font-size: 0.95rem; margin-bottom: 1.2rem;">
           <span class="duration-badge">⏱️ {{ show.formatted_duration }} Total Length</span>
@@ -73,7 +78,11 @@
           <span>Added {{ show.fuzzy_added_date }}</span>
         </div>
 
-        {% if show.description %}
+        {% if show.description_html %}
+          <div class="detail-description" style="line-height: 1.6; margin-bottom: 1.5rem;">
+            {{ show.description_html | safe }}
+          </div>
+        {% elif show.description %}
           <p class="detail-description">{{ show.description }}</p>
         {% endif %}
 

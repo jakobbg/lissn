@@ -12,11 +12,12 @@ from lissn.app import app, scanner
 @pytest.fixture
 def client(temp_library) -> Generator[TestClient, None, None]:
     """Test client fixture configured with temporary library paths."""
-    books_dir, podcasts_dir, cache_db = temp_library
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
 
     # Override scanner paths with temporary test library
     scanner.books_dir = books_dir
     scanner.podcasts_dir = podcasts_dir
+    scanner.cache_dir = cache_dir
     scanner.cache.db_path = cache_db
     scanner.cache._init_db()
     scanner.scan_all()

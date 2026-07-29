@@ -28,18 +28,20 @@ def create_dummy_wav(path: Path, duration_seconds: float = 1.0) -> None:
 
 
 @pytest.fixture
-def temp_library() -> Generator[Tuple[Path, Path, Path], None, None]:
+def temp_library() -> Generator[Tuple[Path, Path, Path, Path], None, None]:
     """
-    Fixture providing temporary Books, Podcasts, and Cache DB paths with mock show folders.
+    Fixture providing temporary Books, Podcasts, Cache directory, and Cache DB paths with mock show folders.
     """
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         books_dir = tmp_path / "Books"
         podcasts_dir = tmp_path / "Podcasts"
-        cache_db = tmp_path / "lissn_cache.db"
+        cache_dir = tmp_path / "cache"
+        cache_db = cache_dir / "lissn_cache.db"
 
         books_dir.mkdir(parents=True, exist_ok=True)
         podcasts_dir.mkdir(parents=True, exist_ok=True)
+        cache_dir.mkdir(parents=True, exist_ok=True)
 
         # 1. Create a sample Audiobook show: "The Great Gatsby"
         book_show = books_dir / "The Great Gatsby"
@@ -49,8 +51,6 @@ def temp_library() -> Generator[Tuple[Path, Path, Path], None, None]:
         (book_show / "cover.jpg").write_bytes(
             b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb\x00C\x00"
         )
-        # Description
-        (book_show / "description.txt").write_text("A novel by F. Scott Fitzgerald.")
         # Audio tracks
         create_dummy_wav(book_show / "01_chapter1.wav", duration_seconds=5.0)
         create_dummy_wav(book_show / "02_chapter2.wav", duration_seconds=10.0)
@@ -66,4 +66,4 @@ def temp_library() -> Generator[Tuple[Path, Path, Path], None, None]:
         # Audio tracks
         create_dummy_wav(podcast_show / "ep1_ai_future.wav", duration_seconds=12.0)
 
-        yield books_dir, podcasts_dir, cache_db
+        yield books_dir, podcasts_dir, cache_dir, cache_db

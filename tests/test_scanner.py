@@ -48,10 +48,12 @@ def test_format_fuzzy_date() -> None:
 
 
 def test_library_scanner_and_cache(temp_library) -> None:
-    """Test full directory scanning and SQLite cache operations."""
-    books_dir, podcasts_dir, cache_db = temp_library
+    """Test full directory scanning, notes.md auto-generation, and SQLite cache operations."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
 
-    scanner = LibraryScanner(books_dir=books_dir, podcasts_dir=podcasts_dir, db_path=cache_db)
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
     result = scanner.scan_all()
 
     assert result["total"] == 2
@@ -62,9 +64,13 @@ def test_library_scanner_and_cache(temp_library) -> None:
     book_show_data = result["books"][0]
     assert book_show_data["title"] == "The Great Gatsby"
     assert book_show_data["section"] == "books"
-    assert book_show_data["description"] == "A novel by F. Scott Fitzgerald."
     assert book_show_data["total_duration"] == 15.0
     assert book_show_data["cover_path"] is not None
+
+    # Verify auto-created notes.md file in cache_dir
+    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
+    assert notes_file.exists()
+    assert "Unknown Author" in notes_file.read_text()
 
     # Query SQLite cache directly
     cached_shows = scanner.cache.get_all_shows()
@@ -76,3 +82,34 @@ def test_library_scanner_and_cache(temp_library) -> None:
     assert cached_show is not None
     assert len(cached_show["episodes"]) == 2
     assert cached_show["episodes"][0]["filename"] == "01_chapter1.wav"
+
+
+def test_notes_md_customization(temp_library) -> None:
+    """Test custom metadata and markdown rendering parsed from notes.md in cache_dir."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
+
+    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
+    notes_file.parent.mkdir(parents=True, exist_ok=True)
+    notes_file.write_text(
+        """---
+title: "The Great Gatsby (Annotated)"
+author: "F. Scott Fitzgerald"
+---
+
+# About this Audiobook
+
+This is a **classic** American novel.
+""",
+        encoding="utf-8",
+    )
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
+    result = scanner.scan_all()
+
+    book = result["books"][0]
+    assert book["title"] == "The Great Gatsby (Annotated)"
+    assert book["author"] == "F. Scott Fitzgerald"
+    assert "<strong>classic</strong>" in book["description_html"]
+

@@ -1,6 +1,7 @@
 """
 Configuration manager for lissn.
-Loads settings from environment variables or a configuration JSON file.
+Loads settings from lissn.json (or config/lissn.json / config/lissn.example.json)
+with environment variable overrides.
 """
 
 from pathlib import Path
@@ -16,23 +17,32 @@ class Config:
         self,
         books_dir: Optional[str] = None,
         podcasts_dir: Optional[str] = None,
+        cache_dir: Optional[str] = None,
         cache_db_path: Optional[str] = None,
         host: Optional[str] = None,
         port: Optional[int] = None,
         base_url: Optional[str] = None,
     ) -> None:
-        """Initialize configuration with environment overrides and defaults."""
+        """Initialize configuration with file/env overrides and defaults."""
         base_dir = Path.cwd()
 
-        # Load config file if present
+        # Candidates for configuration JSON file
+        config_candidates = [
+            base_dir / "lissn.json",
+            base_dir / "config" / "lissn.json",
+            base_dir / "config" / "lissn.example.json",
+            base_dir / "lissn_config.json",
+        ]
+
         json_config = {}
-        config_file = base_dir / "lissn_config.json"
-        if config_file.exists():
-            try:
-                with open(config_file, "r", encoding="utf-8") as f:
-                    json_config = json.load(f)
-            except Exception:
-                pass
+        for candidate in config_candidates:
+            if candidate.is_file():
+                try:
+                    with open(candidate, "r", encoding="utf-8") as f:
+                        json_config = json.load(f)
+                    break
+                except Exception:
+                    pass
 
         # Resolve Books path
         raw_books = (
@@ -52,14 +62,23 @@ class Config:
         )
         self.podcasts_dir: Path = Path(raw_podcasts).resolve()
 
+        # Resolve Cache Directory path
+        raw_cache_dir = (
+            cache_dir
+            or os.getenv("LISSN_CACHE_DIR")
+            or json_config.get("cache_dir")
+            or str(base_dir / "data" / "cache")
+        )
+        self.cache_dir: Path = Path(raw_cache_dir).resolve()
+
         # Resolve Cache DB path
-        raw_cache = (
+        raw_cache_db = (
             cache_db_path
             or os.getenv("LISSN_CACHE_DB")
             or json_config.get("cache_db_path")
-            or str(base_dir / "data" / "lissn_cache.db")
+            or str(self.cache_dir / "lissn_cache.db")
         )
-        self.cache_db_path: Path = Path(raw_cache).resolve()
+        self.cache_db_path: Path = Path(raw_cache_db).resolve()
 
         self.host: str = host or os.getenv("LISSN_HOST") or json_config.get("host") or "0.0.0.0"
         self.port: int = int(port or os.getenv("LISSN_PORT") or json_config.get("port") or 8000)
@@ -74,4 +93,5 @@ class Config:
         """Ensure media and cache directories exist on disk."""
         self.books_dir.mkdir(parents=True, exist_ok=True)
         self.podcasts_dir.mkdir(parents=True, exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_db_path.parent.mkdir(parents=True, exist_ok=True)

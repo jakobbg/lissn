@@ -31,6 +31,7 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 scanner = LibraryScanner(
     books_dir=config.books_dir,
     podcasts_dir=config.podcasts_dir,
+    cache_dir=config.cache_dir,
     db_path=config.cache_db_path,
 )
 

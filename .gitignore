@@ -217,6 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Local data cache
+# Local configuration & cache directories
+lissn.json
+config/lissn.json
+cache/
 data/
 

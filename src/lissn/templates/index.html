@@ -57,6 +57,9 @@
               </div>
               <div class="card-body">
                 <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
+                {% if show.author %}
+                  <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: -0.3rem; margin-bottom: 0.5rem;">by {{ show.author }}</div>
+                {% endif %}
                 <div class="meta-row">
                   <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
                   <span>•</span>
@@ -101,6 +104,9 @@
               </div>
               <div class="card-body">
                 <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
+                {% if show.author %}
+                  <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: -0.3rem; margin-bottom: 0.5rem;">by {{ show.author }}</div>
+                {% endif %}
                 <div class="meta-row">
                   <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
                   <span>•</span>

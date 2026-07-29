@@ -1,16 +1,19 @@
 """
 Scanner module for lissn.
 Recursively indexes audiobooks and podcasts, calculates audio duration,
-locates cover art, computes fuzzy added dates, and caches data in SQLite.
+locates cover art, computes fuzzy added dates, reads notes.md from cache_dir,
+and caches show data in SQLite.
 """
 
 from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
 import sqlite3
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
+import markdown
 import mutagen
+import yaml
 
 AUDIO_EXTENSIONS = {".mp3", ".m4a", ".m4b", ".aac", ".flac", ".ogg", ".opus", ".wav"}
 COVER_NAMES = ["cover.jpg", "cover.jpeg", "cover.png", "folder.jpg", "folder.png", "poster.jpg"]
@@ -90,13 +93,11 @@ def get_audio_duration(file_path: Path) -> float:
 
 def find_cover_image(folder_path: Path) -> Optional[Path]:
     """Locate the best available cover image file in the show folder."""
-    # Check preferred cover filenames
     for filename in COVER_NAMES:
         candidate = folder_path / filename
         if candidate.is_file():
             return candidate
 
-    # Search for any jpeg/jpg/png file
     for candidate in sorted(folder_path.iterdir()):
         if candidate.is_file() and candidate.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}:
             return candidate
@@ -104,18 +105,73 @@ def find_cover_image(folder_path: Path) -> Optional[Path]:
     return None
 
 
-def read_description(folder_path: Path) -> str:
-    """Extract show description from txt/markdown files in the directory if present."""
-    for desc_file in ["description.txt", "info.txt", "README.md", "about.txt"]:
-        path = folder_path / desc_file
-        if path.is_file():
+def get_or_create_notes(cache_dir: Path, section: str, show_name: str) -> Dict[str, Any]:
+    """
+    Locate or create notes.md inside cache_dir / section / show_name / notes.md.
+    Parses frontmatter for author, title, podcast_name, and converts markdown description.
+    """
+    show_cache_dir = cache_dir / section / show_name
+    show_cache_dir.mkdir(parents=True, exist_ok=True)
+
+    notes_file = show_cache_dir / "notes.md"
+
+    if not notes_file.exists():
+        if section == "books":
+            default_content = f"""---
+title: "{show_name}"
+author: "Unknown Author"
+---
+
+# {show_name}
+
+Add book description in markdown format here.
+"""
+        else:
+            default_content = f"""---
+podcast_name: "{show_name}"
+author: "Podcast Host"
+---
+
+# {show_name}
+
+Add podcast description in markdown format here.
+"""
+        notes_file.write_text(default_content, encoding="utf-8")
+
+    raw_text = notes_file.read_text(encoding="utf-8").strip()
+
+    title = show_name
+    author = ""
+    podcast_name = show_name if section == "podcasts" else ""
+    body = raw_text
+
+    if raw_text.startswith("---"):
+        parts = raw_text.split("---", 2)
+        if len(parts) >= 3:
+            yaml_block = parts[1].strip()
+            body = parts[2].strip()
             try:
-                content = path.read_text(encoding="utf-8").strip()
-                if content:
-                    return content
+                meta = yaml.safe_load(yaml_block) or {}
+                if isinstance(meta, dict):
+                    if meta.get("title"):
+                        title = str(meta["title"]).strip()
+                    if meta.get("author"):
+                        author = str(meta["author"]).strip()
+                    if meta.get("podcast_name"):
+                        podcast_name = str(meta["podcast_name"]).strip()
             except Exception:
                 pass
-    return ""
+
+    html_description = markdown.markdown(body, extensions=["extra"]) if body else ""
+
+    return {
+        "title": title,
+        "author": author,
+        "podcast_name": podcast_name,
+        "description": body,
+        "description_html": html_description,
+        "notes_path": str(notes_file.resolve()),
+    }
 
 
 class ScannerCache:
@@ -140,6 +196,8 @@ class ScannerCache:
                     show_id TEXT PRIMARY KEY,
                     section TEXT NOT NULL,
                     title TEXT NOT NULL,
+                    author TEXT,
+                    podcast_name TEXT,
                     folder_path TEXT NOT NULL,
                     cover_path TEXT,
                     total_duration REAL NOT NULL,
@@ -147,6 +205,8 @@ class ScannerCache:
                     added_timestamp REAL NOT NULL,
                     fuzzy_added_date TEXT NOT NULL,
                     description TEXT,
+                    description_html TEXT,
+                    notes_path TEXT,
                     episode_count INTEGER NOT NULL,
                     updated_at REAL NOT NULL
                 );
@@ -176,15 +236,17 @@ class ScannerCache:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO shows (
-                    show_id, section, title, folder_path, cover_path,
+                    show_id, section, title, author, podcast_name, folder_path, cover_path,
                     total_duration, formatted_duration, added_timestamp,
-                    fuzzy_added_date, description, episode_count, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    fuzzy_added_date, description, description_html, notes_path, episode_count, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     show_data["show_id"],
                     show_data["section"],
                     show_data["title"],
+                    show_data.get("author", ""),
+                    show_data.get("podcast_name", ""),
                     show_data["folder_path"],
                     show_data.get("cover_path"),
                     show_data["total_duration"],
@@ -192,6 +254,8 @@ class ScannerCache:
                     show_data["added_timestamp"],
                     show_data["fuzzy_added_date"],
                     show_data.get("description", ""),
+                    show_data.get("description_html", ""),
+                    show_data.get("notes_path", ""),
                     len(episodes),
                     now,
                 ),
@@ -256,9 +320,10 @@ class ScannerCache:
 class LibraryScanner:
     """Scans Books and Podcasts folders and populates the SQLite cache."""
 
-    def __init__(self, books_dir: Path, podcasts_dir: Path, db_path: Path) -> None:
+    def __init__(self, books_dir: Path, podcasts_dir: Path, cache_dir: Path, db_path: Path) -> None:
         self.books_dir = books_dir
         self.podcasts_dir = podcasts_dir
+        self.cache_dir = cache_dir
         self.cache = ScannerCache(db_path)
 
     def scan_folder(self, section: str, root_dir: Path) -> List[Dict[str, Any]]:
@@ -267,14 +332,19 @@ class LibraryScanner:
         if not root_dir.exists() or not root_dir.is_dir():
             return scanned_shows
 
-        # Every child directory under root_dir is a show
         for show_dir in sorted(root_dir.iterdir()):
             if not show_dir.is_dir() or show_dir.name.startswith("."):
                 continue
 
             show_id = generate_show_id(section, show_dir.name)
             cover_path = find_cover_image(show_dir)
-            description = read_description(show_dir)
+
+            # Load or create notes.md in cache directory
+            notes_info = get_or_create_notes(
+                cache_dir=self.cache_dir,
+                section=section,
+                show_name=show_dir.name,
+            )
 
             audio_files = []
             for item in sorted(show_dir.rglob("*")):
@@ -315,17 +385,24 @@ class LibraryScanner:
             if earliest_timestamp == float("inf"):
                 earliest_timestamp = show_dir.stat().st_mtime
 
+            # Derive title: use notes.md title or podcast_name if custom, else folder name
+            display_title = notes_info["title"] or show_dir.name
+
             show_data = {
                 "show_id": show_id,
                 "section": section,
-                "title": show_dir.name,
+                "title": display_title,
+                "author": notes_info.get("author", ""),
+                "podcast_name": notes_info.get("podcast_name", display_title),
                 "folder_path": str(show_dir.resolve()),
                 "cover_path": str(cover_path.resolve()) if cover_path else None,
                 "total_duration": total_duration,
                 "formatted_duration": format_duration(total_duration),
                 "added_timestamp": earliest_timestamp,
                 "fuzzy_added_date": format_fuzzy_date(earliest_timestamp),
-                "description": description,
+                "description": notes_info.get("description", ""),
+                "description_html": notes_info.get("description_html", ""),
+                "notes_path": notes_info.get("notes_path", ""),
             }
 
             self.cache.save_show(show_data, episodes)
