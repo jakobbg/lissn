@@ -532,7 +532,7 @@ def test_login_success_and_failure(unauthenticated_client: TestClient, monkeypat
     # Test incorrect password
     res_bad = client.post("/api/login", json={"password": "wrongpassword"})
     assert res_bad.status_code == 401
-    assert res_bad.json()["detail"] == "Sorry, the password is incorrect"
+    assert res_bad.json()["detail"] == "Sorry, the password is incorrect."
 
     # Test correct password
     res_ok = client.post("/api/login", json={"password": "mysecretpass"})

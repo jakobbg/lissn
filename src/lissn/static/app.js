@@ -1142,13 +1142,13 @@ function initAuthSystem() {
           const errData = await res.json().catch(() => ({}));
           globalAuthState.authenticated = false;
           if (passwordError) {
-            passwordError.textContent = errData.detail || 'Sorry, the password is incorrect';
+            passwordError.textContent = errData.detail || 'Sorry, the password is incorrect.';
             passwordError.hidden = false;
           }
         }
       } catch (err) {
         if (passwordError) {
-          passwordError.textContent = 'Sorry, the password is incorrect';
+          passwordError.textContent = 'Sorry, the password is incorrect.';
           passwordError.hidden = false;
         }
       }

@@ -109,7 +109,7 @@ def require_auth(request: Request) -> None:
     if not is_authenticated(request):
         raise HTTPException(
             status_code=401,
-            detail="Sorry, the password is incorrect",
+            detail="Sorry, the password is incorrect.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -418,7 +418,7 @@ def api_login(payload: LoginRequest, response: Response) -> Dict[str, Any]:
         )
         return {"status": "success", "authenticated": True, "token": token}
 
-    raise HTTPException(status_code=401, detail="Sorry, the password is incorrect")
+    raise HTTPException(status_code=401, detail="Sorry, the password is incorrect.")
 
 
 @app.post("/api/logout")
