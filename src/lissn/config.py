@@ -1,6 +1,6 @@
 """
 Configuration manager for lissn.
-Loads settings from lissn.json (or config/lissn.json / config/lissn.example.json)
+Loads settings from config/lissn.json (or config/lissn.example.json)
 with environment variable overrides.
 """
 
