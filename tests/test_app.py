@@ -753,4 +753,15 @@ def test_player_restoration_script_elements(client: TestClient) -> None:
         assert 'id="bottom-player"' in show_res.text
 
 
+def test_opengraph_logo_social_preview_tags(client: TestClient) -> None:
+    """Test index page contains OpenGraph and Twitter card meta tags referencing logo.png."""
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert 'property="og:image" content="' in index_res.text
+    assert '/static/logo.png"' in index_res.text
+    assert 'name="twitter:card" content="summary_large_image"' in index_res.text
+    assert 'name="twitter:image" content="' in index_res.text
+
+
+
 
