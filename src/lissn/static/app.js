@@ -1049,15 +1049,6 @@ function initAuthSystem() {
 
 /* Markdown Show Details Editor */
 function initMarkdownEditor() {
-  const editModal = document.getElementById('edit-modal');
-  const editForm = document.getElementById('edit-show-form');
-  const writeBtn = document.getElementById('tab-write-btn');
-  const previewBtn = document.getElementById('tab-preview-btn');
-  const descInput = document.getElementById('edit-description-input');
-  const descPreview = document.getElementById('edit-description-preview');
-  const mdToolbar = document.getElementById('md-toolbar');
-  const errorEl = document.getElementById('edit-form-error');
-
   // Delegated click listener for Edit Show Details button
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.js-edit-show');
@@ -1081,75 +1072,37 @@ function initMarkdownEditor() {
     }
   });
 
-  function openEditModal(btn) {
-    if (!editModal) return;
-    const showId = btn.getAttribute('data-show-id') || document.getElementById('edit-show-id')?.value;
-    const title = btn.getAttribute('data-title') || '';
-    const author = btn.getAttribute('data-author') || '';
-    const description = btn.getAttribute('data-description') || '';
-
-    const showIdInput = document.getElementById('edit-show-id');
-    const titleInput = document.getElementById('edit-title-input');
-    const authorInput = document.getElementById('edit-author-input');
-
-    if (showIdInput) showIdInput.value = showId;
-    if (titleInput) titleInput.value = title;
-    if (authorInput) authorInput.value = author;
-    if (descInput) descInput.value = description;
-
-    switchToWriteTab();
-    if (errorEl) errorEl.hidden = true;
-
-    editModal.removeAttribute('hidden');
-    editModal.setAttribute('aria-hidden', 'false');
-    if (titleInput) titleInput.focus();
-  }
-
   // Tab switching between Write and Preview
-  if (writeBtn && previewBtn) {
-    writeBtn.addEventListener('click', switchToWriteTab);
-    previewBtn.addEventListener('click', switchToPreviewTab);
-  }
-
-  function switchToWriteTab() {
-    if (writeBtn) writeBtn.classList.add('active');
-    if (previewBtn) previewBtn.classList.remove('active');
-    if (descInput) descInput.hidden = false;
-    if (mdToolbar) mdToolbar.style.display = 'flex';
-    if (descPreview) descPreview.hidden = true;
-  }
-
-  function switchToPreviewTab() {
-    if (previewBtn) previewBtn.classList.add('active');
-    if (writeBtn) writeBtn.classList.remove('active');
-    if (descInput) descInput.hidden = true;
-    if (mdToolbar) mdToolbar.style.display = 'none';
-    if (descPreview) {
-      descPreview.innerHTML = renderSimpleMarkdown(descInput ? descInput.value : '');
-      descPreview.hidden = false;
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#tab-write-btn')) {
+      switchToWriteTab();
+    } else if (e.target.closest('#tab-preview-btn')) {
+      switchToPreviewTab();
     }
-  }
+  });
 
   // Markdown formatting toolbar button click handlers
-  if (mdToolbar) {
-    mdToolbar.addEventListener('click', (e) => {
-      const btn = e.target.closest('.md-btn');
-      if (!btn || !descInput) return;
-      e.preventDefault();
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.md-btn');
+    if (!btn) return;
+    const descInput = document.getElementById('edit-description-input');
+    if (!descInput) return;
+    e.preventDefault();
 
-      const action = btn.getAttribute('data-md-action');
-      applyMarkdownFormatting(descInput, action);
-    });
-  }
+    const action = btn.getAttribute('data-md-action');
+    applyMarkdownFormatting(descInput, action);
+  });
 
   // Save changes form submission
-  if (editForm) {
-    editForm.addEventListener('submit', async (e) => {
+  document.addEventListener('submit', async (e) => {
+    if (e.target && e.target.id === 'edit-show-form') {
       e.preventDefault();
       const showId = document.getElementById('edit-show-id')?.value;
       const title = document.getElementById('edit-title-input')?.value || '';
       const author = document.getElementById('edit-author-input')?.value || '';
+      const descInput = document.getElementById('edit-description-input');
       const description = descInput ? descInput.value : '';
+      const errorEl = document.getElementById('edit-form-error');
 
       if (!showId) return;
 
@@ -1181,7 +1134,66 @@ function initMarkdownEditor() {
           errorEl.hidden = false;
         }
       }
-    });
+    }
+  });
+}
+
+function openEditModal(btn) {
+  const editModal = document.getElementById('edit-modal');
+  if (!editModal) return;
+
+  const showId = btn.getAttribute('data-show-id') || document.getElementById('edit-show-id')?.value;
+  const title = btn.getAttribute('data-title') || '';
+  const author = btn.getAttribute('data-author') || '';
+  const description = btn.getAttribute('data-description') || '';
+
+  const showIdInput = document.getElementById('edit-show-id');
+  const titleInput = document.getElementById('edit-title-input');
+  const authorInput = document.getElementById('edit-author-input');
+  const descInput = document.getElementById('edit-description-input');
+  const errorEl = document.getElementById('edit-form-error');
+
+  if (showIdInput) showIdInput.value = showId;
+  if (titleInput) titleInput.value = title;
+  if (authorInput) authorInput.value = author;
+  if (descInput) descInput.value = description;
+
+  switchToWriteTab();
+  if (errorEl) errorEl.hidden = true;
+
+  editModal.removeAttribute('hidden');
+  editModal.setAttribute('aria-hidden', 'false');
+  if (titleInput) titleInput.focus();
+}
+
+function switchToWriteTab() {
+  const writeBtn = document.getElementById('tab-write-btn');
+  const previewBtn = document.getElementById('tab-preview-btn');
+  const descInput = document.getElementById('edit-description-input');
+  const descPreview = document.getElementById('edit-description-preview');
+  const mdToolbar = document.getElementById('md-toolbar');
+
+  if (writeBtn) writeBtn.classList.add('active');
+  if (previewBtn) previewBtn.classList.remove('active');
+  if (descInput) descInput.hidden = false;
+  if (mdToolbar) mdToolbar.style.display = 'flex';
+  if (descPreview) descPreview.hidden = true;
+}
+
+function switchToPreviewTab() {
+  const writeBtn = document.getElementById('tab-write-btn');
+  const previewBtn = document.getElementById('tab-preview-btn');
+  const descInput = document.getElementById('edit-description-input');
+  const descPreview = document.getElementById('edit-description-preview');
+  const mdToolbar = document.getElementById('md-toolbar');
+
+  if (previewBtn) previewBtn.classList.add('active');
+  if (writeBtn) writeBtn.classList.remove('active');
+  if (descInput) descInput.hidden = true;
+  if (mdToolbar) mdToolbar.style.display = 'none';
+  if (descPreview) {
+    descPreview.innerHTML = renderSimpleMarkdown(descInput ? descInput.value : '');
+    descPreview.hidden = false;
   }
 }
 

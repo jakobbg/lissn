@@ -279,5 +279,62 @@
       </form>
     </div>
   </div>
+
+  <!-- Edit Metadata Modal -->
+  <div id="edit-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-labelledby="edit-modal-title">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <h2 id="edit-modal-title" class="modal-title">✏️ Edit Show Details</h2>
+        <button type="button" class="modal-close-btn js-close-modal" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="edit-show-form" class="modal-body">
+        <input type="hidden" id="edit-show-id" value="">
+        
+        <div class="form-group">
+          <label for="edit-title-input" class="form-label">Title</label>
+          <input type="text" id="edit-title-input" class="form-control" required placeholder="Show title" value="">
+        </div>
+
+        <div class="form-group">
+          <label for="edit-author-input" class="form-label">Author / Host</label>
+          <input type="text" id="edit-author-input" class="form-control" placeholder="Author or host name" value="">
+        </div>
+
+        <div class="form-group">
+          <div class="label-toolbar-row">
+            <label for="edit-description-input" class="form-label">Description (Markdown)</label>
+            <div class="tab-toggle-group">
+              <button type="button" class="tab-btn active" id="tab-write-btn">Write</button>
+              <button type="button" class="tab-btn" id="tab-preview-btn">Preview</button>
+            </div>
+          </div>
+
+          <!-- Markdown Formatting Toolbar -->
+          <div id="md-toolbar" class="md-toolbar" aria-label="Markdown formatting tools">
+            <button type="button" class="md-btn" data-md-action="bold" title="Bold (**text**)" aria-label="Bold"><strong>B</strong></button>
+            <button type="button" class="md-btn" data-md-action="italic" title="Italic (*text*)" aria-label="Italic"><em>I</em></button>
+            <button type="button" class="md-btn" data-md-action="heading" title="Heading (### Heading)" aria-label="Heading">H</button>
+            <button type="button" class="md-btn" data-md-action="list" title="Bullet List (- item)" aria-label="Bullet list">• List</button>
+            <button type="button" class="md-btn" data-md-action="olist" title="Numbered List (1. item)" aria-label="Numbered list">1. List</button>
+            <button type="button" class="md-btn" data-md-action="code" title="Code (`code`)" aria-label="Code">&lt;/&gt;</button>
+            <button type="button" class="md-btn" data-md-action="quote" title="Quote (> text)" aria-label="Quote">“”</button>
+            <button type="button" class="md-btn" data-md-action="link" title="Link ([text](url))" aria-label="Link">🔗</button>
+          </div>
+
+          <div class="editor-container">
+            <textarea id="edit-description-input" class="form-control md-textarea" rows="8" placeholder="Add description in Markdown format..."></textarea>
+            <div id="edit-description-preview" class="md-preview-pane" hidden></div>
+          </div>
+        </div>
+
+        <div id="edit-form-error" class="error-message" hidden aria-live="assertive"></div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary js-close-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </body>
 </html>

@@ -147,6 +147,16 @@ def test_sleep_timer_and_duration_remaining_toggle(client: TestClient) -> None:
     assert 'player-time-toggleable' in html
     assert 'title="Click to toggle remaining time"' in html
 
+    # Check edit-modal structure is rendered on index page as well
+    assert 'id="edit-modal"' in html
+
+    # Verify sr-only CSS class exists in style.css so screen reader announcements are visually hidden
+    css_res = client.get("/static/style.css")
+    assert css_res.status_code == 200
+    assert ".sr-only" in css_res.text
+    assert "position: absolute;" in css_res.text
+    assert "clip: rect(0, 0, 0, 0);" in css_res.text
+
 
 def test_show_detail_page_not_found(client: TestClient) -> None:
     """Test show detail page returns HTTP 404 for invalid show ID."""
