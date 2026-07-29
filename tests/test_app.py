@@ -54,6 +54,7 @@ def test_show_detail_page_with_opengraph_tags(client: TestClient) -> None:
     assert f"/covers/{show_id}" in html
     assert "--show-color-1-rgb:" in html
     assert "--show-color-2-rgb:" in html
+    assert "--show-color-3-rgb:" in html
 
 
 def test_get_cover_image(client: TestClient) -> None:

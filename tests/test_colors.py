@@ -16,16 +16,19 @@ from lissn.colors import (
 
 def test_generate_fallback_colors():
     """Test deterministic fallback color generation from show_id."""
-    color1, color2 = generate_fallback_colors("test_show_123")
+    color1, color2, color3 = generate_fallback_colors("test_show_123")
     assert len(color1) == 3
     assert len(color2) == 3
+    assert len(color3) == 3
     assert all(0 <= c <= 255 for c in color1)
     assert all(0 <= c <= 255 for c in color2)
+    assert all(0 <= c <= 255 for c in color3)
 
     # Verify deterministic output
-    color1_again, color2_again = generate_fallback_colors("test_show_123")
+    color1_again, color2_again, color3_again = generate_fallback_colors("test_show_123")
     assert color1 == color1_again
     assert color2 == color2_again
+    assert color3 == color3_again
 
 
 def test_hsl_to_rgb_tuple():
@@ -44,18 +47,22 @@ def test_extract_dominant_colors(tmp_path: Path):
             img.putpixel((x, y), (255, 140, 0))
     img.save(img_path)
 
-    color1, color2 = extract_dominant_colors(img_path, "test_show")
+    color1, color2, color3 = extract_dominant_colors(img_path, "test_show")
     assert len(color1) == 3
     assert len(color2) == 3
+    assert len(color3) == 3
 
 
 def test_get_show_colors(tmp_path: Path):
     """Test get_show_colors formatting for template rendering."""
     res_no_cover = get_show_colors(None, "show_abc")
     assert "color1_rgb" in res_no_cover
+    assert "color2_rgb" in res_no_cover
+    assert "color3_rgb" in res_no_cover
     assert "css_variables" in res_no_cover
     assert "--show-color-1-rgb:" in res_no_cover["css_variables"]
     assert "--show-color-2-rgb:" in res_no_cover["css_variables"]
+    assert "--show-color-3-rgb:" in res_no_cover["css_variables"]
 
     # Test with cover image
     img_path = tmp_path / "cover.jpg"

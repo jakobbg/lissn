@@ -113,7 +113,7 @@ body {
   transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
-/* Modern Fluent Static Background Overlay */
+/* Modern Fluent Static Background Overlay - Front Page & Show Colors */
 body::before {
   content: "";
   position: fixed;
@@ -121,22 +121,55 @@ body::before {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: -1;
+  z-index: -2;
   pointer-events: none;
   background: 
-    radial-gradient(ellipse at 15% 15%, rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 85%, rgba(var(--show-color-2-rgb, var(--bg-gradient-color2)), 0.24) 0%, transparent 60%),
-    radial-gradient(ellipse at 50% 50%, rgba(var(--bg-gradient-color3), 0.12) 0%, transparent 70%),
-    linear-gradient(135deg, var(--bg-color) 0%, var(--bg-color) 100%);
+    radial-gradient(circle at 10% 15%, rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.55) 0%, transparent 55%),
+    radial-gradient(circle at 90% 25%, rgba(var(--show-color-2-rgb, var(--bg-gradient-color2)), 0.48) 0%, transparent 60%),
+    radial-gradient(circle at 50% 75%, rgba(var(--show-color-3-rgb, var(--bg-gradient-color3)), 0.40) 0%, transparent 65%),
+    linear-gradient(180deg, rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.15) 0%, var(--bg-color) 45%, var(--bg-color) 100%);
   transition: background 0.4s ease;
 }
 
 [data-theme="dark"] body::before {
   background: 
-    radial-gradient(ellipse at 15% 15%, rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.42) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 85%, rgba(var(--show-color-2-rgb, var(--bg-gradient-color2)), 0.36) 0%, transparent 60%),
-    radial-gradient(ellipse at 50% 50%, rgba(var(--bg-gradient-color3), 0.18) 0%, transparent 70%),
-    linear-gradient(135deg, var(--bg-color) 0%, #060911 100%);
+    radial-gradient(circle at 10% 15%, rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.68) 0%, transparent 55%),
+    radial-gradient(circle at 90% 25%, rgba(var(--show-color-2-rgb, var(--bg-gradient-color2)), 0.58) 0%, transparent 60%),
+    radial-gradient(circle at 50% 75%, rgba(var(--show-color-3-rgb, var(--bg-gradient-color3)), 0.48) 0%, transparent 65%),
+    linear-gradient(180deg, rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.30) 0%, var(--bg-color) 50%, #04070e 100%);
+}
+
+/* Ambient Glowing Sphere Overlay for Show Cover Base Colors */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vw;
+  max-width: 1000px;
+  height: 480px;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(80px);
+  opacity: 0.75;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.5) 0%,
+    rgba(var(--show-color-2-rgb, var(--bg-gradient-color2)), 0.35) 50%,
+    transparent 75%
+  );
+  transition: background 0.4s ease, opacity 0.4s ease;
+}
+
+[data-theme="dark"] body::after {
+  opacity: 0.85;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(var(--show-color-1-rgb, var(--bg-gradient-color1)), 0.65) 0%,
+    rgba(var(--show-color-2-rgb, var(--bg-gradient-color2)), 0.45) 50%,
+    transparent 75%
+  );
 }
 
 /* Accessibility Focus States */
@@ -448,13 +481,30 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   grid-template-columns: 280px 1fr;
   gap: 2rem;
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(var(--show-color-1-rgb, var(--border-color)), 0.35);
   border-radius: var(--radius-lg);
   padding: 2rem;
-  box-shadow: var(--card-shadow);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--card-shadow), 0 12px 36px -12px rgba(var(--show-color-1-rgb, 0, 0, 0), 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.show-detail-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    rgba(var(--show-color-1-rgb, var(--accent-primary)), 0.85),
+    rgba(var(--show-color-2-rgb, var(--accent-hover)), 0.85),
+    rgba(var(--show-color-3-rgb, var(--accent-primary)), 0.85)
+  );
 }
 
 @media (max-width: 768px) {
@@ -468,6 +518,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   aspect-ratio: 1 / 1;
   border-radius: var(--radius-md);
   object-fit: cover;
+  box-shadow: 0 16px 40px -8px rgba(var(--show-color-1-rgb, 0, 0, 0), 0.45),
+              0 6px 16px -6px rgba(var(--show-color-2-rgb, 0, 0, 0), 0.35);
 }
 
 .detail-info {
