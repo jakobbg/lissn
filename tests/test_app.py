@@ -62,6 +62,31 @@ def test_show_detail_page_with_opengraph_tags(client: TestClient) -> None:
     assert "--show-color-3-rgb:" in html
 
 
+def test_bottom_media_player_and_auto_continue(client: TestClient) -> None:
+    """Test index and show detail pages render floating bottom media player with auto-continue controls."""
+    # Test index page
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert 'id="bottom-player"' in index_res.text
+    assert 'id="auto-continue-btn"' in index_res.text
+    assert "Auto-Next" in index_res.text
+
+    # Test show detail page with track rows and play buttons
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_res = client.get(f"/show/{show_id}")
+    assert show_res.status_code == 200
+
+    html = show_res.text
+    assert 'id="bottom-player"' in html
+    assert 'id="auto-continue-btn"' in html
+    assert 'class="track-row"' in html
+    assert 'data-track-index="' in html
+    assert 'data-audio-src="' in html
+    assert 'js-play-track' in html
+    assert '▶ Play' in html
+
+
 def test_show_detail_page_not_found(client: TestClient) -> None:
     """Test show detail page returns HTTP 404 for invalid show ID."""
     response = client.get("/show/non_existent_show_id_999")
