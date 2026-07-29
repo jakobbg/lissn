@@ -503,11 +503,12 @@ class LibraryScanner:
                 bitrate_kbps = get_audio_bitrate(audio_path, stat.st_size, duration)
                 title = get_audio_title(audio_path)
                 ep_id = f"{show_id}_ep_{idx}"
+                rel_filename = str(audio_path.relative_to(show_dir))
                 episodes.append(
                     {
                         "episode_id": ep_id,
                         "title": title,
-                        "filename": audio_path.name,
+                        "filename": rel_filename,
                         "file_path": str(audio_path.resolve()),
                         "duration": duration,
                         "formatted_duration": format_duration(duration),

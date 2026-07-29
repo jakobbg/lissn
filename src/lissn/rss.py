@@ -98,7 +98,7 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
         pub_date = format_rfc822(ep["added_timestamp"])
         ET.SubElement(item, "pubDate").text = pub_date
 
-        audio_url = f"{clean_base}/audio/{show_id}/{quote(ep['filename'], safe='')}"
+        audio_url = f"{clean_base}/audio/{show_id}/{quote(ep['filename'], safe='/')}"
         mime_type = get_mime_type(ep["filename"])
 
         ET.SubElement(

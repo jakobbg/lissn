@@ -646,3 +646,57 @@ def test_single_line_metadata_and_dark_subscribe_button(client: TestClient) -> N
     assert 'class="btn btn-secondary"' in html_show
     assert "🎵 Tracks (" in html_show
 
+
+def test_subfolder_streaming_download_and_rss(client: TestClient, temp_library) -> None:
+    """Test audio streaming, episode download, ZIP download, and RSS feed generation for files in subfolders."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
+
+    # Create show with nested subfolder structure: Podcasts/Papaya/Papaya.2026.1901-2101/Papaya.2026-01-19.mp3
+    papaya_dir = podcasts_dir / "Papaya"
+    sub_dir = papaya_dir / "Papaya.2026.1901-2101"
+    sub_dir.mkdir(parents=True)
+    (sub_dir / "Papaya.2026-01-19.mp3").write_bytes(b"dummy papaya mp3 data 19")
+
+    # Rescan library
+    rescan_res = client.post("/api/scan")
+    assert rescan_res.status_code == 200
+
+    shows_res = client.get("/api/shows?section=podcasts")
+    shows = shows_res.json()["shows"]
+    papaya_show = next(s for s in shows if "Papaya" in s["title"])
+    show_id = papaya_show["show_id"]
+
+    show_detail = client.get(f"/api/shows/{show_id}").json()
+    assert len(show_detail["episodes"]) == 1
+    rel_filename = show_detail["episodes"][0]["filename"]
+    assert rel_filename == "Papaya.2026.1901-2101/Papaya.2026-01-19.mp3"
+
+    # 1. Test HTML show detail page renders correct data-audio-src
+    show_page = client.get(f"/show/{show_id}")
+    assert show_page.status_code == 200
+    assert 'Papaya.2026.1901-2101/Papaya.2026-01-19.mp3' in show_page.text
+
+    # 2. Test streaming audio endpoint with subfolder path
+    stream_res = client.get(f"/audio/{show_id}/{rel_filename}")
+    assert stream_res.status_code == 200
+    assert stream_res.content == b"dummy papaya mp3 data 19"
+
+    # 3. Test download episode endpoint with subfolder path
+    dl_res = client.get(f"/download/{show_id}/{rel_filename}")
+    assert dl_res.status_code == 200
+    assert dl_res.content == b"dummy papaya mp3 data 19"
+
+    # 4. Test RSS feed contains correct enclosure URL
+    rss_res = client.get(f"/rss/{show_id}")
+    assert rss_res.status_code == 200
+    assert f"/audio/{show_id}/Papaya.2026.1901-2101/Papaya.2026-01-19.mp3" in rss_res.text
+
+    # 5. Test ZIP archive download preserves relative subfolder path
+    import io
+    import zipfile
+
+    zip_res = client.get(f"/download/show/{show_id}")
+    assert zip_res.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(zip_res.content), "r") as zf:
+        assert "Papaya.2026.1901-2101/Papaya.2026-01-19.mp3" in zf.namelist()
+

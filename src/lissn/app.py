@@ -43,7 +43,7 @@ config.ensure_directories()
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-templates.env.filters["urlencode"] = lambda s: quote(str(s), safe="")
+templates.env.filters["urlencode"] = lambda s: quote(str(s), safe="/")
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 scanner = LibraryScanner(
@@ -215,8 +215,8 @@ def get_cover_image(show_id: str) -> Response:
 
 from urllib.parse import quote, unquote
 
-@app.get("/audio/{show_id}/{filename}")
-@app.head("/audio/{show_id}/{filename}")
+@app.get("/audio/{show_id}/{filename:path}")
+@app.head("/audio/{show_id}/{filename:path}")
 def stream_audio(show_id: str, filename: str, request: Request) -> Response:
     """Stream audio file supporting partial HTTP range requests (206/416) and HEAD method."""
     require_auth(request)
@@ -228,6 +228,20 @@ def stream_audio(show_id: str, filename: str, request: Request) -> Response:
     audio_file = (folder / filename).resolve()
     if not audio_file.exists():
         audio_file = (folder / unquote(filename)).resolve()
+
+    if not audio_file.exists() or not audio_file.is_file():
+        # Fallback check across show episodes for matching filename or file_path
+        for ep in show.get("episodes", []):
+            if (
+                ep.get("filename") == filename
+                or ep.get("filename") == unquote(filename)
+                or Path(ep.get("filename", "")).name == filename
+                or Path(ep.get("filename", "")).name == unquote(filename)
+            ):
+                cand = Path(ep["file_path"]).resolve()
+                if cand.exists() and cand.is_file():
+                    audio_file = cand
+                    break
 
     # Prevent directory traversal attacks
     if not str(audio_file).startswith(str(folder.resolve())):
@@ -274,8 +288,8 @@ def download_show_zip(show_id: str, request: Request) -> Response:
     )
 
 
-@app.get("/download/{show_id}/{filename}")
-@app.head("/download/{show_id}/{filename}")
+@app.get("/download/{show_id}/{filename:path}")
+@app.head("/download/{show_id}/{filename:path}")
 def download_episode(show_id: str, filename: str, request: Request) -> Response:
     """Download a single episode file with Content-Disposition attachment header."""
     require_auth(request)
@@ -287,6 +301,20 @@ def download_episode(show_id: str, filename: str, request: Request) -> Response:
     audio_file = (folder / filename).resolve()
     if not audio_file.exists():
         audio_file = (folder / unquote(filename)).resolve()
+
+    if not audio_file.exists() or not audio_file.is_file():
+        # Fallback check across show episodes for matching filename or file_path
+        for ep in show.get("episodes", []):
+            if (
+                ep.get("filename") == filename
+                or ep.get("filename") == unquote(filename)
+                or Path(ep.get("filename", "")).name == filename
+                or Path(ep.get("filename", "")).name == unquote(filename)
+            ):
+                cand = Path(ep["file_path"]).resolve()
+                if cand.exists() and cand.is_file():
+                    audio_file = cand
+                    break
 
     # Prevent directory traversal attacks
     if not str(audio_file).startswith(str(folder.resolve())):

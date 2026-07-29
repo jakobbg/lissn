@@ -275,3 +275,33 @@ def test_identical_track_titles_renamed_to_track_n(tmp_path: Path) -> None:
     assert episodes[1]["title"] == "Track 2"
 
 
+def test_subfolder_scanning(tmp_path: Path) -> None:
+    """Test scanner indexes audio files located inside nested subfolders with relative filenames."""
+    books_dir = tmp_path / "books"
+    podcasts_dir = tmp_path / "podcasts"
+    cache_dir = tmp_path / "cache"
+    db_path = cache_dir / "lissn.db"
+
+    show_folder = podcasts_dir / "Papaya"
+    sub_folder = show_folder / "Papaya.2026.1901-2101"
+    sub_folder.mkdir(parents=True)
+
+    # Create files matching user report scenario
+    (sub_folder / "Papaya.2026-01-19.mp3").write_bytes(b"dummy audio data 1")
+    (sub_folder / "Papaya.2026-01-20.mp3").write_bytes(b"dummy audio data 2")
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=db_path
+    )
+
+    scanned = scanner.scan_all()
+    assert scanned["total"] == 1
+
+    show = scanner.cache.get_show(scanned["podcasts"][0]["show_id"])
+    assert show is not None
+    episodes = show["episodes"]
+    assert len(episodes) == 2
+    assert episodes[0]["filename"] == "Papaya.2026.1901-2101/Papaya.2026-01-19.mp3"
+    assert episodes[1]["filename"] == "Papaya.2026.1901-2101/Papaya.2026-01-20.mp3"
+
+
