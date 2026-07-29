@@ -62,6 +62,13 @@ def test_show_detail_page_with_opengraph_tags(client: TestClient) -> None:
     assert "--show-color-3-rgb:" in html
 
 
+def test_show_detail_page_not_found(client: TestClient) -> None:
+    """Test show detail page returns HTTP 404 for invalid show ID."""
+    response = client.get("/show/non_existent_show_id_999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Show not found"
+
+
 def test_get_cover_image(client: TestClient) -> None:
     """Test cover image endpoint serves cover file."""
     shows_res = client.get("/api/shows")
@@ -70,6 +77,56 @@ def test_get_cover_image(client: TestClient) -> None:
     response = client.get(f"/covers/{show_id}")
     assert response.status_code == 200
     assert response.headers["content-type"] in ["image/jpeg", "image/png", "image/svg+xml"]
+
+
+def test_get_cover_image_fallback_svg(client: TestClient) -> None:
+    """Test cover image endpoint returns fallback SVG when show has no cover image or invalid ID."""
+    response = client.get("/covers/non_existent_show_123")
+    assert response.status_code == 200
+    assert "image/svg+xml" in response.headers["content-type"]
+    assert "<svg" in response.text
+    assert "lissn" in response.text
+
+
+def test_stream_audio_success(client: TestClient) -> None:
+    """Test audio streaming endpoint returns audio file content."""
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    book_info = next(s for s in shows if s["section"] == "books")
+
+    show_id = book_info["show_id"]
+    show_detail_res = client.get(f"/api/shows/{show_id}")
+    show_detail = show_detail_res.json()
+    filename = show_detail["episodes"][0]["filename"]
+
+    response = client.get(f"/audio/{show_id}/{filename}")
+    assert response.status_code == 200
+    assert len(response.content) > 0
+
+
+def test_stream_audio_not_found(client: TestClient) -> None:
+    """Test audio streaming endpoint returns 404 for missing show or file."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    # Missing show
+    res_bad_show = client.get("/audio/invalid_show_id/track.wav")
+    assert res_bad_show.status_code == 404
+    assert res_bad_show.json()["detail"] == "Show not found"
+
+    # Missing file in valid show
+    res_bad_file = client.get(f"/audio/{show_id}/non_existent_track.wav")
+    assert res_bad_file.status_code == 404
+    assert res_bad_file.json()["detail"] == "Audio file not found"
+
+
+def test_stream_audio_directory_traversal_prevention(client: TestClient) -> None:
+    """Test audio streaming endpoint blocks directory traversal attempts with HTTP 403 or 404."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    response = client.get(f"/audio/{show_id}/../../conftest.py")
+    assert response.status_code in [403, 404]
 
 
 def test_get_podcast_rss(client: TestClient) -> None:
@@ -85,6 +142,13 @@ def test_get_podcast_rss(client: TestClient) -> None:
     assert "<enclosure" in response.text
 
 
+def test_get_podcast_rss_not_found(client: TestClient) -> None:
+    """Test RSS endpoint returns 404 when show is not found."""
+    response = client.get("/rss/non_existent_show_id_999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Show not found"
+
+
 def test_api_shows(client: TestClient) -> None:
     """Test REST API endpoint for shows."""
     response = client.get("/api/shows")
@@ -92,6 +156,41 @@ def test_api_shows(client: TestClient) -> None:
     data = response.json()
     assert "shows" in data
     assert data["count"] == 2
+
+
+def test_api_shows_filtered_by_section(client: TestClient) -> None:
+    """Test REST API endpoint filtered by section query parameter."""
+    res_books = client.get("/api/shows?section=books")
+    assert res_books.status_code == 200
+    data_books = res_books.json()
+    assert data_books["count"] == 1
+    assert data_books["shows"][0]["section"] == "books"
+
+    res_podcasts = client.get("/api/shows?section=podcasts")
+    assert res_podcasts.status_code == 200
+    data_podcasts = res_podcasts.json()
+    assert data_podcasts["count"] == 1
+    assert data_podcasts["shows"][0]["section"] == "podcasts"
+
+
+def test_api_get_show_detail(client: TestClient) -> None:
+    """Test REST API endpoint for single show detail."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    response = client.get(f"/api/shows/{show_id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["show_id"] == show_id
+    assert "title" in data
+    assert "episodes" in data
+
+
+def test_api_get_show_detail_not_found(client: TestClient) -> None:
+    """Test REST API endpoint for single show detail returns 404 when not found."""
+    response = client.get("/api/shows/invalid_show_id_999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Show not found"
 
 
 def test_api_rescan(client: TestClient) -> None:

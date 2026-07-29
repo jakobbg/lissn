@@ -53,6 +53,19 @@ def test_extract_dominant_colors(tmp_path: Path):
     assert len(color3) == 3
 
 
+def test_extract_dominant_colors_invalid_image(tmp_path: Path):
+    """Test fallback to deterministic palette when encountering a broken/corrupted image file."""
+    corrupted_img = tmp_path / "corrupted.jpg"
+    corrupted_img.write_bytes(b"not an image file")
+
+    c1, c2, c3 = extract_dominant_colors(corrupted_img, "show_fallback_123")
+    expected_c1, expected_c2, expected_c3 = generate_fallback_colors("show_fallback_123")
+
+    assert c1 == expected_c1
+    assert c2 == expected_c2
+    assert c3 == expected_c3
+
+
 def test_get_show_colors(tmp_path: Path):
     """Test get_show_colors formatting for template rendering."""
     res_no_cover = get_show_colors(None, "show_abc")

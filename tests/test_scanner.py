@@ -4,6 +4,7 @@ Unit tests for scanner.py module.
 
 from datetime import datetime, timezone
 from pathlib import Path
+import tempfile
 import time
 
 from lissn.scanner import (
@@ -113,3 +114,45 @@ This is a **classic** American novel.
     assert book["author"] == "F. Scott Fitzgerald"
     assert "<strong>classic</strong>" in book["description_html"]
 
+
+def test_scanner_handles_empty_directories(tmp_path: Path) -> None:
+    """Test LibraryScanner scanning completely empty library folders without errors."""
+    books_dir = tmp_path / "empty_books"
+    podcasts_dir = tmp_path / "empty_podcasts"
+    cache_dir = tmp_path / "cache"
+    cache_db = cache_dir / "test.db"
+
+    books_dir.mkdir()
+    podcasts_dir.mkdir()
+    cache_dir.mkdir()
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
+    result = scanner.scan_all()
+
+    assert result["total"] == 0
+    assert len(result["books"]) == 0
+    assert len(result["podcasts"]) == 0
+
+
+def test_scanner_skips_non_audio_files(temp_library) -> None:
+    """Test LibraryScanner ignores non-audio files (like text files, images, or metadata)."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
+
+    book_show = books_dir / "The Great Gatsby"
+    (book_show / "notes_local.txt").write_text("Some text info")
+    (book_show / ".DS_Store").write_bytes(b"\x00\x00")
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
+    result = scanner.scan_all()
+
+    book_summary = result["books"][0]
+    show_detail = scanner.cache.get_show(book_summary["show_id"])
+    filenames = [ep["filename"] for ep in show_detail["episodes"]]
+
+    assert "notes_local.txt" not in filenames
+    assert ".DS_Store" not in filenames
+    assert "01_chapter1.wav" in filenames
