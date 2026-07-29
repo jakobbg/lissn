@@ -22,6 +22,7 @@ def test_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.delenv("LISSN_PORT", raising=False)
     monkeypatch.delenv("LISSN_BASE_URL", raising=False)
     monkeypatch.delenv("LISSN_MAX_EPISODES_PER_SHOW", raising=False)
+    monkeypatch.delenv("LISSN_PASSWORD", raising=False)
 
     config = Config()
 
@@ -33,6 +34,7 @@ def test_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     assert config.port == 8000
     assert config.base_url == "http://localhost:8000"
     assert config.max_episodes_per_show == 2000
+    assert config.password == "incorrect"
 
 
 def test_config_environment_variable_overrides(
@@ -52,6 +54,7 @@ def test_config_environment_variable_overrides(
     monkeypatch.setenv("LISSN_PORT", "9090")
     monkeypatch.setenv("LISSN_BASE_URL", "https://lissn.example.com")
     monkeypatch.setenv("LISSN_MAX_EPISODES_PER_SHOW", "500")
+    monkeypatch.setenv("LISSN_PASSWORD", "custompass123")
 
     config = Config()
 
@@ -63,6 +66,7 @@ def test_config_environment_variable_overrides(
     assert config.port == 9090
     assert config.base_url == "https://lissn.example.com"
     assert config.max_episodes_per_show == 500
+    assert config.password == "custompass123"
 
 
 def test_config_json_file_loading(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

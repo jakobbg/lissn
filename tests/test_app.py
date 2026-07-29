@@ -6,15 +6,32 @@ from typing import Generator
 from fastapi.testclient import TestClient
 import pytest
 
-from lissn.app import app, scanner
+from lissn.app import app, config, scanner
 
 
 @pytest.fixture
 def client(temp_library) -> Generator[TestClient, None, None]:
-    """Test client fixture configured with temporary library paths."""
+    """Test client fixture configured with temporary library paths and authenticated session."""
     books_dir, podcasts_dir, cache_dir, cache_db = temp_library
 
     # Override scanner paths with temporary test library
+    scanner.books_dir = books_dir
+    scanner.podcasts_dir = podcasts_dir
+    scanner.cache_dir = cache_dir
+    scanner.cache.db_path = cache_db
+    scanner.cache._init_db()
+    scanner.scan_all()
+
+    with TestClient(app) as test_client:
+        test_client.post("/api/login", json={"password": config.password})
+        yield test_client
+
+
+@pytest.fixture
+def unauthenticated_client(temp_library) -> Generator[TestClient, None, None]:
+    """Test client fixture configured without session authentication."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
+
     scanner.books_dir = books_dir
     scanner.podcasts_dir = podcasts_dir
     scanner.cache_dir = cache_dir
@@ -403,6 +420,118 @@ def test_compact_track_layout(client: TestClient) -> None:
     assert play_idx < dl_idx
     # Check title hover attribute
     assert 'title="File: ' in html
+
+
+def test_login_success_and_failure(unauthenticated_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test /api/login endpoint returns 200 and sets session cookie for valid password, and 401 with error message for invalid password."""
+    from lissn.app import config
+
+    client = unauthenticated_client
+    monkeypatch.setattr(config, "password", "mysecretpass")
+
+    # Test incorrect password
+    res_bad = client.post("/api/login", json={"password": "wrongpassword"})
+    assert res_bad.status_code == 401
+    assert res_bad.json()["detail"] == "Sorry, the password is incorrect"
+
+    # Test correct password
+    res_ok = client.post("/api/login", json={"password": "mysecretpass"})
+    assert res_ok.status_code == 200
+    data = res_ok.json()
+    assert data["status"] == "success"
+    assert data["authenticated"] is True
+    assert "lissn_session" in res_ok.cookies
+
+
+def test_protected_endpoints_require_auth(unauthenticated_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that play, download, and edit endpoints return 401 when unauthenticated and 200 when logged in."""
+    from lissn.app import config
+
+    client = unauthenticated_client
+    monkeypatch.setattr(config, "password", "testpass")
+
+    shows_res = client.get("/api/shows")
+    show = shows_res.json()["shows"][0]
+    show_id = show["show_id"]
+
+    show_detail = client.get(f"/api/shows/{show_id}").json()
+    ep = show_detail["episodes"][0]
+    filename = ep["filename"]
+
+    # 1. Accessing audio stream without auth
+    res_audio = client.get(f"/audio/{show_id}/{filename}")
+    assert res_audio.status_code == 401
+
+    # 2. Accessing download show zip without auth
+    res_zip = client.get(f"/download/show/{show_id}")
+    assert res_zip.status_code == 401
+
+    # 3. Accessing download episode without auth
+    res_ep = client.get(f"/download/{show_id}/{filename}")
+    assert res_ep.status_code == 401
+
+    # 4. Accessing edit show endpoint without auth
+    res_edit = client.post(
+        f"/api/shows/{show_id}/edit",
+        json={"title": "New Title", "author": "New Author", "description": "New Desc"},
+    )
+    assert res_edit.status_code == 401
+
+    # Now login successfully
+    login_res = client.post("/api/login", json={"password": "testpass"})
+    assert login_res.status_code == 200
+
+    # Repeat requests with authenticated session client
+    res_audio_auth = client.get(f"/audio/{show_id}/{filename}")
+    assert res_audio_auth.status_code in (200, 206)
+
+    res_zip_auth = client.get(f"/download/show/{show_id}")
+    assert res_zip_auth.status_code == 200
+
+    res_ep_auth = client.get(f"/download/{show_id}/{filename}")
+    assert res_ep_auth.status_code == 200
+
+    res_edit_auth = client.post(
+        f"/api/shows/{show_id}/edit",
+        json={"title": "Updated Title", "author": "Updated Author", "description": "**Bold** notes"},
+    )
+    assert res_edit_auth.status_code == 200
+    assert res_edit_auth.json()["show"]["title"] == "Updated Title"
+
+
+def test_edit_show_markdown_and_notes_file(client: TestClient) -> None:
+    """Test editing show title, author, and markdown description updates notes.md and cache."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    markdown_desc = "# Overview\n\nThis is an **amazing** audio book with *italic* text."
+    edit_res = client.post(
+        f"/api/shows/{show_id}/edit",
+        json={
+            "title": "Renamed Book Title",
+            "author": "Author J.K. Smith",
+            "description": markdown_desc,
+        },
+    )
+    assert edit_res.status_code == 200
+    show_data = edit_res.json()["show"]
+
+    assert show_data["title"] == "Renamed Book Title"
+    assert show_data["author"] == "Author J.K. Smith"
+    assert show_data["description"] == markdown_desc
+    assert "<strong>amazing</strong>" in show_data["description_html"]
+    assert "<em>italic</em>" in show_data["description_html"]
+
+    # Verify persistent notes.md file content
+    from pathlib import Path
+
+    notes_file = Path(show_data["notes_path"])
+    assert notes_file.exists()
+    file_content = notes_file.read_text(encoding="utf-8")
+    assert 'title: "Renamed Book Title"' in file_content or 'podcast_name: "Renamed Book Title"' in file_content
+    assert 'author: "Author J.K. Smith"' in file_content
+    assert "**amazing**" in file_content
+
 
 
 

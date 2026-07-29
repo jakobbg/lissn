@@ -2,6 +2,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initAuthSystem();
+  initMarkdownEditor();
   initSectionFiltering();
   initCopyButtons();
   initShareButtons();
@@ -470,6 +472,11 @@ function initMediaPlayer() {
   function playTrack(index) {
     if (index < 0 || index >= activePlaylist.length) return;
 
+    if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+      openPasswordModal(() => playTrack(index));
+      return;
+    }
+
     currentTrackIndex = index;
     const track = activePlaylist[index];
 
@@ -786,4 +793,367 @@ function formatTime(seconds) {
     return `${hrs}:${formattedMins}:${formattedSecs}`;
   }
   return `${mins}:${formattedSecs}`;
+}
+
+/* Authentication & Password Protected Actions */
+let globalAuthState = { authenticated: true, passwordRequired: false };
+let pendingAuthAction = null;
+
+async function checkAuthStatus() {
+  try {
+    const res = await fetch('/api/auth/status');
+    if (res.ok) {
+      const data = await res.json();
+      globalAuthState.authenticated = data.authenticated;
+      globalAuthState.passwordRequired = data.password_required;
+    }
+  } catch (e) {
+    console.warn('Failed to check auth status:', e);
+  }
+}
+
+function requireAuthOr(action) {
+  if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+    openPasswordModal(action);
+    return false;
+  }
+  if (typeof action === 'function') action();
+  return true;
+}
+
+function openPasswordModal(pendingAction) {
+  pendingAuthAction = pendingAction || null;
+  const modal = document.getElementById('password-modal');
+  const errorEl = document.getElementById('password-error');
+  const inputEl = document.getElementById('password-input');
+
+  if (errorEl) errorEl.hidden = true;
+  if (inputEl) inputEl.value = '';
+  if (modal) {
+    modal.removeAttribute('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    if (inputEl) inputEl.focus();
+  }
+}
+
+function closePasswordModal() {
+  const modal = document.getElementById('password-modal');
+  if (modal) {
+    modal.setAttribute('hidden', '');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  pendingAuthAction = null;
+}
+
+function initAuthSystem() {
+  checkAuthStatus();
+
+  const passwordForm = document.getElementById('password-form');
+  const passwordError = document.getElementById('password-error');
+
+  if (passwordForm) {
+    passwordForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const passwordInput = document.getElementById('password-input');
+      const password = passwordInput ? passwordInput.value : '';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          globalAuthState.authenticated = true;
+          if (passwordError) passwordError.hidden = true;
+          closePasswordModal();
+          showToast('🔓 Session authenticated');
+          if (pendingAuthAction) {
+            const act = pendingAuthAction;
+            pendingAuthAction = null;
+            act();
+          }
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          globalAuthState.authenticated = false;
+          if (passwordError) {
+            passwordError.textContent = errData.detail || 'Sorry, the password is incorrect';
+            passwordError.hidden = false;
+          }
+        }
+      } catch (err) {
+        if (passwordError) {
+          passwordError.textContent = 'Sorry, the password is incorrect';
+          passwordError.hidden = false;
+        }
+      }
+    });
+  }
+
+  // Intercept media player audio element 401 error
+  const audioElement = document.getElementById('global-audio-element');
+  if (audioElement) {
+    audioElement.addEventListener('error', () => {
+      if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+        openPasswordModal();
+      }
+    });
+  }
+
+  // Modal close button delegation and keyboard Escape listener
+  document.addEventListener('click', (e) => {
+    if (e.target.matches('.js-close-modal') || e.target.closest('.js-close-modal')) {
+      closePasswordModal();
+      closeEditModal();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closePasswordModal();
+      closeEditModal();
+    }
+  });
+}
+
+/* Markdown Show Details Editor */
+function initMarkdownEditor() {
+  const editModal = document.getElementById('edit-modal');
+  const editForm = document.getElementById('edit-show-form');
+  const writeBtn = document.getElementById('tab-write-btn');
+  const previewBtn = document.getElementById('tab-preview-btn');
+  const descInput = document.getElementById('edit-description-input');
+  const descPreview = document.getElementById('edit-description-preview');
+  const mdToolbar = document.getElementById('md-toolbar');
+  const errorEl = document.getElementById('edit-form-error');
+
+  // Delegated click listener for Edit Show Details button
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.js-edit-show');
+    if (btn) {
+      e.preventDefault();
+      requireAuthOr(() => openEditModal(btn));
+    }
+  });
+
+  // Delegated click listener for protected download actions
+  document.addEventListener('click', (e) => {
+    const downloadBtn = e.target.closest('.js-download-track, .js-download-show');
+    if (downloadBtn) {
+      if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+        e.preventDefault();
+        const href = downloadBtn.getAttribute('href');
+        openPasswordModal(() => {
+          if (href) window.location.href = href;
+        });
+      }
+    }
+  });
+
+  function openEditModal(btn) {
+    if (!editModal) return;
+    const showId = btn.getAttribute('data-show-id') || document.getElementById('edit-show-id')?.value;
+    const title = btn.getAttribute('data-title') || '';
+    const author = btn.getAttribute('data-author') || '';
+    const description = btn.getAttribute('data-description') || '';
+
+    const showIdInput = document.getElementById('edit-show-id');
+    const titleInput = document.getElementById('edit-title-input');
+    const authorInput = document.getElementById('edit-author-input');
+
+    if (showIdInput) showIdInput.value = showId;
+    if (titleInput) titleInput.value = title;
+    if (authorInput) authorInput.value = author;
+    if (descInput) descInput.value = description;
+
+    switchToWriteTab();
+    if (errorEl) errorEl.hidden = true;
+
+    editModal.removeAttribute('hidden');
+    editModal.setAttribute('aria-hidden', 'false');
+    if (titleInput) titleInput.focus();
+  }
+
+  // Tab switching between Write and Preview
+  if (writeBtn && previewBtn) {
+    writeBtn.addEventListener('click', switchToWriteTab);
+    previewBtn.addEventListener('click', switchToPreviewTab);
+  }
+
+  function switchToWriteTab() {
+    if (writeBtn) writeBtn.classList.add('active');
+    if (previewBtn) previewBtn.classList.remove('active');
+    if (descInput) descInput.hidden = false;
+    if (mdToolbar) mdToolbar.style.display = 'flex';
+    if (descPreview) descPreview.hidden = true;
+  }
+
+  function switchToPreviewTab() {
+    if (previewBtn) previewBtn.classList.add('active');
+    if (writeBtn) writeBtn.classList.remove('active');
+    if (descInput) descInput.hidden = true;
+    if (mdToolbar) mdToolbar.style.display = 'none';
+    if (descPreview) {
+      descPreview.innerHTML = renderSimpleMarkdown(descInput ? descInput.value : '');
+      descPreview.hidden = false;
+    }
+  }
+
+  // Markdown formatting toolbar button click handlers
+  if (mdToolbar) {
+    mdToolbar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.md-btn');
+      if (!btn || !descInput) return;
+      e.preventDefault();
+
+      const action = btn.getAttribute('data-md-action');
+      applyMarkdownFormatting(descInput, action);
+    });
+  }
+
+  // Save changes form submission
+  if (editForm) {
+    editForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const showId = document.getElementById('edit-show-id')?.value;
+      const title = document.getElementById('edit-title-input')?.value || '';
+      const author = document.getElementById('edit-author-input')?.value || '';
+      const description = descInput ? descInput.value : '';
+
+      if (!showId) return;
+
+      try {
+        const res = await fetch(`/api/shows/${showId}/edit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, author, description })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          showToast('✨ Show details saved successfully!');
+          closeEditModal();
+          updateShowPageDOM(data.show);
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          if (res.status === 401) {
+            closeEditModal();
+            openPasswordModal();
+          } else if (errorEl) {
+            errorEl.textContent = errData.detail || 'Failed to update show metadata.';
+            errorEl.hidden = false;
+          }
+        }
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent = 'Error connecting to server.';
+          errorEl.hidden = false;
+        }
+      }
+    });
+  }
+}
+
+function closeEditModal() {
+  const editModal = document.getElementById('edit-modal');
+  if (editModal) {
+    editModal.setAttribute('hidden', '');
+    editModal.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function updateShowPageDOM(show) {
+  if (!show) return;
+  const detailTitle = document.querySelector('.detail-title');
+  if (detailTitle) detailTitle.textContent = show.title;
+
+  const detailHeader = document.querySelector('.show-detail-header');
+  if (detailHeader) {
+    const detailInfo = detailHeader.querySelector('.detail-info');
+    if (detailInfo) {
+      let authorEl = detailInfo.querySelector('div[style*="color: var(--text-muted)"]');
+      if (show.author) {
+        if (!authorEl) {
+          authorEl = document.createElement('div');
+          authorEl.style.cssText = 'font-size: 1.1rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.8rem; font-weight: 500;';
+          if (detailTitle) detailTitle.after(authorEl);
+        }
+        authorEl.textContent = `by ${show.author}`;
+      } else if (authorEl) {
+        authorEl.remove();
+      }
+    }
+  }
+
+  const detailDesc = document.querySelector('.detail-description');
+  if (detailDesc) {
+    detailDesc.innerHTML = show.description_html || show.description || '';
+  }
+
+  const editBtn = document.querySelector('.js-edit-show');
+  if (editBtn) {
+    editBtn.setAttribute('data-title', show.title);
+    editBtn.setAttribute('data-author', show.author || '');
+    editBtn.setAttribute('data-description', show.description || '');
+  }
+}
+
+function applyMarkdownFormatting(textarea, action) {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selectedText = textarea.value.substring(start, end);
+  let replacement = '';
+
+  switch (action) {
+    case 'bold':
+      replacement = `**${selectedText || 'bold text'}**`;
+      break;
+    case 'italic':
+      replacement = `*${selectedText || 'italic text'}*`;
+      break;
+    case 'heading':
+      replacement = `### ${selectedText || 'Heading'}`;
+      break;
+    case 'list':
+      replacement = selectedText ? selectedText.split('\n').map(l => `- ${l}`).join('\n') : '- List item';
+      break;
+    case 'olist':
+      replacement = selectedText ? selectedText.split('\n').map((l, i) => `${i + 1}. ${l}`).join('\n') : '1. List item';
+      break;
+    case 'code':
+      replacement = `\`${selectedText || 'code'}\``;
+      break;
+    case 'quote':
+      replacement = `> ${selectedText || 'Quote text'}`;
+      break;
+    case 'link':
+      replacement = `[${selectedText || 'link text'}](url)`;
+      break;
+    default:
+      return;
+  }
+
+  textarea.setRangeText(replacement, start, end, 'select');
+  textarea.focus();
+}
+
+function renderSimpleMarkdown(md) {
+  if (!md) return '<em>No description provided.</em>';
+  let html = md
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$2</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>')
+    .replace(/\n\n/g, '<br><br>');
+  return html;
 }

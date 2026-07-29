@@ -554,3 +554,46 @@ class LibraryScanner:
         books = self.scan_folder("books", self.books_dir)
         podcasts = self.scan_folder("podcasts", self.podcasts_dir)
         return {"books": books, "podcasts": podcasts, "total": len(books) + len(podcasts)}
+
+    def update_show_metadata(
+        self, show_id: str, title: str, author: str, description: str
+    ) -> Optional[Dict[str, Any]]:
+        """Update show title, author, and markdown description, updating notes.md and database cache."""
+        show = self.cache.get_show(show_id)
+        if not show:
+            return None
+
+        notes_path_str = show.get("notes_path")
+        if notes_path_str and Path(notes_path_str).parent.exists():
+            notes_file = Path(notes_path_str)
+        else:
+            folder_name = Path(show["folder_path"]).name
+            notes_file = self.cache_dir / show["section"] / folder_name / "notes.md"
+            notes_file.parent.mkdir(parents=True, exist_ok=True)
+
+        section = show["section"]
+        title = title.strip()
+        author = author.strip()
+        description = description.strip()
+
+        if section == "books":
+            yaml_header = f'---\ntitle: "{title}"\nauthor: "{author}"\n---'
+        else:
+            yaml_header = f'---\npodcast_name: "{title}"\nauthor: "{author}"\n---'
+
+        notes_content = f"{yaml_header}\n\n{description}\n"
+        notes_file.write_text(notes_content, encoding="utf-8")
+
+        html_description = markdown.markdown(description, extensions=["extra"]) if description else ""
+
+        show["title"] = title
+        show["author"] = author
+        if section == "podcasts":
+            show["podcast_name"] = title
+        show["description"] = description
+        show["description_html"] = html_description
+        show["notes_path"] = str(notes_file.resolve())
+
+        self.cache.save_show(show, show["episodes"])
+        return show
+

@@ -4,15 +4,18 @@ Serves index pages, show detail views with OpenGraph meta tags,
 podcast RSS 2.0 feeds, audio file streaming, and JSON APIs.
 """
 
+import hashlib
 import io
 import mimetypes
 from pathlib import Path
+from typing import Any, Dict, Optional
 import zipfile
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 from lissn.colors import get_show_colors
 from lissn.config import Config
@@ -49,6 +52,54 @@ scanner = LibraryScanner(
     db_path=config.cache_db_path,
     max_episodes_per_show=config.max_episodes_per_show,
 )
+
+
+def generate_session_token(password: str) -> str:
+    """Generate deterministic session token derived from server password."""
+    if not password:
+        return ""
+    return hashlib.sha256(f"lissn_session_token:{password}".encode("utf-8")).hexdigest()
+
+
+def is_authenticated(request: Request) -> bool:
+    """Check if request contains valid session cookie or authorization token."""
+    if not config.password:
+        return True
+
+    expected = generate_session_token(config.password)
+    cookie_token = request.cookies.get("lissn_session")
+    if cookie_token and cookie_token == expected:
+        return True
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer ") and auth_header[7:].strip() == expected:
+        return True
+
+    x_token = request.headers.get("X-Lissn-Session")
+    if x_token and x_token == expected:
+        return True
+
+    return False
+
+
+def require_auth(request: Request) -> None:
+    """Enforce session authentication if password is configured."""
+    if not is_authenticated(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Sorry, the password is incorrect",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+class LoginRequest(BaseModel):
+    password: str
+
+
+class EditShowRequest(BaseModel):
+    title: str
+    author: str = ""
+    description: str = ""
 
 
 @app.middleware("http")
@@ -100,6 +151,8 @@ def index_page(request: Request) -> Response:
             "podcasts": podcasts,
             "base_url": get_base_url(request),
             "host_header": get_host_header(request),
+            "authenticated": is_authenticated(request),
+            "password_required": bool(config.password),
         },
     )
 
@@ -123,6 +176,8 @@ def show_detail_page(show_id: str, request: Request) -> Response:
             "show_colors": colors,
             "base_url": get_base_url(request),
             "host_header": get_host_header(request),
+            "authenticated": is_authenticated(request),
+            "password_required": bool(config.password),
         },
     )
 
@@ -161,8 +216,9 @@ from urllib.parse import quote, unquote
 
 @app.get("/audio/{show_id}/{filename}")
 @app.head("/audio/{show_id}/{filename}")
-def stream_audio(show_id: str, filename: str) -> Response:
+def stream_audio(show_id: str, filename: str, request: Request) -> Response:
     """Stream audio file supporting partial HTTP range requests (206/416) and HEAD method."""
+    require_auth(request)
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
@@ -190,8 +246,9 @@ def stream_audio(show_id: str, filename: str) -> Response:
 
 
 @app.get("/download/show/{show_id}")
-def download_show_zip(show_id: str) -> Response:
+def download_show_zip(show_id: str, request: Request) -> Response:
     """Download all audio files for a show bundled into a single ZIP archive."""
+    require_auth(request)
     show = scanner.cache.get_show(show_id)
     if not show or not show.get("episodes"):
         raise HTTPException(status_code=404, detail="Show or tracks not found")
@@ -218,8 +275,9 @@ def download_show_zip(show_id: str) -> Response:
 
 @app.get("/download/{show_id}/{filename}")
 @app.head("/download/{show_id}/{filename}")
-def download_episode(show_id: str, filename: str) -> Response:
+def download_episode(show_id: str, filename: str, request: Request) -> Response:
     """Download a single episode file with Content-Disposition attachment header."""
+    require_auth(request)
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
@@ -274,6 +332,55 @@ def api_get_show(show_id: str) -> Response:
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
     return show
+
+
+@app.post("/api/shows/{show_id}/edit")
+def api_edit_show(show_id: str, payload: EditShowRequest, request: Request) -> Dict[str, Any]:
+    """REST API endpoint to update show title, author, and markdown description."""
+    require_auth(request)
+
+    updated_show = scanner.update_show_metadata(
+        show_id=show_id,
+        title=payload.title,
+        author=payload.author,
+        description=payload.description,
+    )
+    if not updated_show:
+        raise HTTPException(status_code=404, detail="Show not found")
+    return {"status": "success", "show": updated_show}
+
+
+@app.post("/api/login")
+def api_login(payload: LoginRequest, response: Response) -> Dict[str, Any]:
+    """Authenticate user with password and set session cookie."""
+    if not config.password or payload.password == config.password:
+        token = generate_session_token(config.password)
+        response.set_cookie(
+            key="lissn_session",
+            value=token,
+            httponly=True,
+            samesite="lax",
+            path="/",
+        )
+        return {"status": "success", "authenticated": True, "token": token}
+
+    raise HTTPException(status_code=401, detail="Sorry, the password is incorrect")
+
+
+@app.post("/api/logout")
+def api_logout(response: Response) -> Dict[str, Any]:
+    """Clear session cookie and log out."""
+    response.delete_cookie(key="lissn_session", path="/")
+    return {"status": "success", "authenticated": False}
+
+
+@app.get("/api/auth/status")
+def api_auth_status(request: Request) -> Dict[str, Any]:
+    """Check current authentication status and password requirement."""
+    return {
+        "authenticated": is_authenticated(request),
+        "password_required": bool(config.password),
+    }
 
 
 @app.post("/api/scan")
