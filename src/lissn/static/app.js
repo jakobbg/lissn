@@ -1,4 +1,4 @@
-/* lissn Lightweight Frontend Interactions */
+/* lissn Lightweight Frontend Interactions & Persistent Media Player */
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initShareButtons();
   initRescanButton();
   initMediaPlayer();
+  initClientNavigation();
 });
 
 /**
@@ -83,15 +84,10 @@ function applyFilter(section) {
   const sectionBooks = document.getElementById('section-books');
   const sectionPodcasts = document.getElementById('section-podcasts');
 
-  let booksVisible = 0;
-  let podcastsVisible = 0;
-
   cards.forEach(card => {
     const cardSection = card.getAttribute('data-section');
     if (section === 'all' || cardSection === section) {
       card.style.display = 'flex';
-      if (cardSection === 'books') booksVisible++;
-      if (cardSection === 'podcasts') podcastsVisible++;
     } else {
       card.style.display = 'none';
     }
@@ -201,7 +197,110 @@ function showToast(message) {
 }
 
 /**
- * Initialize Bottom Media Player with auto-continue playlist support.
+ * Initialize Client-Side PJAX Navigation to preserve media player across page changes.
+ */
+function initClientNavigation() {
+  document.addEventListener('click', (e) => {
+    const anchor = e.target.closest('a');
+    if (!anchor) return;
+
+    const href = anchor.getAttribute('href');
+    if (!href) return;
+
+    // Skip external links, non-HTTP schemas, RSS, direct audio, cover downloads, or new window links
+    if (
+      href.startsWith('#') ||
+      href.startsWith('javascript:') ||
+      href.startsWith('podcast:') ||
+      href.startsWith('mailto:') ||
+      anchor.getAttribute('target') === '_blank' ||
+      anchor.hasAttribute('download') ||
+      href.includes('/rss/') ||
+      href.includes('/audio/') ||
+      href.includes('/covers/')
+    ) {
+      return;
+    }
+
+    const targetUrl = new URL(href, window.location.origin);
+    if (targetUrl.origin !== window.location.origin) return;
+
+    // Perform smooth client-side page load
+    e.preventDefault();
+    navigateTo(targetUrl.href, true);
+  });
+
+  // Handle browser Back / Forward buttons
+  window.addEventListener('popstate', () => {
+    navigateTo(window.location.href, false);
+  });
+}
+
+/**
+ * Fetch destination page HTML dynamically and update DOM without stopping audio.
+ */
+async function navigateTo(urlStr, isPushState = true) {
+  try {
+    const response = await fetch(urlStr, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+
+    if (!response.ok) {
+      window.location.href = urlStr;
+      return;
+    }
+
+    const htmlText = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+
+    const newMain = doc.querySelector('main.main-content');
+    const currentMain = document.querySelector('main.main-content');
+
+    if (!newMain || !currentMain) {
+      window.location.href = urlStr;
+      return;
+    }
+
+    // Update document title
+    document.title = doc.title || 'lissn';
+
+    // Update body inline styling (for show accent color variables)
+    const newBodyStyle = doc.body.getAttribute('style') || '';
+    document.body.setAttribute('style', newBodyStyle);
+
+    // Replace main content
+    currentMain.innerHTML = newMain.innerHTML;
+
+    // Push browser history
+    if (isPushState) {
+      window.history.pushState({}, '', urlStr);
+    }
+
+    // Scroll window to top
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Announce page title change for screen readers
+    const announcer = document.getElementById('aria-announcer');
+    if (announcer) {
+      announcer.textContent = `Navigated to ${doc.title || 'page'}`;
+    }
+
+    // Re-initialize section filter tabs if returning to home
+    initSectionFiltering();
+
+    // Re-bind player track list for newly injected page elements
+    if (window.syncPlayerWithPage) {
+      window.syncPlayerWithPage();
+    }
+  } catch (err) {
+    console.warn('Navigation fetch error, falling back to full page load:', err);
+    window.location.href = urlStr;
+  }
+}
+
+/**
+ * Initialize Bottom Media Player with auto-continue playlist support and session persistence.
  */
 function initMediaPlayer() {
   const bottomPlayer = document.getElementById('bottom-player');
@@ -226,34 +325,53 @@ function initMediaPlayer() {
   const coverImg = document.getElementById('player-cover');
   const coverPlaceholder = document.getElementById('player-cover-placeholder');
 
-  let playlist = [];
+  let activePlaylist = [];
   let currentTrackIndex = -1;
   let isAutoContinue = localStorage.getItem('lissn_auto_continue') !== 'false'; // Default to true
 
   // Sync initial auto-continue UI state
   updateAutoContinueUI();
 
-  // Populate playlist if on show page
-  const trackRows = Array.from(document.querySelectorAll('.track-row'));
-  if (trackRows.length > 0) {
-    playlist = trackRows.map((row, idx) => ({
-      index: idx,
-      src: row.getAttribute('data-audio-src'),
-      trackTitle: row.getAttribute('data-track-title'),
-      showTitle: row.getAttribute('data-show-title'),
-      coverUrl: row.getAttribute('data-cover-url'),
-      element: row
-    }));
+  // Restore saved player state from sessionStorage if available
+  restoreSavedPlayerState();
+
+  // Function to scan current DOM for track rows and update playlist reference
+  function syncPlayerWithPage() {
+    const trackRows = Array.from(document.querySelectorAll('.track-row'));
+    if (trackRows.length > 0) {
+      activePlaylist = trackRows.map((row, idx) => ({
+        index: idx,
+        src: row.getAttribute('data-audio-src'),
+        trackTitle: row.getAttribute('data-track-title'),
+        showTitle: row.getAttribute('data-show-title'),
+        coverUrl: row.getAttribute('data-cover-url'),
+        element: row
+      }));
+
+      // Check if current playing src matches any track on the current page
+      const currentSrc = audioElement.getAttribute('src') || audioElement.src;
+      if (currentSrc) {
+        const foundIdx = activePlaylist.findIndex(t => currentSrc.endsWith(t.src) || t.src.endsWith(currentSrc));
+        if (foundIdx !== -1) {
+          currentTrackIndex = foundIdx;
+        }
+      }
+    }
+    highlightActiveTrackRow();
   }
 
-  // Track table click handler (clicking anywhere on a track row panel plays that track)
+  // Expose sync helper globally for PJAX page transitions
+  window.syncPlayerWithPage = syncPlayerWithPage;
+  syncPlayerWithPage();
+
+  // Handle click on track rows anywhere in the page (via delegation)
   document.addEventListener('click', (e) => {
-    if (e.target.closest('audio') || e.target.closest('a')) return;
+    if (e.target.closest('audio') || e.target.closest('a') || e.target.closest('button.btn-secondary') || e.target.closest('.js-copy-rss')) return;
 
     const trackRow = e.target.closest('.track-row');
     if (trackRow) {
       const idx = parseInt(trackRow.getAttribute('data-track-index'), 10);
-      if (!isNaN(idx) && playlist[idx]) {
+      if (!isNaN(idx) && activePlaylist[idx]) {
         if (currentTrackIndex === idx && !audioElement.paused) {
           audioElement.pause();
         } else {
@@ -270,7 +388,7 @@ function initMediaPlayer() {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const idx = parseInt(document.activeElement.getAttribute('data-track-index'), 10);
-        if (!isNaN(idx) && playlist[idx]) {
+        if (!isNaN(idx) && activePlaylist[idx]) {
           if (currentTrackIndex === idx && !audioElement.paused) {
             audioElement.pause();
           } else {
@@ -282,12 +400,12 @@ function initMediaPlayer() {
   });
 
   function playTrack(index) {
-    if (index < 0 || index >= playlist.length) return;
+    if (index < 0 || index >= activePlaylist.length) return;
 
     currentTrackIndex = index;
-    const track = playlist[index];
+    const track = activePlaylist[index];
 
-    // Immediately make bottom player visible
+    // Make bottom player visible
     bottomPlayer.classList.add('visible');
     document.body.classList.add('has-active-player');
 
@@ -298,6 +416,7 @@ function initMediaPlayer() {
     if (playPromise !== undefined) {
       playPromise.then(() => {
         updatePlayButtonUI(true);
+        savePlayerState();
       }).catch(err => {
         console.warn('Playback play promise error:', err);
         updatePlayButtonUI(false);
@@ -317,15 +436,20 @@ function initMediaPlayer() {
       if (coverPlaceholder) coverPlaceholder.style.display = 'flex';
     }
 
-    highlightActiveTrackRow(index);
+    highlightActiveTrackRow();
   }
 
-  function highlightActiveTrackRow(index) {
-    trackRows.forEach((row, i) => {
+  function highlightActiveTrackRow() {
+    const currentSrc = audioElement.getAttribute('src') || audioElement.src;
+    const trackRows = document.querySelectorAll('.track-row');
+
+    trackRows.forEach((row) => {
+      const rowSrc = row.getAttribute('data-audio-src');
       const playBtnEl = row.querySelector('.js-play-track');
-      if (i === index) {
+
+      if (rowSrc && currentSrc && (currentSrc.endsWith(rowSrc) || rowSrc.endsWith(currentSrc))) {
         row.classList.add('active-track');
-        if (playBtnEl) playBtnEl.textContent = '⏸ Pause';
+        if (playBtnEl) playBtnEl.textContent = audioElement.paused ? '▶ Play' : '⏸ Pause';
       } else {
         row.classList.remove('active-track');
         if (playBtnEl) playBtnEl.textContent = '▶ Play';
@@ -338,18 +462,13 @@ function initMediaPlayer() {
       playBtn.textContent = isPlaying ? '⏸️' : '▶️';
       playBtn.setAttribute('aria-label', isPlaying ? 'Pause audio' : 'Play audio');
     }
-    if (currentTrackIndex >= 0 && playlist[currentTrackIndex]) {
-      const rowPlayBtn = playlist[currentTrackIndex].element?.querySelector('.js-play-track');
-      if (rowPlayBtn) {
-        rowPlayBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
-      }
-    }
+    highlightActiveTrackRow();
   }
 
-  // Play / Pause toggle
+  // Play / Pause toggle button
   if (playBtn) {
     playBtn.addEventListener('click', () => {
-      if (!audioElement.src && playlist.length > 0) {
+      if (!audioElement.src && activePlaylist.length > 0) {
         playTrack(0);
         return;
       }
@@ -374,7 +493,7 @@ function initMediaPlayer() {
 
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
-      if (currentTrackIndex < playlist.length - 1) {
+      if (currentTrackIndex < activePlaylist.length - 1) {
         playTrack(currentTrackIndex + 1);
       }
     });
@@ -417,17 +536,23 @@ function initMediaPlayer() {
   // Handle End of Track (Auto-Continue to next episode/chapter)
   audioElement.addEventListener('ended', () => {
     updatePlayButtonUI(false);
-    if (isAutoContinue && currentTrackIndex < playlist.length - 1) {
-      showToast(`▶ Auto-continuing: ${playlist[currentTrackIndex + 1].trackTitle}`);
+    if (isAutoContinue && currentTrackIndex >= 0 && currentTrackIndex < activePlaylist.length - 1) {
+      showToast(`▶ Auto-continuing: ${activePlaylist[currentTrackIndex + 1].trackTitle}`);
       playTrack(currentTrackIndex + 1);
-    } else if (currentTrackIndex >= playlist.length - 1) {
+    } else if (currentTrackIndex >= activePlaylist.length - 1 && activePlaylist.length > 0) {
       showToast('🎉 End of show playlist');
     }
   });
 
   // Audio status events
-  audioElement.addEventListener('play', () => updatePlayButtonUI(true));
-  audioElement.addEventListener('pause', () => updatePlayButtonUI(false));
+  audioElement.addEventListener('play', () => {
+    updatePlayButtonUI(true);
+    savePlayerState();
+  });
+  audioElement.addEventListener('pause', () => {
+    updatePlayButtonUI(false);
+    savePlayerState();
+  });
 
   // Time & Seek Bar updates
   audioElement.addEventListener('timeupdate', () => {
@@ -436,6 +561,7 @@ function initMediaPlayer() {
       seekBar.value = pct;
       currentTimeEl.textContent = formatTime(audioElement.currentTime);
       totalTimeEl.textContent = formatTime(audioElement.duration);
+      savePlayerState();
     }
   });
 
@@ -473,7 +599,53 @@ function initMediaPlayer() {
     muteBtn.textContent = (audioElement.muted || audioElement.volume === 0) ? '🔇' : '🔊';
   }
 
-  // Keyboard Shortcuts (Space play/pause, Left/Right seek, N next)
+  // Save current player state to sessionStorage
+  function savePlayerState() {
+    if (!audioElement.src) return;
+    const state = {
+      src: audioElement.getAttribute('src') || audioElement.src,
+      trackTitle: trackTitleEl ? trackTitleEl.textContent : '',
+      showTitle: showTitleEl ? showTitleEl.textContent : '',
+      coverUrl: (coverImg && coverImg.style.display !== 'none') ? coverImg.src : null,
+      currentTime: audioElement.currentTime || 0,
+      paused: audioElement.paused
+    };
+    try {
+      sessionStorage.setItem('lissn_player_state', JSON.stringify(state));
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
+  // Restore saved player state from sessionStorage
+  function restoreSavedPlayerState() {
+    try {
+      const raw = sessionStorage.getItem('lissn_player_state');
+      if (!raw) return;
+      const state = JSON.parse(raw);
+      if (state && state.src) {
+        audioElement.src = state.src;
+        if (state.currentTime) audioElement.currentTime = state.currentTime;
+
+        if (trackTitleEl && state.trackTitle) trackTitleEl.textContent = state.trackTitle;
+        if (showTitleEl && state.showTitle) showTitleEl.textContent = state.showTitle;
+
+        if (state.coverUrl) {
+          coverImg.src = state.coverUrl;
+          coverImg.style.display = 'block';
+          if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+        }
+
+        bottomPlayer.classList.add('visible');
+        document.body.classList.add('has-active-player');
+        updatePlayButtonUI(!state.paused);
+      }
+    } catch (e) {
+      // Ignore restoration errors
+    }
+  }
+
+  // Global Keyboard Shortcuts (Space play/pause, Left/Right seek, N next, P prev)
   document.addEventListener('keydown', (e) => {
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
@@ -507,4 +679,3 @@ function formatTime(seconds) {
   }
   return `${mins}:${formattedSecs}`;
 }
-

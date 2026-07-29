@@ -296,3 +296,20 @@ def test_audiobook_m4b_m4a_mime_types(client: TestClient) -> None:
     assert mimetypes.guess_type("audiobook.m4b")[0] == "audio/mp4"
     assert mimetypes.guess_type("podcast.m4a")[0] == "audio/mp4"
 
+
+def test_client_navigation_and_accessibility_announcer(client: TestClient) -> None:
+    """Test index and show detail pages contain aria-announcer for screen reader feedback."""
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert 'id="aria-announcer"' in index_res.text
+    assert 'class="sr-only"' in index_res.text
+    assert 'aria-live="polite"' in index_res.text
+
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_res = client.get(f"/show/{show_id}")
+    assert show_res.status_code == 200
+    assert 'id="aria-announcer"' in show_res.text
+    assert 'class="sr-only"' in show_res.text
+
+
