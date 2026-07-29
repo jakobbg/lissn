@@ -24,6 +24,8 @@ class Config:
         base_url: Optional[str] = None,
         max_episodes_per_show: Optional[int] = None,
         password: Optional[str] = None,
+        pattern_name: Optional[str] = None,
+        pattern_opacity: Optional[float] = None,
     ) -> None:
         """Initialize configuration with file/env overrides and defaults."""
         base_dir = Path.cwd()
@@ -100,6 +102,28 @@ class Config:
             else os.getenv("LISSN_PASSWORD") or json_config.get("password") or "incorrect"
         )
         self.password: str = str(raw_password)
+
+        # Resolve Background Pattern resource ("dots", "waves", "mesh", or "none")
+        raw_pattern_name = (
+            pattern_name
+            if pattern_name is not None
+            else os.getenv("LISSN_PATTERN_NAME") or json_config.get("pattern_name") or "dots"
+        )
+        valid_patterns = {"dots", "waves", "mesh", "none"}
+        clean_pattern_name = str(raw_pattern_name).lower().strip()
+        self.pattern_name: str = clean_pattern_name if clean_pattern_name in valid_patterns else "dots"
+
+        # Resolve Background Pattern Opacity (0.0 to 1.0)
+        raw_pattern_opacity = (
+            pattern_opacity
+            if pattern_opacity is not None
+            else os.getenv("LISSN_PATTERN_OPACITY") or json_config.get("pattern_opacity") or 0.15
+        )
+        try:
+            parsed_opacity = float(raw_pattern_opacity)
+        except (ValueError, TypeError):
+            parsed_opacity = 0.15
+        self.pattern_opacity: float = max(0.0, min(1.0, parsed_opacity))
 
     def ensure_directories(self) -> None:
         """Ensure media and cache directories exist on disk."""

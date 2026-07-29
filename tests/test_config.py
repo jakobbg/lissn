@@ -23,6 +23,8 @@ def test_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.delenv("LISSN_BASE_URL", raising=False)
     monkeypatch.delenv("LISSN_MAX_EPISODES_PER_SHOW", raising=False)
     monkeypatch.delenv("LISSN_PASSWORD", raising=False)
+    monkeypatch.delenv("LISSN_PATTERN_NAME", raising=False)
+    monkeypatch.delenv("LISSN_PATTERN_OPACITY", raising=False)
 
     config = Config()
 
@@ -35,6 +37,8 @@ def test_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     assert config.base_url == "http://localhost:8000"
     assert config.max_episodes_per_show == 2000
     assert config.password == "incorrect"
+    assert config.pattern_name == "dots"
+    assert config.pattern_opacity == 0.15
 
 
 def test_config_environment_variable_overrides(
@@ -130,3 +134,30 @@ def test_config_ensure_directories(tmp_path: Path) -> None:
     assert books.is_dir()
     assert podcasts.is_dir()
     assert cache.is_dir()
+
+
+def test_config_pattern_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test pattern_name and pattern_opacity initialization, env overrides, and validation."""
+    # Direct constructor initialization
+    cfg1 = Config(pattern_name="waves", pattern_opacity=0.45)
+    assert cfg1.pattern_name == "waves"
+    assert cfg1.pattern_opacity == 0.45
+
+    # Environment variable overrides
+    monkeypatch.setenv("LISSN_PATTERN_NAME", "mesh")
+    monkeypatch.setenv("LISSN_PATTERN_OPACITY", "0.6")
+    cfg2 = Config()
+    assert cfg2.pattern_name == "mesh"
+    assert cfg2.pattern_opacity == 0.6
+
+    # Invalid pattern name fallback and opacity clamping
+    monkeypatch.setenv("LISSN_PATTERN_NAME", "unknown_pattern")
+    monkeypatch.setenv("LISSN_PATTERN_OPACITY", "1.5")
+    cfg3 = Config()
+    assert cfg3.pattern_name == "dots"
+    assert cfg3.pattern_opacity == 1.0
+
+    monkeypatch.setenv("LISSN_PATTERN_OPACITY", "-0.2")
+    cfg4 = Config()
+    assert cfg4.pattern_opacity == 0.0
+

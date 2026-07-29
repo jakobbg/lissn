@@ -59,6 +59,26 @@ def test_index_page(client: TestClient) -> None:
     assert 'tabindex="-1"' in response.text
 
 
+def test_background_pattern_overlay_rendering(client: TestClient) -> None:
+    """Test index and show detail pages render background pattern overlay element with configured SVG and opacity."""
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert 'class="bg-pattern-overlay"' in index_res.text
+    assert 'pattern-dots.svg' in index_res.text
+    assert 'opacity: 0.15' in index_res.text
+
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    assert len(shows) > 0
+    show_id = shows[0]["show_id"]
+
+    show_res = client.get(f"/show/{show_id}")
+    assert show_res.status_code == 200
+    assert 'class="bg-pattern-overlay"' in show_res.text
+    assert 'pattern-dots.svg' in show_res.text
+    assert 'opacity: 0.15' in show_res.text
+
+
 def test_back_to_library_anchor_and_show_card_ids(client: TestClient) -> None:
     """Test Back to Library button anchors to the show card ID while top-left brand title links to main page top without hash."""
     shows_res = client.get("/api/shows")

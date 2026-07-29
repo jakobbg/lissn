@@ -25,6 +25,9 @@
   <script src="/static/app.js" defer></script>
 </head>
 <body style="{% if show_colors %}{{ show_colors.css_variables }}{% endif %}">
+  {% if pattern_name and pattern_name != 'none' and pattern_opacity and pattern_opacity > 0 %}
+    <div class="bg-pattern-overlay" style="background-image: url('/static/pattern-{{ pattern_name }}.svg'); opacity: {{ pattern_opacity }};" aria-hidden="true"></div>
+  {% endif %}
   <div id="aria-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
   <header class="site-header">
     <div class="header-container">

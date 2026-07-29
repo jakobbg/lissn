@@ -154,6 +154,8 @@ def index_page(request: Request) -> Response:
             "host_header": get_host_header(request),
             "authenticated": is_authenticated(request),
             "password_required": bool(config.password),
+            "pattern_name": config.pattern_name,
+            "pattern_opacity": config.pattern_opacity,
         },
     )
 
@@ -179,6 +181,8 @@ def show_detail_page(show_id: str, request: Request) -> Response:
             "host_header": get_host_header(request),
             "authenticated": is_authenticated(request),
             "password_required": bool(config.password),
+            "pattern_name": config.pattern_name,
+            "pattern_opacity": config.pattern_opacity,
         },
     )
 

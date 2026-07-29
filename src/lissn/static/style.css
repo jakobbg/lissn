@@ -172,6 +172,22 @@ body::after {
   );
 }
 
+/* Subtle Transparent Pattern Overlay across Page Background Gradient */
+.bg-pattern-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  background-repeat: repeat;
+  background-position: top left;
+  color: var(--text-primary);
+  mix-blend-mode: overlay;
+  transition: opacity 0.3s ease;
+}
+
 /* Accessibility Focus States & Screen Reader Utilities */
 a:focus-visible, button:focus-visible, input:focus-visible {
   outline: 3px solid var(--accent-primary);
