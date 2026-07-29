@@ -565,6 +565,11 @@ def test_edit_show_markdown_and_notes_file(client: TestClient) -> None:
     assert 'author: "Author J.K. Smith"' in file_content
     assert "**amazing**" in file_content
 
-
-
-
+def test_static_app_js_track_match_logic(client: TestClient) -> None:
+    """Test that static app.js includes URL-based track matching logic to prevent double-click requirement after page navigation."""
+    response = client.get("/static/app.js")
+    assert response.status_code == 200
+    js_content = response.text
+    assert "isCurrentlyLoadedTrack" in js_content
+    assert "normCurrent === normTrack" in js_content
+    assert "currentTrackIndex = foundIdx;" in js_content

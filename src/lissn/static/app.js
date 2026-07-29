@@ -532,6 +532,20 @@ function initMediaPlayer() {
   // Restore saved player state from sessionStorage if available
   restoreSavedPlayerState();
 
+  // Helper to check if a playlist track matches the currently loaded audio element src
+  function isCurrentlyLoadedTrack(track) {
+    if (!track || !track.src) return false;
+    const currentSrc = audioElement.getAttribute('src') || audioElement.src;
+    if (!currentSrc) return false;
+    try {
+      const normCurrent = new URL(currentSrc, window.location.origin).href;
+      const normTrack = new URL(track.src, window.location.origin).href;
+      return normCurrent === normTrack;
+    } catch (e) {
+      return currentSrc.endsWith(track.src) || track.src.endsWith(currentSrc);
+    }
+  }
+
   // Function to scan current DOM for track rows and update playlist reference
   function syncPlayerWithPage() {
     const trackRows = Array.from(document.querySelectorAll('.track-row'));
@@ -546,13 +560,11 @@ function initMediaPlayer() {
       }));
 
       // Check if current playing src matches any track on the current page
-      const currentSrc = audioElement.getAttribute('src') || audioElement.src;
-      if (currentSrc) {
-        const foundIdx = activePlaylist.findIndex(t => currentSrc.endsWith(t.src) || t.src.endsWith(currentSrc));
-        if (foundIdx !== -1) {
-          currentTrackIndex = foundIdx;
-        }
-      }
+      const foundIdx = activePlaylist.findIndex(t => isCurrentlyLoadedTrack(t));
+      currentTrackIndex = foundIdx;
+    } else {
+      activePlaylist = [];
+      currentTrackIndex = -1;
     }
     highlightActiveTrackRow();
   }
@@ -569,8 +581,13 @@ function initMediaPlayer() {
     if (trackRow) {
       const idx = parseInt(trackRow.getAttribute('data-track-index'), 10);
       if (!isNaN(idx) && activePlaylist[idx]) {
-        if (currentTrackIndex === idx && !audioElement.paused) {
-          audioElement.pause();
+        const targetTrack = activePlaylist[idx];
+        if (isCurrentlyLoadedTrack(targetTrack)) {
+          if (!audioElement.paused) {
+            audioElement.pause();
+          } else {
+            audioElement.play();
+          }
         } else {
           playTrack(idx);
         }
@@ -586,8 +603,13 @@ function initMediaPlayer() {
         e.preventDefault();
         const idx = parseInt(document.activeElement.getAttribute('data-track-index'), 10);
         if (!isNaN(idx) && activePlaylist[idx]) {
-          if (currentTrackIndex === idx && !audioElement.paused) {
-            audioElement.pause();
+          const targetTrack = activePlaylist[idx];
+          if (isCurrentlyLoadedTrack(targetTrack)) {
+            if (!audioElement.paused) {
+              audioElement.pause();
+            } else {
+              audioElement.play();
+            }
           } else {
             playTrack(idx);
           }
@@ -649,14 +671,14 @@ function initMediaPlayer() {
   const SVG_TRACK_PAUSE = '<svg class="btn-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
 
   function highlightActiveTrackRow() {
-    const currentSrc = audioElement.getAttribute('src') || audioElement.src;
     const trackRows = document.querySelectorAll('.track-row');
 
     trackRows.forEach((row) => {
       const rowSrc = row.getAttribute('data-audio-src');
       const playBtnEl = row.querySelector('.js-play-track');
+      const isCurrent = isCurrentlyLoadedTrack({ src: rowSrc });
 
-      if (rowSrc && currentSrc && (currentSrc.endsWith(rowSrc) || rowSrc.endsWith(currentSrc))) {
+      if (isCurrent) {
         row.classList.add('active-track');
         if (playBtnEl) playBtnEl.innerHTML = audioElement.paused ? SVG_TRACK_PLAY : SVG_TRACK_PAUSE;
       } else {
