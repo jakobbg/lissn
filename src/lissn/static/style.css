@@ -933,6 +933,24 @@ body.has-active-player .site-footer {
   text-align: center;
 }
 
+.player-time-toggleable {
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.player-time-toggleable:hover {
+  background-color: var(--badge-bg);
+  color: var(--accent-primary);
+}
+
+.player-time-toggleable:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
 .player-seek-bar {
   flex-grow: 1;
   accent-color: var(--accent-primary);
@@ -941,11 +959,11 @@ body.has-active-player .site-footer {
   cursor: pointer;
 }
 
-/* Right Controls: Auto-Continue & Sound Settings */
+/* Right Controls: Auto-Continue, Sleep Timer & Sound Settings */
 .player-right-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
   flex-shrink: 0;
 }
 
@@ -987,6 +1005,75 @@ body.has-active-player .site-footer {
 
 .auto-continue-btn.active .auto-continue-badge {
   background-color: var(--accent-primary);
+}
+
+/* Sleep Timer Button and Interactive Select Overlay */
+.sleep-timer-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sleep-timer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: var(--badge-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  pointer-events: none; /* Let overlay select capture clicks */
+}
+
+.sleep-timer-wrapper:hover .sleep-timer-btn {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.sleep-timer-btn.active {
+  background-color: var(--accent-subtle);
+  color: var(--accent-text);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
+}
+
+.sleep-timer-badge {
+  font-size: 0.68rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+  background-color: var(--text-muted);
+  color: #ffffff;
+  font-weight: 700;
+  min-width: 24px;
+  text-align: center;
+}
+
+.sleep-timer-btn.active .sleep-timer-badge {
+  background-color: var(--accent-primary);
+}
+
+.sleep-timer-select {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.sleep-timer-select:focus-visible + .sleep-timer-btn,
+.sleep-timer-select:focus + .sleep-timer-btn {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 
 .player-extra-controls {

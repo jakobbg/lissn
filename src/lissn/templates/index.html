@@ -190,11 +190,11 @@
         <div class="player-timeline-row">
           <span id="player-current-time" class="player-time-text">0:00</span>
           <input type="range" id="player-seek-bar" class="player-seek-bar" min="0" max="100" value="0" step="0.1" aria-label="Seek track position">
-          <span id="player-total-time" class="player-time-text">0:00</span>
+          <span id="player-total-time" class="player-time-text player-time-toggleable" tabindex="0" role="button" aria-label="Total duration. Click to toggle remaining time" title="Click to toggle remaining time">0:00</span>
         </div>
       </div>
 
-      <!-- Right Controls: Auto-Continue, Speed & Volume -->
+      <!-- Right Controls: Auto-Continue, Sleep Timer, Speed & Volume -->
       <div class="player-right-controls">
         <button type="button" id="auto-continue-btn" class="auto-continue-btn active" aria-label="Toggle auto-continue to next episode" title="Auto-continue to next episode when track ends">
           <svg class="auto-continue-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -206,6 +206,26 @@
           <span class="auto-continue-label">Auto-Next</span>
           <span id="auto-continue-status" class="auto-continue-badge">ON</span>
         </button>
+
+        <!-- Sleep Timer Control -->
+        <div class="sleep-timer-wrapper" title="Sleep timer options">
+          <button type="button" id="sleep-timer-btn" class="sleep-timer-btn" aria-label="Sleep timer" title="Set sleep timer (5, 10, 15, 30, 45 mins, 1 hour)">
+            <svg class="sleep-timer-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <span class="sleep-timer-label">Sleep</span>
+            <span id="sleep-timer-badge" class="sleep-timer-badge">OFF</span>
+          </button>
+          <select id="sleep-timer-select" class="sleep-timer-select" aria-label="Sleep timer options">
+            <option value="off" selected>Sleep: Off</option>
+            <option value="5">5 mins</option>
+            <option value="10">10 mins</option>
+            <option value="15">15 mins</option>
+            <option value="30">30 mins</option>
+            <option value="45">45 mins</option>
+            <option value="60">1 hour</option>
+          </select>
+        </div>
 
         <div class="player-extra-controls">
           <select id="player-speed-select" class="player-speed-select" aria-label="Playback speed" title="Playback speed">

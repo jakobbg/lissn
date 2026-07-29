@@ -125,6 +125,29 @@ def test_bottom_media_player_and_auto_continue(client: TestClient) -> None:
     assert 'player-icon' in html
 
 
+def test_sleep_timer_and_duration_remaining_toggle(client: TestClient) -> None:
+    """Test sleep timer control with 5, 10, 15, 30, 45 mins, 1h options and duration remaining toggle display."""
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.text
+
+    # Check Sleep Timer HTML components
+    assert 'id="sleep-timer-btn"' in html
+    assert 'id="sleep-timer-select"' in html
+    assert 'id="sleep-timer-badge"' in html
+    assert '<option value="5">5 mins</option>' in html
+    assert '<option value="10">10 mins</option>' in html
+    assert '<option value="15">15 mins</option>' in html
+    assert '<option value="30">30 mins</option>' in html
+    assert '<option value="45">45 mins</option>' in html
+    assert '<option value="60">1 hour</option>' in html
+
+    # Check Total Time toggleable duration element
+    assert 'id="player-total-time"' in html
+    assert 'player-time-toggleable' in html
+    assert 'title="Click to toggle remaining time"' in html
+
+
 def test_show_detail_page_not_found(client: TestClient) -> None:
     """Test show detail page returns HTTP 404 for invalid show ID."""
     response = client.get("/show/non_existent_show_id_999")

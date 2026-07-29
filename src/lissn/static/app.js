@@ -395,9 +395,136 @@ function initMediaPlayer() {
   const coverImg = document.getElementById('player-cover');
   const coverPlaceholder = document.getElementById('player-cover-placeholder');
 
+  const sleepTimerBtn = document.getElementById('sleep-timer-btn');
+  const sleepTimerBadge = document.getElementById('sleep-timer-badge');
+  const sleepTimerSelect = document.getElementById('sleep-timer-select');
+
   let activePlaylist = [];
   let currentTrackIndex = -1;
   let isAutoContinue = localStorage.getItem('lissn_auto_continue') !== 'false'; // Default to true
+  let isRemainingTimeMode = localStorage.getItem('lissn_remaining_time_mode') === 'true';
+  let sleepTimerInterval = null;
+  let sleepTimerEndTime = null;
+
+  // Toggle duration display between total length and remaining time
+  function toggleDurationMode() {
+    isRemainingTimeMode = !isRemainingTimeMode;
+    localStorage.setItem('lissn_remaining_time_mode', isRemainingTimeMode);
+    updateTotalTimeDisplay();
+
+    const announcer = document.getElementById('aria-announcer');
+    if (announcer) {
+      announcer.textContent = isRemainingTimeMode ? 'Displaying remaining episode time' : 'Displaying total episode duration';
+    }
+  }
+
+  if (totalTimeEl) {
+    totalTimeEl.addEventListener('click', toggleDurationMode);
+    totalTimeEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleDurationMode();
+      }
+    });
+  }
+
+  function updateTotalTimeDisplay() {
+    if (!totalTimeEl) return;
+    const dur = audioElement.duration;
+    const cur = audioElement.currentTime || 0;
+
+    if (isNaN(dur) || dur <= 0) {
+      totalTimeEl.textContent = isRemainingTimeMode ? '-0:00' : '0:00';
+      return;
+    }
+
+    if (isRemainingTimeMode) {
+      const remaining = Math.max(0, dur - cur);
+      totalTimeEl.textContent = '-' + formatTime(remaining);
+      totalTimeEl.setAttribute('aria-label', `Remaining time: ${formatTime(remaining)}. Click to toggle total duration`);
+      totalTimeEl.setAttribute('title', 'Click to toggle total duration');
+    } else {
+      totalTimeEl.textContent = formatTime(dur);
+      totalTimeEl.setAttribute('aria-label', `Total duration: ${formatTime(dur)}. Click to toggle remaining time`);
+      totalTimeEl.setAttribute('title', 'Click to toggle remaining time');
+    }
+  }
+
+  // Sleep Timer Handler
+  if (sleepTimerSelect) {
+    sleepTimerSelect.addEventListener('change', () => {
+      const value = sleepTimerSelect.value;
+      if (value === 'off') {
+        cancelSleepTimer(true);
+      } else {
+        const minutes = parseInt(value, 10);
+        if (!isNaN(minutes)) {
+          startSleepTimer(minutes);
+        }
+      }
+    });
+  }
+
+  function startSleepTimer(minutes) {
+    cancelSleepTimer(false);
+    sleepTimerEndTime = Date.now() + (minutes * 60 * 1000);
+
+    const labelStr = minutes === 60 ? '1 hour' : `${minutes} minutes`;
+    showToast(`🌙 Sleep timer set for ${labelStr}`);
+    updateSleepTimerUI(minutes * 60);
+
+    sleepTimerInterval = setInterval(tickSleepTimer, 1000);
+  }
+
+  function tickSleepTimer() {
+    if (!sleepTimerEndTime) return;
+    const remainingMs = sleepTimerEndTime - Date.now();
+    const remainingSecs = Math.max(0, Math.ceil(remainingMs / 1000));
+
+    if (remainingSecs <= 0) {
+      cancelSleepTimer(false);
+      audioElement.pause();
+      showToast('🌙 Sleep timer finished. Audio playback paused.');
+      const announcer = document.getElementById('aria-announcer');
+      if (announcer) {
+        announcer.textContent = 'Sleep timer finished. Audio playback paused.';
+      }
+    } else {
+      updateSleepTimerUI(remainingSecs);
+    }
+  }
+
+  function cancelSleepTimer(notify = false) {
+    if (sleepTimerInterval) {
+      clearInterval(sleepTimerInterval);
+      sleepTimerInterval = null;
+    }
+    sleepTimerEndTime = null;
+
+    if (sleepTimerSelect) sleepTimerSelect.value = 'off';
+    if (sleepTimerBtn) sleepTimerBtn.classList.remove('active');
+    if (sleepTimerBadge) sleepTimerBadge.textContent = 'OFF';
+
+    if (notify) {
+      showToast('🌙 Sleep timer turned off');
+    }
+  }
+
+  function updateSleepTimerUI(remainingSecs) {
+    if (!sleepTimerBtn || !sleepTimerBadge) return;
+    sleepTimerBtn.classList.add('active');
+
+    if (remainingSecs >= 3600) {
+      const h = Math.floor(remainingSecs / 3600);
+      const m = Math.floor((remainingSecs % 3600) / 60);
+      sleepTimerBadge.textContent = `${h}h${m > 0 ? m + 'm' : ''}`;
+    } else if (remainingSecs >= 60) {
+      const m = Math.ceil(remainingSecs / 60);
+      sleepTimerBadge.textContent = `${m}m`;
+    } else {
+      sleepTimerBadge.textContent = `${remainingSecs}s`;
+    }
+  }
 
   // Sync initial auto-continue UI state
   updateAutoContinueUI();
@@ -486,7 +613,7 @@ function initMediaPlayer() {
 
     audioElement.src = track.src;
     audioElement.playbackRate = parseFloat(speedSelect.value) || 1.0;
-    
+
     const playPromise = audioElement.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
@@ -642,7 +769,7 @@ function initMediaPlayer() {
       const pct = (audioElement.currentTime / audioElement.duration) * 100;
       seekBar.value = pct;
       currentTimeEl.textContent = formatTime(audioElement.currentTime);
-      totalTimeEl.textContent = formatTime(audioElement.duration);
+      updateTotalTimeDisplay();
       savePlayerState();
     }
   });
@@ -738,6 +865,8 @@ function initMediaPlayer() {
     audioElement.load();
     currentTrackIndex = -1;
 
+    cancelSleepTimer(false);
+
     bottomPlayer.classList.remove('visible');
     document.body.classList.remove('has-active-player');
 
@@ -746,7 +875,7 @@ function initMediaPlayer() {
     if (trackTitleEl) trackTitleEl.textContent = 'Select a track';
     if (showTitleEl) showTitleEl.textContent = 'lissn player';
     if (currentTimeEl) currentTimeEl.textContent = '0:00';
-    if (totalTimeEl) totalTimeEl.textContent = '0:00';
+    if (totalTimeEl) totalTimeEl.textContent = isRemainingTimeMode ? '-0:00' : '0:00';
     if (seekBar) seekBar.value = 0;
 
     highlightActiveTrackRow();
