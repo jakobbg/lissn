@@ -1,6 +1,6 @@
 """
 Configuration manager for lissn.
-Loads settings from config/lissn.json (or config/lissn.example.json)
+Loads settings from lissn.json (or config/lissn.json / config/lissn.example.json)
 with environment variable overrides.
 """
 
@@ -30,7 +30,6 @@ class Config:
         config_candidates = [
             base_dir / "config" / "lissn.json",
             base_dir / "config" / "lissn.example.json",
-            base_dir / "lissn.json",
         ]
 
         json_config = {}
