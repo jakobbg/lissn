@@ -5,6 +5,7 @@ podcast RSS 2.0 feeds, audio file streaming, and JSON APIs.
 """
 
 from datetime import datetime, timezone
+import email.utils
 import hashlib
 import io
 import mimetypes
@@ -48,24 +49,84 @@ templates.env.filters["urlencode"] = lambda s: quote(str(s), safe="/")
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 
+def check_conditional_headers(
+    request: Optional[Request],
+    etag: Optional[str] = None,
+    last_modified: Optional[float] = None,
+) -> bool:
+    """
+    Check HTTP conditional request headers (If-None-Match and If-Modified-Since).
+
+    Args:
+        request: The incoming HTTP Request object, if available.
+        etag: The current resource ETag string.
+        last_modified: POSIX timestamp of resource modification.
+
+    Returns:
+        True if the resource has not been modified (caller should return HTTP 304).
+    """
+    if not request:
+        return False
+
+    if_none_match = request.headers.get("If-None-Match")
+    if if_none_match and etag:
+        client_etags = [t.strip().lstrip("W/").strip('"') for t in if_none_match.split(",")]
+        server_etag = etag.strip().lstrip("W/").strip('"')
+        if "*" in client_etags or server_etag in client_etags:
+            return True
+
+    if_modified_since = request.headers.get("If-Modified-Since")
+    if if_modified_since and last_modified:
+        try:
+            parsed_dt = email.utils.parsedate_to_datetime(if_modified_since)
+            if parsed_dt:
+                client_time = parsed_dt.timestamp()
+                if int(last_modified) <= int(client_time):
+                    return True
+        except Exception:
+            pass
+
+    return False
+
+
 @app.get("/favicon.ico", include_in_schema=False)
-def favicon_ico() -> FileResponse:
-    """Serve binary ICO favicon for browsers."""
-    return FileResponse(
-        BASE_DIR / "static" / "favicon.ico",
-        media_type="image/x-icon",
-        headers={"Cache-Control": "public, max-age=86400"},
-    )
+def favicon_ico(request: Request) -> Response:
+    """Serve binary ICO favicon for browsers with ETag and 304 support."""
+    fav_path = BASE_DIR / "static" / "favicon.ico"
+    if fav_path.exists():
+        stat_res = fav_path.stat()
+        mtime = stat_res.st_mtime
+        etag = f'"{hashlib.md5(f"{fav_path}:{mtime}:{stat_res.st_size}".encode("utf-8")).hexdigest()}"'
+        headers = {
+            "ETag": etag,
+            "Last-Modified": email.utils.formatdate(mtime, usegmt=True),
+            "Cache-Control": "public, max-age=86400",
+        }
+        if check_conditional_headers(request, etag=etag, last_modified=mtime):
+            return Response(status_code=304, headers=headers)
+        return FileResponse(fav_path, media_type="image/x-icon", headers=headers)
+
+    return FileResponse(fav_path, media_type="image/x-icon", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @app.get("/apple-touch-icon.png", include_in_schema=False)
-def apple_touch_icon() -> FileResponse:
-    """Serve high-DPI apple-touch-icon for iOS home screen shortcuts."""
-    return FileResponse(
-        BASE_DIR / "static" / "apple-touch-icon.png",
-        media_type="image/png",
-        headers={"Cache-Control": "public, max-age=86400"},
-    )
+def apple_touch_icon(request: Request) -> Response:
+    """Serve high-DPI apple-touch-icon for iOS home screen shortcuts with ETag and 304 support."""
+    icon_path = BASE_DIR / "static" / "apple-touch-icon.png"
+    if icon_path.exists():
+        stat_res = icon_path.stat()
+        mtime = stat_res.st_mtime
+        etag = f'"{hashlib.md5(f"{icon_path}:{mtime}:{stat_res.st_size}".encode("utf-8")).hexdigest()}"'
+        headers = {
+            "ETag": etag,
+            "Last-Modified": email.utils.formatdate(mtime, usegmt=True),
+            "Cache-Control": "public, max-age=86400",
+        }
+        if check_conditional_headers(request, etag=etag, last_modified=mtime):
+            return Response(status_code=304, headers=headers)
+        return FileResponse(icon_path, media_type="image/png", headers=headers)
+
+    return FileResponse(icon_path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 
 scanner = LibraryScanner(
@@ -215,8 +276,8 @@ def show_detail_page(show_id: str, request: Request) -> Response:
 
 @app.get("/covers/{show_id}")
 @app.head("/covers/{show_id}")
-def get_cover_image(show_id: str, file: Optional[str] = None) -> Response:
-    """Serve cover art image for a show (or specific image file in show folder) with byte range and HEAD support."""
+def get_cover_image(show_id: str, request: Request = None, file: Optional[str] = None) -> Response:
+    """Serve cover art image for a show (or specific image file in show folder) with byte range, ETag, and 304 support."""
     show = scanner.cache.get_show(show_id)
     cover_file = None
     if show:
@@ -238,7 +299,31 @@ def get_cover_image(show_id: str, file: Optional[str] = None) -> Response:
                 {show['title'] if show else 'lissn'}
             </text>
         </svg>"""
-        return Response(content=svg_content, media_type="image/svg+xml", headers={"Accept-Ranges": "bytes"})
+        etag = f'"{hashlib.md5(svg_content.encode("utf-8")).hexdigest()}"'
+        headers = {
+            "ETag": etag,
+            "Cache-Control": "public, max-age=3600",
+            "Accept-Ranges": "bytes",
+        }
+        if check_conditional_headers(request, etag=etag):
+            return Response(status_code=304, headers=headers)
+
+        return Response(content=svg_content, media_type="image/svg+xml", headers=headers)
+
+    stat_res = cover_file.stat()
+    mtime = stat_res.st_mtime
+    etag = f'"{hashlib.md5(f"{cover_file}:{mtime}:{stat_res.st_size}".encode("utf-8")).hexdigest()}"'
+    last_modified_str = email.utils.formatdate(mtime, usegmt=True)
+
+    headers = {
+        "ETag": etag,
+        "Last-Modified": last_modified_str,
+        "Cache-Control": "public, max-age=86400",
+        "Accept-Ranges": "bytes",
+    }
+
+    if check_conditional_headers(request, etag=etag, last_modified=mtime):
+        return Response(status_code=304, headers=headers)
 
     suffix = cover_file.suffix.lower()
     media_type = "image/jpeg"
@@ -247,15 +332,15 @@ def get_cover_image(show_id: str, file: Optional[str] = None) -> Response:
     elif suffix in [".webp"]:
         media_type = "image/webp"
 
-    return FileResponse(path=cover_file, media_type=media_type, headers={"Accept-Ranges": "bytes"})
+    return FileResponse(path=cover_file, media_type=media_type, headers=headers)
 
 
 from urllib.parse import quote, unquote
 
 @app.get("/audio/{show_id}/{filename:path}")
 @app.head("/audio/{show_id}/{filename:path}")
-def stream_audio(show_id: str, filename: str) -> Response:
-    """Stream audio file supporting partial HTTP range requests (206/416) and HEAD method."""
+def stream_audio(show_id: str, filename: str, request: Request = None) -> Response:
+    """Stream audio file supporting partial HTTP range requests (206/416), ETags (304), and HEAD method."""
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
@@ -286,13 +371,28 @@ def stream_audio(show_id: str, filename: str) -> Response:
     if not audio_file.exists() or not audio_file.is_file():
         raise HTTPException(status_code=404, detail="Audio file not found")
 
+    stat_res = audio_file.stat()
+    mtime = stat_res.st_mtime
+    etag = f'"{hashlib.md5(f"{audio_file}:{mtime}:{stat_res.st_size}".encode("utf-8")).hexdigest()}"'
+    last_modified_str = email.utils.formatdate(mtime, usegmt=True)
+
+    headers = {
+        "ETag": etag,
+        "Last-Modified": last_modified_str,
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Accept-Ranges": "bytes",
+    }
+
+    if request and "range" not in request.headers and check_conditional_headers(request, etag=etag, last_modified=mtime):
+        return Response(status_code=304, headers=headers)
+
     guessed_type, _ = mimetypes.guess_type(audio_file.name)
     media_type = guessed_type or "audio/mpeg"
 
     return FileResponse(
         path=audio_file,
         media_type=media_type,
-        headers={"Accept-Ranges": "bytes"},
+        headers=headers,
     )
 
 
@@ -374,14 +474,23 @@ def download_episode(show_id: str, filename: str, request: Request) -> Response:
 @app.get("/rss/{show_id}")
 @app.head("/rss/{show_id}")
 def get_podcast_rss(show_id: str, request: Request) -> Response:
-    """Generate and return RSS 2.0 Podcast XML feed for a show."""
+    """Generate and return RSS 2.0 Podcast XML feed for a show with ETag and 304 Not Modified caching."""
     require_auth(request)
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
 
     rss_xml = generate_rss_feed(show_data=show, base_url=get_base_url(request))
-    return Response(content=rss_xml, media_type="application/rss+xml")
+    etag = f'"{hashlib.md5(rss_xml.encode("utf-8")).hexdigest()}"'
+    headers = {
+        "ETag": etag,
+        "Cache-Control": "public, max-age=3600",
+    }
+
+    if check_conditional_headers(request, etag=etag):
+        return Response(status_code=304, headers=headers)
+
+    return Response(content=rss_xml, media_type="application/rss+xml", headers=headers)
 
 
 @app.get("/api/shows")

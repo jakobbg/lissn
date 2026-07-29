@@ -976,3 +976,80 @@ def test_play_button_title_tooltips(client: TestClient) -> None:
     assert show_res.status_code == 200
     assert 'title="Play / Pause"' in show_res.text
     assert 'title="Play / Pause (Space)"' not in show_res.text
+
+
+def test_rss_feed_etag_and_304_caching(client: TestClient) -> None:
+    """Test RSS feed generation includes ETag & Cache-Control and returns 304 Not Modified for conditional GET requests."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    res = client.get(f"/rss/{show_id}")
+    assert res.status_code == 200
+    assert "etag" in res.headers
+    assert "public, max-age=3600" in res.headers.get("cache-control", "")
+    etag = res.headers["etag"]
+
+    # Request with matching If-None-Match header
+    cond_res = client.get(f"/rss/{show_id}", headers={"If-None-Match": etag})
+    assert cond_res.status_code == 304
+    assert cond_res.text == ""
+    assert cond_res.headers.get("etag") == etag
+
+
+def test_cover_image_etag_and_304_caching(client: TestClient) -> None:
+    """Test cover image endpoint includes ETag, Last-Modified, Cache-Control and handles 304 Not Modified."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    res = client.get(f"/covers/{show_id}")
+    assert res.status_code == 200
+    assert "etag" in res.headers
+    assert "last-modified" in res.headers
+    assert "public, max-age=86400" in res.headers.get("cache-control", "")
+    etag = res.headers["etag"]
+    last_mod = res.headers["last-modified"]
+
+    # Request with matching If-None-Match
+    etag_res = client.get(f"/covers/{show_id}", headers={"If-None-Match": etag})
+    assert etag_res.status_code == 304
+    assert etag_res.text == ""
+
+    # Request with matching If-Modified-Since
+    mod_res = client.get(f"/covers/{show_id}", headers={"If-Modified-Since": last_mod})
+    assert mod_res.status_code == 304
+    assert mod_res.text == ""
+
+
+def test_audio_stream_etag_and_304_caching(client: TestClient) -> None:
+    """Test audio streaming endpoint sets ETag & Last-Modified and returns 304 for full file GETs with If-None-Match."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_detail = client.get(f"/api/shows/{show_id}").json()
+    filename = show_detail["episodes"][0]["filename"]
+
+    res = client.get(f"/audio/{show_id}/{filename}")
+    assert res.status_code == 200
+    assert "etag" in res.headers
+    assert "last-modified" in res.headers
+    assert "immutable" in res.headers.get("cache-control", "")
+    etag = res.headers["etag"]
+
+    # Conditional GET without Range header returns 304 Not Modified
+    cond_res = client.get(f"/audio/{show_id}/{filename}", headers={"If-None-Match": etag})
+    assert cond_res.status_code == 304
+    assert cond_res.text == ""
+
+    # Range request overrides 304 and returns 206 Partial Content
+    range_res = client.get(f"/audio/{show_id}/{filename}", headers={"Range": "bytes=0-10", "If-None-Match": etag})
+    assert range_res.status_code == 206
+
+
+def test_favicon_etag_and_304_caching(client: TestClient) -> None:
+    """Test favicon endpoints return ETag and handle conditional 304 Not Modified."""
+    res = client.get("/favicon.ico")
+    assert res.status_code == 200
+    if "etag" in res.headers:
+        etag = res.headers["etag"]
+        cond_res = client.get("/favicon.ico", headers={"If-None-Match": etag})
+        assert cond_res.status_code == 304
+
