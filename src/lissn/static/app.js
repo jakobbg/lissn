@@ -287,16 +287,22 @@ function initMediaPlayer() {
     currentTrackIndex = index;
     const track = playlist[index];
 
-    audioElement.src = track.src;
-    audioElement.playbackRate = parseFloat(speedSelect.value) || 1.0;
-    audioElement.play().then(() => {
-      updatePlayButtonUI(true);
-    }).catch(err => {
-      console.warn('Playback interrupted:', err);
-    });
-
+    // Immediately make bottom player visible
     bottomPlayer.classList.add('visible');
     document.body.classList.add('has-active-player');
+
+    audioElement.src = track.src;
+    audioElement.playbackRate = parseFloat(speedSelect.value) || 1.0;
+    
+    const playPromise = audioElement.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        updatePlayButtonUI(true);
+      }).catch(err => {
+        console.warn('Playback play promise error:', err);
+        updatePlayButtonUI(false);
+      });
+    }
 
     // Update metadata UI
     if (trackTitleEl) trackTitleEl.textContent = track.trackTitle;
