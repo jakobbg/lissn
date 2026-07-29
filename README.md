@@ -45,12 +45,12 @@ pip install -e .
 ```
 
 ### 4. Create Configuration File
-Copy the example configuration file to `lissn.json`:
+Copy the example configuration file to `config/lissn.json`:
 ```bash
-cp config/lissn.example.json lissn.json
+cp config/lissn.example.json config/lissn.json
 ```
 
-Edit `lissn.json` to point to your media directories:
+Edit `config/lissn.json` to point to your media directories:
 ```json
 {
   "books_dir": "/path/to/your/Books",

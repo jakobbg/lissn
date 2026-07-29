@@ -26,12 +26,11 @@ class Config:
         """Initialize configuration with file/env overrides and defaults."""
         base_dir = Path.cwd()
 
-        # Candidates for configuration JSON file
+        # Candidates for configuration JSON file (prioritizing config/lissn.json)
         config_candidates = [
-            base_dir / "lissn.json",
             base_dir / "config" / "lissn.json",
             base_dir / "config" / "lissn.example.json",
-            base_dir / "lissn_config.json",
+            base_dir / "lissn.json",
         ]
 
         json_config = {}
