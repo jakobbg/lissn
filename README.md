@@ -104,6 +104,55 @@ Open your browser and navigate to `http://localhost:8000`.
 
 ---
 
+## 🔒 HTTPS & Reverse Proxy Deployment
+
+For security, performance, and compatibility with modern web features (such as background audio playback and automated SSL certificates), **lissn** should be hosted behind a **Reverse Proxy** handling TLS/HTTPS termination in production environments.
+
+### Option 1: Caddy (Recommended - Automatic HTTPS)
+[Caddy](https://caddyserver.com/) automatically obtains, configures, and renews free SSL certificates via Let's Encrypt / ZeroSSL.
+
+Example `Caddyfile`:
+```caddyfile
+lissn.example.com {
+    reverse_proxy localhost:8000
+}
+```
+
+Update `base_url` in your `config/lissn.json` to match your domain:
+```json
+{
+  "base_url": "https://lissn.example.com"
+}
+```
+
+### Option 2: Tailscale Serve (Private Network / Tailnet HTTPS)
+If accessing **lissn** over [Tailscale](https://tailscale.com/), enable instant HTTPS on your private network:
+```bash
+tailscale serve https / http://localhost:8000
+```
+
+### Option 3: Nginx
+Example Nginx server block with HTTP/2 and web socket/streaming support:
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name lissn.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/lissn.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/lissn.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+---
+
 ## 🧪 Running Automated Tests
 
 Run the test suite using `pytest`:
