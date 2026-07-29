@@ -594,6 +594,15 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   }
 }
 
+button.detail-cover-link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  text-align: left;
+}
+
 .detail-cover-link {
   display: block;
   text-decoration: none;
@@ -1422,6 +1431,68 @@ tr.track-row.active-track {
   overflow-y: auto;
   line-height: 1.6;
   color: var(--text-primary);
+}
+
+/* Cover Image Zoom Modal */
+.cover-modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.88);
+  cursor: pointer;
+  z-index: 2500;
+  padding: 1.5rem;
+}
+
+.cover-modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modalZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cover-modal-img {
+  max-width: 90vw;
+  max-height: 85vh;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+  cursor: pointer;
+}
+
+.cover-modal-close {
+  position: absolute;
+  top: -2.5rem;
+  right: -0.5rem;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius-full);
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.cover-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: scale(1.1);
 }
 
 

@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initShareButtons();
   initRescanButton();
   initMediaPlayer();
+  initCoverModal();
   initClientNavigation();
   handleHashNavigation(window.location.href);
 });
@@ -1062,11 +1063,65 @@ function initAuthSystem() {
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' || e.code === 'Escape') {
       closePasswordModal();
       closeEditModal();
+      closeCoverModal();
     }
   });
+}
+
+/**
+ * Initialize Show Cover Image Zoom Modal logic.
+ */
+function initCoverModal() {
+  document.addEventListener('click', (e) => {
+    const zoomBtn = e.target.closest('.js-zoom-cover');
+    if (zoomBtn) {
+      e.preventDefault();
+      const modal = document.getElementById('cover-modal');
+      if (modal && !modal.hasAttribute('hidden')) {
+        closeCoverModal();
+      } else {
+        const coverUrl = zoomBtn.getAttribute('data-cover-url') || zoomBtn.querySelector('img')?.src;
+        const showTitle = zoomBtn.getAttribute('data-show-title') || '';
+        if (coverUrl) {
+          openCoverModal(coverUrl, showTitle);
+        }
+      }
+      return;
+    }
+
+    const coverModal = e.target.closest('#cover-modal');
+    if (coverModal && !coverModal.hasAttribute('hidden')) {
+      closeCoverModal();
+      return;
+    }
+  });
+}
+
+function openCoverModal(src, title) {
+  const modal = document.getElementById('cover-modal');
+  const img = document.getElementById('cover-modal-image');
+  if (!modal || !img) return;
+
+  img.src = src;
+  img.alt = title ? `Zoomed cover image for ${title}` : 'Zoomed cover image';
+
+  modal.removeAttribute('hidden');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeCoverModal() {
+  const modal = document.getElementById('cover-modal');
+  const img = document.getElementById('cover-modal-image');
+  if (modal) {
+    modal.setAttribute('hidden', '');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  if (img) {
+    img.src = '';
+  }
 }
 
 /* Markdown Show Details Editor */

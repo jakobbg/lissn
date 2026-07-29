@@ -53,9 +53,9 @@
     <header class="show-detail-header">
       <div>
         {% if show.cover_path %}
-          <a href="/covers/{{ show.show_id }}" target="_blank" rel="noopener" class="detail-cover-link" aria-label="View full cover image for {{ show.title }}" title="Click to open cover image">
+          <button type="button" class="detail-cover-link js-zoom-cover" data-cover-url="/covers/{{ show.show_id }}" data-show-title="{{ show.title }}" aria-label="Zoom cover image for {{ show.title }}" title="Click to zoom cover image">
             <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="detail-cover">
-          </a>
+          </button>
         {% else %}
           <div class="placeholder-cover detail-cover">
             <span style="font-size: 3rem;">{% if show.section == 'books' %}📚{% else %}🎙️{% endif %}</span>
@@ -377,6 +377,13 @@
           <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
       </form>
+    </div>
+  </div>
+  <!-- Cover Image Zoom Modal -->
+  <div id="cover-modal" class="modal-backdrop cover-modal-backdrop" hidden aria-hidden="true" role="dialog" aria-label="Zoomed cover image">
+    <div class="cover-modal-content">
+      <button type="button" class="modal-close-btn cover-modal-close js-close-cover-modal" aria-label="Close zoom modal">&times;</button>
+      <img id="cover-modal-image" src="" alt="Zoomed cover image" class="cover-modal-img">
     </div>
   </div>
 </body>

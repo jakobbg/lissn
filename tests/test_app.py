@@ -89,11 +89,34 @@ def test_show_detail_page_with_opengraph_tags(client: TestClient) -> None:
     assert '<meta property="og:description"' in html
     assert '<meta name="twitter:card" content="summary_large_image"' in html
     assert f"/covers/{show_id}" in html
-    assert 'class="detail-cover-link"' in html
-    assert f'href="/covers/{show_id}"' in html
+    assert 'class="detail-cover-link' in html
+    assert 'js-zoom-cover' in html
+    assert f'data-cover-url="/covers/{show_id}"' in html
+    assert f'href="/covers/{show_id}"' not in html
     assert "--show-color-1-rgb:" in html
     assert "--show-color-2-rgb:" in html
     assert "--show-color-3-rgb:" in html
+
+
+def test_show_cover_zoom_modal_markup(client: TestClient) -> None:
+    """Test show detail page renders cover image zoom modal and button triggering zoom instead of direct file link."""
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    assert len(shows) > 0
+
+    show_id = shows[0]["show_id"]
+    response = client.get(f"/show/{show_id}")
+    assert response.status_code == 200
+
+    html = response.text
+    # Verify cover image element does not directly link to file via href
+    assert f'href="/covers/{show_id}"' not in html
+    # Verify zoom modal markup and button trigger data attributes exist
+    assert 'id="cover-modal"' in html
+    assert 'id="cover-modal-image"' in html
+    assert 'class="modal-close-btn cover-modal-close js-close-cover-modal"' in html
+    assert 'js-zoom-cover' in html
+    assert f'data-cover-url="/covers/{show_id}"' in html
 
 
 def test_bottom_media_player_and_auto_continue(client: TestClient) -> None:
