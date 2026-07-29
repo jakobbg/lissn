@@ -22,6 +22,7 @@ class Config:
         host: Optional[str] = None,
         port: Optional[int] = None,
         base_url: Optional[str] = None,
+        max_episodes_per_show: Optional[int] = None,
     ) -> None:
         """Initialize configuration with file/env overrides and defaults."""
         base_dir = Path.cwd()
@@ -86,6 +87,12 @@ class Config:
             or json_config.get("base_url")
             or f"http://localhost:{self.port}"
         )
+        raw_max_episodes = (
+            max_episodes_per_show
+            if max_episodes_per_show is not None
+            else os.getenv("LISSN_MAX_EPISODES_PER_SHOW") or json_config.get("max_episodes_per_show") or 2000
+        )
+        self.max_episodes_per_show: int = int(raw_max_episodes)
 
     def ensure_directories(self) -> None:
         """Ensure media and cache directories exist on disk."""

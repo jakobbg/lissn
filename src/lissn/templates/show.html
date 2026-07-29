@@ -75,6 +75,10 @@
         
         <div class="meta-row" style="font-size: 0.95rem; margin-bottom: 1.2rem;">
           <span class="duration-badge">⏱️ {{ show.formatted_duration }} Total Length</span>
+          {% if show.formatted_total_file_size %}
+            <span>•</span>
+            <span class="size-badge">💾 {{ show.formatted_total_file_size }} Total Size</span>
+          {% endif %}
           <span>•</span>
           <span>{{ show.episodes|length }} Track{% if show.episodes|length != 1 %}s{% endif %}</span>
           <span>•</span>
@@ -93,6 +97,11 @@
           <a href="podcast://{{ host_header }}/rss/{{ show.show_id }}" class="btn btn-primary">
             🎙️ Subscribe in Podcast App
           </a>
+          {% if show.episodes %}
+            <a href="/download/show/{{ show.show_id }}" class="btn btn-secondary" title="Download all tracks as a ZIP archive">
+              📦 Download Show (.zip)
+            </a>
+          {% endif %}
           <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}">
             📋 Copy RSS Feed URL
           </button>
@@ -117,6 +126,8 @@
                 <th style="width: 50px;">#</th>
                 <th>Track Title</th>
                 <th>Duration</th>
+                <th>Size</th>
+                <th>Bitrate</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -137,6 +148,8 @@
                     <div style="font-size: 0.8rem; color: var(--text-muted);">{{ ep.filename }}</div>
                   </td>
                   <td><span class="duration-badge">{{ ep.formatted_duration }}</span></td>
+                  <td><span class="size-badge">{{ ep.formatted_file_size or '—' }}</span></td>
+                  <td><span class="bitrate-badge">{{ ep.formatted_bitrate or '—' }}</span></td>
                   <td>
                     <div class="track-actions-cell">
                       <button type="button" class="btn btn-sm btn-play js-play-track" data-track-index="{{ loop.index0 }}" aria-label="Play {{ ep.title }}">
@@ -145,6 +158,9 @@
                         </svg>
                         <span>Play</span>
                       </button>
+                      <a href="/download/{{ show.show_id }}/{{ ep.filename }}" class="btn btn-sm btn-secondary js-download-track" aria-label="Download {{ ep.title }}" title="Download audio file" download>
+                        <span>📥 Download</span>
+                      </a>
                     </div>
                   </td>
                 </tr>

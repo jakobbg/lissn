@@ -156,3 +156,60 @@ def test_scanner_skips_non_audio_files(temp_library) -> None:
     assert "notes_local.txt" not in filenames
     assert ".DS_Store" not in filenames
     assert "01_chapter1.wav" in filenames
+
+
+def test_format_file_size() -> None:
+    """Test format_file_size converts bytes to human-readable strings."""
+    from lissn.scanner import format_file_size
+
+    assert format_file_size(0) == "0 B"
+    assert format_file_size(500) == "500 B"
+    assert format_file_size(1500) == "1.5 KB"
+    assert format_file_size(15 * 1024 * 1024) == "15.00 MB"
+    assert format_file_size(2 * 1024 * 1024 * 1024) == "2.00 GB"
+
+
+def test_bitrate_formatting_and_calculation(tmp_path: Path) -> None:
+    """Test get_audio_bitrate and format_bitrate utility functions."""
+    from lissn.scanner import format_bitrate, get_audio_bitrate
+
+    assert format_bitrate(0) == "N/A"
+    assert format_bitrate(128) == "128 kbps"
+
+    # Test calculated bitrate fallback for 10 seconds of 160KB file (160000 bytes * 8 / (10 * 1000) = 128 kbps)
+    test_file = tmp_path / "test.mp3"
+    test_file.write_bytes(b"0" * 160000)
+
+    bitrate = get_audio_bitrate(test_file, file_size=160000, duration=10.0)
+    assert bitrate == 128
+
+
+def test_max_episodes_per_show_limit(tmp_path: Path) -> None:
+    """Test max_episodes_per_show truncates episode list during scanning."""
+    books_dir = tmp_path / "books"
+    podcasts_dir = tmp_path / "podcasts"
+    cache_dir = tmp_path / "cache"
+    cache_db = cache_dir / "db.sqlite"
+
+    show_dir = podcasts_dir / "Huge Podcast"
+    show_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create 10 fake episode files
+    for i in range(1, 11):
+        (show_dir / f"episode_{i:02d}.mp3").write_bytes(b"dummy content")
+
+    # Scanner with max_episodes_per_show = 3
+    scanner = LibraryScanner(
+        books_dir=books_dir,
+        podcasts_dir=podcasts_dir,
+        cache_dir=cache_dir,
+        db_path=cache_db,
+        max_episodes_per_show=3,
+    )
+    result = scanner.scan_all()
+
+    show = result["podcasts"][0]
+    show_detail = scanner.cache.get_show(show["show_id"])
+    assert len(show_detail["episodes"]) == 3
+    assert show_detail["episodes"][0]["filename"] == "episode_01.mp3"
+    assert show_detail["episodes"][2]["filename"] == "episode_03.mp3"

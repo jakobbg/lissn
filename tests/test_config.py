@@ -21,6 +21,7 @@ def test_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.delenv("LISSN_HOST", raising=False)
     monkeypatch.delenv("LISSN_PORT", raising=False)
     monkeypatch.delenv("LISSN_BASE_URL", raising=False)
+    monkeypatch.delenv("LISSN_MAX_EPISODES_PER_SHOW", raising=False)
 
     config = Config()
 
@@ -31,6 +32,7 @@ def test_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     assert config.host == "0.0.0.0"
     assert config.port == 8000
     assert config.base_url == "http://localhost:8000"
+    assert config.max_episodes_per_show == 2000
 
 
 def test_config_environment_variable_overrides(
@@ -49,6 +51,7 @@ def test_config_environment_variable_overrides(
     monkeypatch.setenv("LISSN_HOST", "127.0.0.1")
     monkeypatch.setenv("LISSN_PORT", "9090")
     monkeypatch.setenv("LISSN_BASE_URL", "https://lissn.example.com")
+    monkeypatch.setenv("LISSN_MAX_EPISODES_PER_SHOW", "500")
 
     config = Config()
 
@@ -59,6 +62,7 @@ def test_config_environment_variable_overrides(
     assert config.host == "127.0.0.1"
     assert config.port == 9090
     assert config.base_url == "https://lissn.example.com"
+    assert config.max_episodes_per_show == 500
 
 
 def test_config_json_file_loading(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -71,6 +75,7 @@ def test_config_json_file_loading(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     monkeypatch.delenv("LISSN_HOST", raising=False)
     monkeypatch.delenv("LISSN_PORT", raising=False)
     monkeypatch.delenv("LISSN_BASE_URL", raising=False)
+    monkeypatch.delenv("LISSN_MAX_EPISODES_PER_SHOW", raising=False)
 
     config_dir = tmp_path / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
@@ -84,6 +89,7 @@ def test_config_json_file_loading(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         "host": "0.0.0.0",
         "port": 8080,
         "base_url": "http://192.168.1.50:8080",
+        "max_episodes_per_show": 1500,
     }
     config_file.write_text(json.dumps(config_data), encoding="utf-8")
 
@@ -95,6 +101,7 @@ def test_config_json_file_loading(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     assert config.cache_db_path == (tmp_path / "json_cache" / "db.sqlite").resolve()
     assert config.port == 8080
     assert config.base_url == "http://192.168.1.50:8080"
+    assert config.max_episodes_per_show == 1500
 
 
 def test_config_ensure_directories(tmp_path: Path) -> None:

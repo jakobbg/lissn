@@ -437,13 +437,20 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   flex-wrap: wrap;
 }
 
-.duration-badge {
+.duration-badge, .size-badge, .bitrate-badge {
   background-color: var(--badge-bg);
   color: var(--badge-text);
   padding: 0.15rem 0.5rem;
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.track-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .card-actions {

@@ -47,6 +47,50 @@ def format_duration(total_seconds: float) -> str:
         return f"{secs}s"
 
 
+def format_file_size(size_bytes: int) -> str:
+    """Format size in bytes to human readable string (e.g. '15.4 MB', '1.2 GB')."""
+    if size_bytes <= 0:
+        return "0 B"
+    size = float(size_bytes)
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size < 1024.0 or unit == "TB":
+            if unit == "B":
+                return f"{int(size)} B"
+            elif unit == "KB":
+                return f"{size:.1f} KB"
+            else:
+                return f"{size:.2f} {unit}"
+        size /= 1024.0
+    return f"{size_bytes} B"
+
+
+def get_audio_bitrate(file_path: Path, file_size: int, duration: float) -> int:
+    """Calculate or read audio bitrate in kbps."""
+    try:
+        audio = mutagen.File(file_path)
+        if audio is not None and hasattr(audio, "info") and audio.info is not None:
+            if hasattr(audio.info, "bitrate") and audio.info.bitrate:
+                br = int(audio.info.bitrate)
+                if br > 1000:
+                    return int(round(br / 1000.0))
+                elif br > 0:
+                    return br
+    except Exception:
+        pass
+
+    if duration > 0 and file_size > 0:
+        kbps = int(round((file_size * 8) / (duration * 1000)))
+        return kbps
+    return 0
+
+
+def format_bitrate(bitrate_kbps: int) -> str:
+    """Format bitrate in kbps to human readable string (e.g. '128 kbps')."""
+    if bitrate_kbps > 0:
+        return f"{bitrate_kbps} kbps"
+    return "N/A"
+
+
 def format_fuzzy_date(timestamp: float) -> str:
     """Format a POSIX timestamp into a human-readable relative date string."""
     now = datetime.now(timezone.utc)
@@ -202,6 +246,8 @@ class ScannerCache:
                     cover_path TEXT,
                     total_duration REAL NOT NULL,
                     formatted_duration TEXT NOT NULL,
+                    total_file_size INTEGER DEFAULT 0,
+                    formatted_total_file_size TEXT DEFAULT '',
                     added_timestamp REAL NOT NULL,
                     fuzzy_added_date TEXT NOT NULL,
                     description TEXT,
@@ -220,6 +266,9 @@ class ScannerCache:
                     duration REAL NOT NULL,
                     formatted_duration TEXT NOT NULL,
                     file_size INTEGER NOT NULL,
+                    formatted_file_size TEXT DEFAULT '',
+                    bitrate INTEGER DEFAULT 0,
+                    formatted_bitrate TEXT DEFAULT '',
                     added_timestamp REAL NOT NULL,
                     FOREIGN KEY(show_id) REFERENCES shows(show_id) ON DELETE CASCADE
                 );
@@ -228,6 +277,22 @@ class ScannerCache:
                 CREATE INDEX IF NOT EXISTS idx_episodes_show_id ON episodes(show_id);
                 """
             )
+            # Automatic schema migrations for existing database files
+            cursor = conn.execute("PRAGMA table_info(shows)")
+            show_cols = {row["name"] for row in cursor.fetchall()}
+            if "total_file_size" not in show_cols:
+                conn.execute("ALTER TABLE shows ADD COLUMN total_file_size INTEGER DEFAULT 0")
+            if "formatted_total_file_size" not in show_cols:
+                conn.execute("ALTER TABLE shows ADD COLUMN formatted_total_file_size TEXT DEFAULT ''")
+
+            cursor = conn.execute("PRAGMA table_info(episodes)")
+            ep_cols = {row["name"] for row in cursor.fetchall()}
+            if "formatted_file_size" not in ep_cols:
+                conn.execute("ALTER TABLE episodes ADD COLUMN formatted_file_size TEXT DEFAULT ''")
+            if "bitrate" not in ep_cols:
+                conn.execute("ALTER TABLE episodes ADD COLUMN bitrate INTEGER DEFAULT 0")
+            if "formatted_bitrate" not in ep_cols:
+                conn.execute("ALTER TABLE episodes ADD COLUMN formatted_bitrate TEXT DEFAULT ''")
 
     def save_show(self, show_data: Dict[str, Any], episodes: List[Dict[str, Any]]) -> None:
         """Save show and its associated episodes into the database cache."""
@@ -237,9 +302,10 @@ class ScannerCache:
                 """
                 INSERT OR REPLACE INTO shows (
                     show_id, section, title, author, podcast_name, folder_path, cover_path,
-                    total_duration, formatted_duration, added_timestamp,
-                    fuzzy_added_date, description, description_html, notes_path, episode_count, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    total_duration, formatted_duration, total_file_size, formatted_total_file_size,
+                    added_timestamp, fuzzy_added_date, description, description_html, notes_path,
+                    episode_count, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     show_data["show_id"],
@@ -251,6 +317,8 @@ class ScannerCache:
                     show_data.get("cover_path"),
                     show_data["total_duration"],
                     show_data["formatted_duration"],
+                    show_data.get("total_file_size", 0),
+                    show_data.get("formatted_total_file_size", ""),
                     show_data["added_timestamp"],
                     show_data["fuzzy_added_date"],
                     show_data.get("description", ""),
@@ -267,8 +335,9 @@ class ScannerCache:
                     """
                     INSERT INTO episodes (
                         episode_id, show_id, title, filename, file_path,
-                        duration, formatted_duration, file_size, added_timestamp
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        duration, formatted_duration, file_size, formatted_file_size,
+                        bitrate, formatted_bitrate, added_timestamp
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         ep["episode_id"],
@@ -279,6 +348,9 @@ class ScannerCache:
                         ep["duration"],
                         ep["formatted_duration"],
                         ep["file_size"],
+                        ep.get("formatted_file_size", ""),
+                        ep.get("bitrate", 0),
+                        ep.get("formatted_bitrate", ""),
                         ep["added_timestamp"],
                     ),
                 )
@@ -320,10 +392,18 @@ class ScannerCache:
 class LibraryScanner:
     """Scans Books and Podcasts folders and populates the SQLite cache."""
 
-    def __init__(self, books_dir: Path, podcasts_dir: Path, cache_dir: Path, db_path: Path) -> None:
+    def __init__(
+        self,
+        books_dir: Path,
+        podcasts_dir: Path,
+        cache_dir: Path,
+        db_path: Path,
+        max_episodes_per_show: int = 2000,
+    ) -> None:
         self.books_dir = books_dir
         self.podcasts_dir = podcasts_dir
         self.cache_dir = cache_dir
+        self.max_episodes_per_show = max_episodes_per_show
         self.cache = ScannerCache(db_path)
 
     def scan_folder(self, section: str, root_dir: Path) -> List[Dict[str, Any]]:
@@ -354,8 +434,12 @@ class LibraryScanner:
             if not audio_files:
                 continue
 
+            # Limit number of episodes per show based on max_episodes_per_show setting
+            audio_files = audio_files[: self.max_episodes_per_show]
+
             episodes = []
             total_duration = 0.0
+            total_file_size = 0
             earliest_timestamp = float("inf")
 
             for idx, audio_path in enumerate(audio_files, 1):
@@ -366,7 +450,9 @@ class LibraryScanner:
 
                 duration = get_audio_duration(audio_path)
                 total_duration += duration
+                total_file_size += stat.st_size
 
+                bitrate_kbps = get_audio_bitrate(audio_path, stat.st_size, duration)
                 title = audio_path.stem
                 ep_id = f"{show_id}_ep_{idx}"
                 episodes.append(
@@ -378,6 +464,9 @@ class LibraryScanner:
                         "duration": duration,
                         "formatted_duration": format_duration(duration),
                         "file_size": stat.st_size,
+                        "formatted_file_size": format_file_size(stat.st_size),
+                        "bitrate": bitrate_kbps,
+                        "formatted_bitrate": format_bitrate(bitrate_kbps),
                         "added_timestamp": mtime,
                     }
                 )
@@ -398,6 +487,8 @@ class LibraryScanner:
                 "cover_path": str(cover_path.resolve()) if cover_path else None,
                 "total_duration": total_duration,
                 "formatted_duration": format_duration(total_duration),
+                "total_file_size": total_file_size,
+                "formatted_total_file_size": format_file_size(total_file_size),
                 "added_timestamp": earliest_timestamp,
                 "fuzzy_added_date": format_fuzzy_date(earliest_timestamp),
                 "description": notes_info.get("description", ""),

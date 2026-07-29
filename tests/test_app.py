@@ -317,3 +317,53 @@ def test_client_navigation_and_accessibility_announcer(client: TestClient) -> No
     assert 'class="sr-only"' in show_res.text
 
 
+def test_single_episode_download_endpoint(client: TestClient) -> None:
+    """Test downloading a single episode audio file via /download/{show_id}/{filename}."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_detail = client.get(f"/api/shows/{show_id}").json()
+    filename = show_detail["episodes"][0]["filename"]
+
+    response = client.get(f"/download/{show_id}/{filename}")
+    assert response.status_code == 200
+    assert "attachment" in response.headers.get("content-disposition", "")
+    assert filename in response.headers.get("content-disposition", "")
+
+
+def test_show_zip_download_endpoint(client: TestClient) -> None:
+    """Test downloading complete show audio files bundled as a ZIP archive via /download/show/{show_id}."""
+    import io
+    import zipfile
+
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    response = client.get(f"/download/show/{show_id}")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/zip"
+    assert "attachment" in response.headers.get("content-disposition", "")
+
+    # Verify ZIP contents
+    zip_buf = io.BytesIO(response.content)
+    with zipfile.ZipFile(zip_buf, "r") as zf:
+        namelist = zf.namelist()
+        assert len(namelist) > 0
+
+
+def test_show_page_displays_filesize_and_bitrate(client: TestClient) -> None:
+    """Test show detail page renders total filesize, episode filesize, bitrate, and download buttons."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    response = client.get(f"/show/{show_id}")
+    assert response.status_code == 200
+
+    html = response.text
+    assert "Total Size" in html
+    assert "Size" in html
+    assert "Bitrate" in html
+    assert "Download Show (.zip)" in html
+    assert "📥 Download" in html
+    assert f"/download/show/{show_id}" in html
+    assert f"/download/{show_id}/" in html
+
+

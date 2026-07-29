@@ -4,8 +4,10 @@ Serves index pages, show detail views with OpenGraph meta tags,
 podcast RSS 2.0 feeds, audio file streaming, and JSON APIs.
 """
 
+import io
 import mimetypes
 from pathlib import Path
+import zipfile
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, Response
@@ -45,6 +47,7 @@ scanner = LibraryScanner(
     podcasts_dir=config.podcasts_dir,
     cache_dir=config.cache_dir,
     db_path=config.cache_db_path,
+    max_episodes_per_show=config.max_episodes_per_show,
 )
 
 
@@ -179,6 +182,61 @@ def stream_audio(show_id: str, filename: str) -> Response:
         path=audio_file,
         media_type=media_type,
         headers={"Accept-Ranges": "bytes"},
+    )
+
+
+@app.get("/download/show/{show_id}")
+def download_show_zip(show_id: str) -> Response:
+    """Download all audio files for a show bundled into a single ZIP archive."""
+    show = scanner.cache.get_show(show_id)
+    if not show or not show.get("episodes"):
+        raise HTTPException(status_code=404, detail="Show or tracks not found")
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for ep in show["episodes"]:
+            ep_path = Path(ep["file_path"])
+            if ep_path.is_file():
+                zf.write(ep_path, arcname=ep["filename"])
+
+    buffer.seek(0)
+    # Sanitize title for filename
+    safe_title = "".join(c for c in show["title"] if c.isalnum() or c in (" ", "_", "-")).strip() or "show"
+    zip_filename = f"{safe_title}.zip"
+
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
+    )
+
+
+@app.get("/download/{show_id}/{filename}")
+@app.head("/download/{show_id}/{filename}")
+def download_episode(show_id: str, filename: str) -> Response:
+    """Download a single episode file with Content-Disposition attachment header."""
+    show = scanner.cache.get_show(show_id)
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    folder = Path(show["folder_path"])
+    audio_file = (folder / filename).resolve()
+
+    # Prevent directory traversal attacks
+    if not str(audio_file).startswith(str(folder.resolve())):
+        raise HTTPException(status_code=403, detail="Forbidden file path")
+
+    if not audio_file.exists() or not audio_file.is_file():
+        raise HTTPException(status_code=404, detail="Audio file not found")
+
+    guessed_type, _ = mimetypes.guess_type(audio_file.name)
+    media_type = guessed_type or "audio/mpeg"
+
+    return FileResponse(
+        path=audio_file,
+        media_type=media_type,
+        filename=audio_file.name,
+        headers={"Content-Disposition": f'attachment; filename="{audio_file.name}"'},
     )
 
 
