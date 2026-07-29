@@ -766,41 +766,87 @@ body.has-active-player .site-footer {
 .player-btn-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .player-control-btn {
-  background: transparent;
-  border: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0.4rem 0.6rem;
+  padding: 0.45rem 0.65rem;
   border-radius: var(--radius-full);
-  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  transition: all var(--transition-fast);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.player-control-btn .btn-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .player-control-btn:hover {
-  background-color: var(--badge-bg);
-  transform: scale(1.05);
+  background-color: var(--bg-surface-elevated);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.player-control-btn:active {
+  transform: translateY(0) scale(0.96);
 }
 
 .player-control-btn.player-btn-primary {
-  background-color: var(--accent-primary);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+  border: none;
   color: #ffffff;
-  width: 40px;
-  height: 40px;
-  font-size: 1.1rem;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45);
 }
 
 .player-control-btn.player-btn-primary:hover {
-  background-color: var(--accent-hover);
-  transform: scale(1.08);
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent-primary));
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.08);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.6);
+}
+
+.player-control-btn.player-btn-subtle {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding: 0.4rem;
+}
+
+.player-control-btn.player-btn-subtle:hover {
+  background-color: var(--badge-bg);
+  border-color: var(--border-color);
+  color: var(--accent-primary);
+}
+
+.player-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  transition: stroke var(--transition-fast), fill var(--transition-fast);
+}
+
+.btn-play-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  margin-right: 0.2rem;
 }
 
 .player-timeline-row {

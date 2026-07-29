@@ -84,7 +84,8 @@ def test_bottom_media_player_and_auto_continue(client: TestClient) -> None:
     assert 'data-track-index="' in html
     assert 'data-audio-src="' in html
     assert 'js-play-track' in html
-    assert '▶ Play' in html
+    assert 'btn-play-icon' in html
+    assert 'player-icon' in html
 
 
 def test_show_detail_page_not_found(client: TestClient) -> None:
