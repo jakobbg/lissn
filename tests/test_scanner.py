@@ -239,3 +239,39 @@ def test_get_audio_title_and_norwegian_characters(tmp_path: Path) -> None:
     title = get_audio_title(audio_file)
     assert title == "Blodsbrødre"
 
+
+def test_identical_track_titles_renamed_to_track_n(tmp_path: Path) -> None:
+    """Test scanner renames track titles to 'Track 1', 'Track 2', etc. when all tracks in a show have identical metadata titles."""
+    from lissn.scanner import LibraryScanner
+
+    books_dir = tmp_path / "books"
+    podcasts_dir = tmp_path / "podcasts"
+    cache_dir = tmp_path / "cache"
+    db_path = cache_dir / "lissn.db"
+
+    show_folder = books_dir / "Identical Tracks Book"
+    show_folder.mkdir(parents=True)
+
+    # Create multiple audio files with identical names (or fallback stem if identical)
+    (show_folder / "SameName.mp3").write_bytes(b"dummy mp3 data 1")
+    (show_folder / "SameName.m4a").write_bytes(b"dummy mp3 data 2")
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=db_path
+    )
+
+    scanned = scanner.scan_all()
+    assert scanned["total"] == 1
+
+    shows = scanner.cache.get_all_shows()
+    assert len(shows) == 1
+    show_id = shows[0]["show_id"]
+
+    show = scanner.cache.get_show(show_id)
+    assert show is not None
+    episodes = show["episodes"]
+    assert len(episodes) == 2
+    assert episodes[0]["title"] == "Track 1"
+    assert episodes[1]["title"] == "Track 2"
+
+

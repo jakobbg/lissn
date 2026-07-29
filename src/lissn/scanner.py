@@ -519,6 +519,11 @@ class LibraryScanner:
                     }
                 )
 
+            # If track title is the same for all episodes, change track names to "Track 1", "Track 2", etc.
+            if len(episodes) > 1 and len({ep["title"].strip() for ep in episodes}) == 1:
+                for idx, ep in enumerate(episodes, 1):
+                    ep["title"] = f"Track {idx}"
+
             if earliest_timestamp == float("inf"):
                 earliest_timestamp = show_dir.stat().st_mtime
 

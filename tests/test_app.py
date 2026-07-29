@@ -598,4 +598,5 @@ def test_single_line_metadata_and_dark_subscribe_button(client: TestClient) -> N
     assert 'class="meta-row"' in html_show
     assert "📅" in html_show
     assert 'class="btn btn-secondary"' in html_show
+    assert "🎵 Tracks (" in html_show
 
