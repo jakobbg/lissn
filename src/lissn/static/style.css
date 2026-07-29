@@ -988,18 +988,17 @@ body.has-active-player .site-footer {
 }
 
 .btn-play {
-  background-color: var(--accent-subtle);
-  color: var(--accent-text);
-  border: 1px solid var(--accent-primary);
+  background-color: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   font-weight: 600;
-  padding: 0.35rem 0.85rem;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
 }
 
 .btn-play:hover {
-  background-color: var(--accent-primary);
-  color: #ffffff;
+  background-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 tr.track-row {
