@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lissn"
-version = "0.2.0"
+version = "0.3.0"
 description = "Python audiobook and podcast indexer web application"
 authors = [{ name = "Jakob Grimstveit" }]
 readme = "README.md"
