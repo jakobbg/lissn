@@ -37,6 +37,10 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  {% if show.section == 'podcasts' %}
+  <!-- RSS Autodiscovery: allows podcast clients, Safari, and RSS readers to detect the feed -->
+  <link rel="alternate" type="application/rss+xml" title="{{ show.title }}" href="{{ base_url }}/rss/{{ show.show_id }}">
+  {% endif %}
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/app.js" defer></script>
   <script id="lissn-auth-state" type="application/json">
@@ -124,7 +128,8 @@
 
         <div class="detail-actions">
           {% if authenticated %}
-            <a href="{{ subscribe_url }}" class="btn btn-secondary js-subscribe-btn" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Subscribe in podcast app">🎙️ Subscribe</a>
+            <!-- Direct https:// RSS link with application/rss+xml MIME type. Safari/iOS detect this and offer native Subscribe in Podcasts. -->
+            <a href="{{ base_url }}/rss/{{ show.show_id }}" type="application/rss+xml" class="btn btn-secondary" title="Subscribe in podcast app">🎙️ Subscribe</a>
             <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Copy RSS Feed link">📋 Copy RSS</button>
             {% if show.episodes %}
               <a href="/download/show/{{ show.show_id }}" class="btn btn-secondary js-download-show" data-total-bytes="{{ show.total_file_size }}" data-formatted-size="{{ show.formatted_total_file_size }}" title="Download all tracks as a ZIP archive">

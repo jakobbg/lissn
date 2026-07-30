@@ -665,12 +665,14 @@ def get_podcast_rss(show_id: str, request: Request) -> Response:
     headers = {
         "ETag": etag,
         "Cache-Control": "public, max-age=3600",
+        "Access-Control-Allow-Origin": "*",
+        "X-Content-Type-Options": "nosniff",
     }
 
     if check_conditional_headers(request, etag=etag):
         return Response(status_code=304, headers=headers)
 
-    return Response(content=rss_xml, media_type="application/rss+xml", headers=headers)
+    return Response(content=rss_xml, media_type="application/rss+xml; charset=utf-8", headers=headers)
 
 
 @app.get("/api/shows")

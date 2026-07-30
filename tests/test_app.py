@@ -1091,7 +1091,8 @@ def test_subscribe_and_copy_rss_only_on_show_page(client: TestClient) -> None:
     assert show_res.status_code == 200
     assert "js-copy-rss" in show_res.text
     assert 'title="Subscribe in podcast app"' in show_res.text
-    assert f'href="podcast://testserver/rss/{show_id}"' in show_res.text or f'href="http' not in show_res.text
+    # Subscribe button now uses a direct https:// RSS URL, not a podcast:// scheme
+    assert f'href="http://testserver/rss/{show_id}"' in show_res.text or f'type="application/rss+xml"' in show_res.text
 
 
 def test_get_subscribe_url_logic() -> None:
@@ -1104,8 +1105,21 @@ def test_get_subscribe_url_logic() -> None:
     assert get_subscribe_url("http://localhost:8000/", "show_123") == "podcast://localhost:8000/rss/show_123"
 
 
-def test_subscribe_url_rendering_with_custom_base_url(client: TestClient, monkeypatch) -> None:
-    """Test that show page renders podcast:// scheme when base_url is configured with https://."""
+def test_rss_endpoint_cors_and_content_type(client: TestClient) -> None:
+    """Test that RSS endpoint returns correct Content-Type with charset and Access-Control-Allow-Origin header."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    rss_res = client.get(f"/rss/{show_id}")
+
+    assert rss_res.status_code == 200
+    content_type = rss_res.headers.get("content-type", "")
+    assert "application/rss+xml" in content_type
+    assert "utf-8" in content_type.lower()
+    assert rss_res.headers.get("access-control-allow-origin") == "*"
+
+
+def test_subscribe_button_uses_https_rss_url(client: TestClient, monkeypatch) -> None:
+    """Test that Subscribe button on show page links directly to the HTTPS RSS feed URL."""
     from lissn.app import config
     monkeypatch.setattr(config, "base_url", "https://my-lissn.example.com:8443/custom")
 
@@ -1114,7 +1128,9 @@ def test_subscribe_url_rendering_with_custom_base_url(client: TestClient, monkey
     show_res = client.get(f"/show/{show_id}")
 
     assert show_res.status_code == 200
-    assert f'href="podcast://my-lissn.example.com:8443/custom/rss/{show_id}"' in show_res.text
+    # Subscribe button must link to plain https:// RSS URL with application/rss+xml type
+    assert f'href="https://my-lissn.example.com:8443/custom/rss/{show_id}"' in show_res.text
+    assert 'type="application/rss+xml"' in show_res.text
     assert f'data-rss-url="https://my-lissn.example.com:8443/custom/rss/{show_id}"' in show_res.text
 
 
