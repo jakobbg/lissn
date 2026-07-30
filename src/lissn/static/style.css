@@ -937,10 +937,23 @@ button.detail-cover-link {
   height: 36px;
 }
 
-/* Subscribe Popover */
+/* Subscribe Popover & Backdrop */
+.subscribe-popover-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 999;
+  animation: fadeIn 0.15s ease-out;
+}
+
 .subscribe-popover {
   position: absolute;
-  z-index: 900;
+  z-index: 1000;
   width: max-content;
   max-width: calc(100vw - 24px);
   background: var(--bg-surface);
@@ -1037,6 +1050,16 @@ button.detail-cover-link {
 }
 
 @media (max-width: 640px) {
+  .subscribe-popover {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 420px !important;
+    margin: 0 !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  }
   .subscribe-popover-steps li {
     white-space: normal;
   }

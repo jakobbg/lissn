@@ -1080,13 +1080,13 @@ def test_subscribe_only_on_show_page(client: TestClient) -> None:
     """Test that Subscribe button is removed from main page and present only on show detail page."""
     index_res = client.get("/")
     assert index_res.status_code == 200
-    assert 'title="Subscribe in podcast app"' not in index_res.text
+    assert 'title="Subscribe via RSS"' not in index_res.text
 
     shows_res = client.get("/api/shows")
     show_id = shows_res.json()["shows"][0]["show_id"]
     show_res = client.get(f"/show/{show_id}")
     assert show_res.status_code == 200
-    assert 'title="Subscribe in podcast app"' in show_res.text
+    assert 'title="Subscribe via RSS"' in show_res.text
 
 
 def test_get_subscribe_url_logic() -> None:

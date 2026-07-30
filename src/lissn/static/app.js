@@ -218,16 +218,29 @@ function initCopyButtons() {
  */
 function initSubscribeButtons() {
   let activePopover = null;
+  let activeBackdrop = null;
 
   function closeSubscribePopover() {
     if (activePopover) {
       activePopover.remove();
       activePopover = null;
     }
+    if (activeBackdrop) {
+      activeBackdrop.remove();
+      activeBackdrop = null;
+    }
   }
 
   function showSubscribePopover(btn, rssUrl) {
     closeSubscribePopover();
+
+    if (window.innerWidth <= 640) {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'subscribe-popover-backdrop';
+      document.body.appendChild(backdrop);
+      backdrop.addEventListener('click', closeSubscribePopover);
+      activeBackdrop = backdrop;
+    }
 
     const popover = document.createElement('div');
     popover.className = 'subscribe-popover';
@@ -250,13 +263,14 @@ function initSubscribeButtons() {
       </ol>
     `;
 
-    // Position below the button
     document.body.appendChild(popover);
-    const rect = btn.getBoundingClientRect();
-    const scrollY = window.scrollY;
-    popover.style.top = (rect.bottom + scrollY + 8) + 'px';
-    const left = Math.min(rect.left, window.innerWidth - popover.offsetWidth - 12);
-    popover.style.left = Math.max(8, left) + 'px';
+    if (window.innerWidth > 640) {
+      const rect = btn.getBoundingClientRect();
+      const scrollY = window.scrollY;
+      popover.style.top = (rect.bottom + scrollY + 8) + 'px';
+      const left = Math.min(rect.left, window.innerWidth - popover.offsetWidth - 12);
+      popover.style.left = Math.max(8, left) + 'px';
+    }
 
     activePopover = popover;
 

@@ -128,8 +128,8 @@
 
         <div class="detail-actions">
           {% if authenticated %}
-            <!-- JS handler tries podcast:// scheme to open Apple Podcasts, and copies RSS URL as fallback -->
-            <button type="button" class="btn btn-secondary js-subscribe-btn" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Subscribe in podcast app">🎙️ Subscribe</button>
+            <!-- JS handler copies RSS feed URL to clipboard and presents subscription guide popover -->
+            <button type="button" class="btn btn-secondary js-subscribe-btn" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Subscribe via RSS">🎙️ Subscribe</button>
             {% if show.episodes %}
               <a href="/download/show/{{ show.show_id }}" class="btn btn-secondary js-download-show" data-total-bytes="{{ show.total_file_size }}" data-formatted-size="{{ show.formatted_total_file_size }}" title="Download all tracks as a ZIP archive">
                 📦 Download Show
