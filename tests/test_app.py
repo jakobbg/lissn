@@ -751,7 +751,6 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
     auth_show = client.get(f"/show/{show_id}")
     assert auth_show.status_code == 200
     assert "🎙️ Subscribe" in auth_show.text
-    assert "📋 Copy RSS" in auth_show.text
     assert "📦 Download Show" in auth_show.text
     assert "Edit Details" in auth_show.text
     assert "js-play-track" in auth_show.text
@@ -813,7 +812,6 @@ def test_single_line_metadata_and_dark_subscribe_button(client: TestClient) -> N
     assert "📅" in html_show
     assert 'btn-secondary' in html_show
     assert "🎙️ Subscribe" in html_show
-    assert "📋 Copy RSS" in html_show
     assert 'class="track-table"' in html_show
 
 
@@ -1078,21 +1076,17 @@ def test_edit_modal_cover_preview_js_handlers(client: TestClient) -> None:
     assert "URL.createObjectURL(file)" in js_content
 
 
-def test_subscribe_and_copy_rss_only_on_show_page(client: TestClient) -> None:
-    """Test that Subscribe and Copy RSS buttons are removed from main page and present only on show detail page."""
+def test_subscribe_only_on_show_page(client: TestClient) -> None:
+    """Test that Subscribe button is removed from main page and present only on show detail page."""
     index_res = client.get("/")
     assert index_res.status_code == 200
-    assert "js-copy-rss" not in index_res.text
     assert 'title="Subscribe in podcast app"' not in index_res.text
 
     shows_res = client.get("/api/shows")
     show_id = shows_res.json()["shows"][0]["show_id"]
     show_res = client.get(f"/show/{show_id}")
     assert show_res.status_code == 200
-    assert "js-copy-rss" in show_res.text
     assert 'title="Subscribe in podcast app"' in show_res.text
-    # Subscribe button now uses a direct https:// RSS URL, not a podcast:// scheme
-    assert f'href="http://testserver/rss/{show_id}"' in show_res.text or f'type="application/rss+xml"' in show_res.text
 
 
 def test_get_subscribe_url_logic() -> None:

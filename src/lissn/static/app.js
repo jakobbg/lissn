@@ -478,7 +478,7 @@ function initPageShortcuts() {
         shareBtn.click();
       }
     } else if (key === 'r') {
-      const copyRssBtn = document.querySelector('.js-copy-rss');
+      const copyRssBtn = document.querySelector('.js-subscribe-btn, .js-copy-rss');
       if (copyRssBtn) {
         e.preventDefault();
         copyRssBtn.click();
