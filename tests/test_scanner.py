@@ -382,5 +382,69 @@ def test_incremental_scanning_and_pruning(temp_library, monkeypatch: pytest.Monk
     assert shows_in_db[0]["section"] == "books"
 
 
+def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
+    """Test parsing, cache migration, and metadata updating for publisher field."""
+    from lissn.scanner import get_or_create_notes, ScannerCache, LibraryScanner
+
+    notes_dir = tmp_path / "books" / "Test Book"
+    notes_dir.mkdir(parents=True, exist_ok=True)
+    notes_file = notes_dir / "notes.md"
+    notes_file.write_text(
+        '---\ntitle: "Test Book"\nauthor: "Test Author"\npublisher: "Penguin Random House"\n---\n\nBook description.',
+        encoding="utf-8"
+    )
+
+    parsed = get_or_create_notes(tmp_path, "books", "Test Book")
+    assert parsed["title"] == "Test Book"
+    assert parsed["author"] == "Test Author"
+    assert parsed["publisher"] == "Penguin Random House"
+
+    db_path = tmp_path / "cache.db"
+    cache = ScannerCache(db_path)
+    
+    show_id = "test_show_1"
+    show_data = {
+        "show_id": show_id,
+        "section": "books",
+        "title": "Test Book",
+        "author": "Test Author",
+        "publisher": "Penguin Random House",
+        "podcast_name": "",
+        "folder_path": str(tmp_path),
+        "cover_path": "",
+        "total_duration": 100.0,
+        "formatted_duration": "1m 40s",
+        "total_file_size": 1024,
+        "formatted_total_file_size": "1.0 KB",
+        "added_timestamp": 123456789.0,
+        "fuzzy_added_date": "Recently",
+        "description": "Book description.",
+        "description_html": "<p>Book description.</p>",
+        "notes_path": str(notes_file),
+    }
+
+    cache.save_show(show_data, [])
+    fetched = cache.get_show(show_id)
+    assert fetched is not None
+    assert fetched["publisher"] == "Penguin Random House"
+
+    scanner = LibraryScanner(books_dir=tmp_path, podcasts_dir=tmp_path, cache_dir=tmp_path, db_path=db_path)
+    scanner.cache = cache
+
+    updated = scanner.update_show_metadata(
+        show_id=show_id,
+        title="Updated Title",
+        author="Updated Author",
+        description="New description",
+        publisher="HarperCollins"
+    )
+    assert updated is not None
+    assert updated["publisher"] == "HarperCollins"
+    
+    notes_content = notes_file.read_text(encoding="utf-8")
+    assert 'publisher: "HarperCollins"' in notes_content
+
+
+
 
 

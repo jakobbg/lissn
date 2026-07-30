@@ -57,10 +57,16 @@
 
   <main class="main-content">
     <div class="toolbar">
-      <div class="section-tabs" role="tablist" aria-label="Library section filter">
-        <button class="tab-btn active" data-section="all" role="tab" aria-selected="true">All Shows</button>
-        <button class="tab-btn" data-section="books" role="tab" aria-selected="false">📚 Audio Books ({{ books|length }})</button>
-        <button class="tab-btn" data-section="podcasts" role="tab" aria-selected="false">🎙️ Podcasts ({{ podcasts|length }})</button>
+      <div class="toolbar-filter-group">
+        <div class="section-tabs" role="tablist" aria-label="Library section filter">
+          <button class="tab-btn active" data-section="all" role="tab" aria-selected="true">All Shows</button>
+          <button class="tab-btn" data-section="books" role="tab" aria-selected="false">📚 Audio Books ({{ books|length }})</button>
+          <button class="tab-btn" data-section="podcasts" role="tab" aria-selected="false">🎙️ Podcasts ({{ podcasts|length }})</button>
+        </div>
+        <div class="search-filter-wrapper">
+          <input type="search" id="library-search-input" class="search-input" placeholder="🔍 Search title, author, publisher..." aria-label="Search shows by title, author, or publisher" autocomplete="off" spellcheck="false">
+          <button type="button" id="search-clear-btn" class="search-clear-btn" aria-label="Clear search" hidden>✕</button>
+        </div>
       </div>
       {% if authenticated %}
         <button id="rescan-btn" class="rescan-btn">
@@ -75,7 +81,7 @@
       {% if books %}
         <div class="shows-grid">
           {% for show in books %}
-            <article class="show-card" id="show-{{ show.show_id }}" data-section="books" tabindex="-1">
+            <article class="show-card" id="show-{{ show.show_id }}" data-section="books" data-title="{{ show.title|lower }}" data-author="{{ (show.author or '')|lower }}" data-publisher="{{ (show.publisher or '')|lower }}" tabindex="-1">
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
@@ -89,8 +95,12 @@
               </a>
               <div class="card-body">
                 <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
-                {% if show.author %}
-                  <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: -0.3rem; margin-bottom: 0.5rem;">by {{ show.author }}</div>
+                {% if show.author or show.publisher %}
+                  <div class="card-byline">
+                    {% if show.author %}by {{ show.author }}{% endif %}
+                    {% if show.author and show.publisher %} • {% endif %}
+                    {% if show.publisher %}<span class="publisher-label">{{ show.publisher }}</span>{% endif %}
+                  </div>
                 {% endif %}
                 <div class="meta-row">
                   <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
@@ -114,7 +124,7 @@
       {% if podcasts %}
         <div class="shows-grid">
           {% for show in podcasts %}
-            <article class="show-card" id="show-{{ show.show_id }}" data-section="podcasts" tabindex="-1">
+            <article class="show-card" id="show-{{ show.show_id }}" data-section="podcasts" data-title="{{ show.title|lower }}" data-author="{{ (show.author or '')|lower }}" data-publisher="{{ (show.publisher or '')|lower }}" tabindex="-1">
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
@@ -128,8 +138,12 @@
               </a>
               <div class="card-body">
                 <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
-                {% if show.author %}
-                  <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: -0.3rem; margin-bottom: 0.5rem;">by {{ show.author }}</div>
+                {% if show.author or show.publisher %}
+                  <div class="card-byline">
+                    {% if show.author %}by {{ show.author }}{% endif %}
+                    {% if show.author and show.publisher %} • {% endif %}
+                    {% if show.publisher %}<span class="publisher-label">{{ show.publisher }}</span>{% endif %}
+                  </div>
                 {% endif %}
                 <div class="meta-row">
                   <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
@@ -146,6 +160,12 @@
         <p class="text-muted">No Podcasts found in library folder.</p>
       {% endif %}
     </section>
+
+    <div id="no-search-results" class="no-search-results" style="display: none;">
+      <p class="text-muted" style="text-align: center; margin: 3rem 0; font-size: 1.05rem;">
+        🔍 No matching shows found for "<span id="search-query-text"></span>".
+      </p>
+    </div>
   </main>
 
   <footer class="site-footer">

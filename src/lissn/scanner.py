@@ -258,6 +258,7 @@ Add podcast description in markdown format here.
 
     title = show_name
     author = ""
+    publisher = ""
     podcast_name = show_name if section == "podcasts" else ""
     body = raw_text
 
@@ -273,6 +274,8 @@ Add podcast description in markdown format here.
                         title = str(meta["title"]).strip()
                     if meta.get("author"):
                         author = str(meta["author"]).strip()
+                    if meta.get("publisher"):
+                        publisher = str(meta["publisher"]).strip()
                     if meta.get("podcast_name"):
                         podcast_name = str(meta["podcast_name"]).strip()
             except Exception:
@@ -283,6 +286,7 @@ Add podcast description in markdown format here.
     return {
         "title": title,
         "author": author,
+        "publisher": publisher,
         "podcast_name": podcast_name,
         "description": body,
         "description_html": html_description,
@@ -321,6 +325,7 @@ class ScannerCache:
                     section TEXT NOT NULL,
                     title TEXT NOT NULL,
                     author TEXT,
+                    publisher TEXT DEFAULT '',
                     podcast_name TEXT,
                     folder_path TEXT NOT NULL,
                     cover_path TEXT,
@@ -364,6 +369,8 @@ class ScannerCache:
                 conn.execute("ALTER TABLE shows ADD COLUMN total_file_size INTEGER DEFAULT 0")
             if "formatted_total_file_size" not in show_cols:
                 conn.execute("ALTER TABLE shows ADD COLUMN formatted_total_file_size TEXT DEFAULT ''")
+            if "publisher" not in show_cols:
+                conn.execute("ALTER TABLE shows ADD COLUMN publisher TEXT DEFAULT ''")
 
             cursor = conn.execute("PRAGMA table_info(episodes)")
             ep_cols = {row["name"] for row in cursor.fetchall()}
@@ -381,17 +388,18 @@ class ScannerCache:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO shows (
-                    show_id, section, title, author, podcast_name, folder_path, cover_path,
+                    show_id, section, title, author, publisher, podcast_name, folder_path, cover_path,
                     total_duration, formatted_duration, total_file_size, formatted_total_file_size,
                     added_timestamp, fuzzy_added_date, description, description_html, notes_path,
                     episode_count, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     show_data["show_id"],
                     show_data["section"],
                     show_data["title"],
                     show_data.get("author", ""),
+                    show_data.get("publisher", ""),
                     show_data.get("podcast_name", ""),
                     show_data["folder_path"],
                     show_data.get("cover_path"),
@@ -633,9 +641,9 @@ class LibraryScanner:
         return {"books": books, "podcasts": podcasts, "total": len(books) + len(podcasts)}
 
     def update_show_metadata(
-        self, show_id: str, title: str, author: str, description: str
+        self, show_id: str, title: str, author: str = "", description: str = "", publisher: str = ""
     ) -> Optional[Dict[str, Any]]:
-        """Update show title, author, and markdown description, updating notes.md and database cache."""
+        """Update title, author, publisher, and description for a show and re-save notes.md."""
         show = self.cache.get_show(show_id)
         if not show:
             return None
@@ -651,12 +659,13 @@ class LibraryScanner:
         section = show["section"]
         title = title.strip()
         author = author.strip()
+        publisher = publisher.strip()
         description = description.strip()
 
         if section == "books":
-            yaml_header = f'---\ntitle: "{title}"\nauthor: "{author}"\n---'
+            yaml_header = f'---\ntitle: "{title}"\nauthor: "{author}"\npublisher: "{publisher}"\n---'
         else:
-            yaml_header = f'---\npodcast_name: "{title}"\nauthor: "{author}"\n---'
+            yaml_header = f'---\npodcast_name: "{title}"\nauthor: "{author}"\npublisher: "{publisher}"\n---'
 
         notes_content = f"{yaml_header}\n\n{description}\n"
         notes_file.write_text(notes_content, encoding="utf-8")
@@ -665,6 +674,7 @@ class LibraryScanner:
 
         show["title"] = title
         show["author"] = author
+        show["publisher"] = publisher
         if section == "podcasts":
             show["podcast_name"] = title
         show["description"] = description

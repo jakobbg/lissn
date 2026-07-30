@@ -193,6 +193,7 @@ class LoginRequest(BaseModel):
 class EditShowRequest(BaseModel):
     title: str
     author: str = ""
+    publisher: str = ""
     description: str = ""
 
 
@@ -567,6 +568,7 @@ def api_edit_show(show_id: str, payload: EditShowRequest, request: Request) -> D
         show_id=show_id,
         title=payload.title,
         author=payload.author,
+        publisher=payload.publisher,
         description=payload.description,
     )
     if not updated_show:

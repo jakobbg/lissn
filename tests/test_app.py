@@ -53,6 +53,10 @@ def test_index_page(client: TestClient) -> None:
     assert "The Great Gatsby" in response.text
     assert "Tech Talk Podcast" in response.text
     assert 'data-section="all"' in response.text
+    assert 'id="library-search-input"' in response.text
+    assert 'data-title=' in response.text
+    assert 'data-author=' in response.text
+    assert 'data-publisher=' in response.text
     # Verify cover wrapper is a clickable link to show page
     assert 'class="cover-wrapper"' in response.text
     assert 'href="/show/' in response.text
@@ -1281,6 +1285,27 @@ async def test_lifespan_scan_modes(monkeypatch: pytest.MonkeyPatch) -> None:
     async with lifespan(app):
         pass
     assert scan_mode_passed is None
+
+
+def test_api_edit_show_with_publisher(client: TestClient) -> None:
+    """Test editing show title, author, publisher, and description via API."""
+    shows = scanner.cache.get_all_shows()
+    assert len(shows) > 0
+    show_id = shows[0]["show_id"]
+
+    payload = {
+        "title": "New Title",
+        "author": "New Author",
+        "publisher": "New Publisher House",
+        "description": "New markdown description."
+    }
+    response = client.post(f"/api/shows/{show_id}/edit", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["show"]["publisher"] == "New Publisher House"
+    assert data["show"]["title"] == "New Title"
+
 
 
 

@@ -84,9 +84,11 @@
           <span class="section-badge" style="position: static;">{{ show.section }}</span>
         </div>
         <h1 class="detail-title">{{ show.title }}</h1>
-        {% if show.author %}
+        {% if show.author or show.publisher %}
           <div style="font-size: 1.1rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.8rem; font-weight: 500;">
-            by {{ show.author }}
+            {% if show.author %}by {{ show.author }}{% endif %}
+            {% if show.author and show.publisher %} • {% endif %}
+            {% if show.publisher %}<span>{{ show.publisher }}</span>{% endif %}
           </div>
         {% endif %}
         
@@ -119,7 +121,7 @@
                 📦 Download Show (.zip)
               </a>
             {% endif %}
-            <button type="button" class="btn btn-secondary js-edit-show" data-show-id="{{ show.show_id }}" data-title="{{ show.title }}" data-author="{{ show.author }}" data-description="{{ show.description }}">
+            <button type="button" class="btn btn-secondary js-edit-show" data-show-id="{{ show.show_id }}" data-title="{{ show.title }}" data-author="{{ show.author }}" data-publisher="{{ show.publisher or '' }}" data-description="{{ show.description }}">
               ✏️ Edit Details
             </button>
           {% endif %}
@@ -368,6 +370,11 @@
         <div class="form-group">
           <label for="edit-author-input" class="form-label">Author / Host</label>
           <input type="text" id="edit-author-input" class="form-control" placeholder="Author or host name" value="{{ show.author if show else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label for="edit-publisher-input" class="form-label">Publisher</label>
+          <input type="text" id="edit-publisher-input" class="form-control" placeholder="Publisher name" value="{{ show.publisher if show else '' }}">
         </div>
 
         <!-- Cover Art Selection & Upload -->

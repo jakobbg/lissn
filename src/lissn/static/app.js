@@ -43,39 +43,89 @@ function updateThemeButtonText(btn, theme) {
   btn.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
 }
 
+let activeSectionFilter = 'all';
+let currentSearchQuery = '';
+
 /**
- * Initialize section filtering tabs ('all', 'books', 'podcasts').
+ * Initialize section filtering tabs ('all', 'books', 'podcasts') & real-time search input.
  */
 function initSectionFiltering() {
-  const tabs = document.querySelectorAll('.tab-btn');
+  const tabs = document.querySelectorAll('.toolbar .tab-btn');
   if (!tabs.length) return;
 
   const params = new URLSearchParams(window.location.search);
-  const activeSection = params.get('section') || 'all';
+  activeSectionFilter = params.get('section') || 'all';
+  currentSearchQuery = (params.get('q') || '').trim();
 
-  applyFilter(activeSection);
+  const searchInput = document.getElementById('library-search-input');
+  if (searchInput && currentSearchQuery) {
+    searchInput.value = currentSearchQuery;
+  }
+
+  initSearchFilter();
+  applyCombinedFilters();
 
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
-      const section = e.currentTarget.getAttribute('data-section');
-      applyFilter(section);
-      
-      // Update URL query parameter cleanly without reloading page
-      const url = new URL(window.location);
-      if (section === 'all') {
-        url.searchParams.delete('section');
-      } else {
-        url.searchParams.set('section', section);
-      }
-      window.history.pushState({}, '', url);
+      activeSectionFilter = e.currentTarget.getAttribute('data-section') || 'all';
+      applyCombinedFilters();
+      updateFilterUrl();
     });
   });
 }
 
-function applyFilter(section) {
-  const tabs = document.querySelectorAll('.tab-btn');
+/**
+ * Initialize real-time text input search filter (title, author, publisher).
+ */
+function initSearchFilter() {
+  const searchInput = document.getElementById('library-search-input');
+  const clearBtn = document.getElementById('search-clear-btn');
+  if (!searchInput) return;
+
+  const handleInput = () => {
+    currentSearchQuery = searchInput.value.trim();
+    if (clearBtn) {
+      clearBtn.hidden = !currentSearchQuery;
+    }
+    applyCombinedFilters();
+    updateFilterUrl();
+  };
+
+  searchInput.addEventListener('input', handleInput);
+
+  if (clearBtn) {
+    clearBtn.hidden = !searchInput.value.trim();
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      clearBtn.hidden = true;
+      currentSearchQuery = '';
+      applyCombinedFilters();
+      updateFilterUrl();
+      searchInput.focus();
+    });
+  }
+}
+
+function updateFilterUrl() {
+  const url = new URL(window.location);
+  if (activeSectionFilter === 'all') {
+    url.searchParams.delete('section');
+  } else {
+    url.searchParams.set('section', activeSectionFilter);
+  }
+  if (!currentSearchQuery) {
+    url.searchParams.delete('q');
+  } else {
+    url.searchParams.set('q', currentSearchQuery);
+  }
+  window.history.pushState({}, '', url);
+}
+
+function applyCombinedFilters() {
+  const tabs = document.querySelectorAll('.toolbar .tab-btn');
   tabs.forEach(tab => {
-    if (tab.getAttribute('data-section') === section) {
+    const sec = tab.getAttribute('data-section');
+    if (sec === activeSectionFilter) {
       tab.classList.add('active');
       tab.setAttribute('aria-selected', 'true');
     } else {
@@ -87,21 +137,52 @@ function applyFilter(section) {
   const cards = document.querySelectorAll('.show-card');
   const sectionBooks = document.getElementById('section-books');
   const sectionPodcasts = document.getElementById('section-podcasts');
+  const noResultsDiv = document.getElementById('no-search-results');
+  const searchQuerySpan = document.getElementById('search-query-text');
+
+  const query = currentSearchQuery.toLowerCase();
+  let visibleBooksCount = 0;
+  let visiblePodcastsCount = 0;
+  let totalVisibleCount = 0;
 
   cards.forEach(card => {
     const cardSection = card.getAttribute('data-section');
-    if (section === 'all' || cardSection === section) {
+    const title = (card.getAttribute('data-title') || card.querySelector('.show-title-link')?.textContent || '').toLowerCase();
+    const author = (card.getAttribute('data-author') || '').toLowerCase();
+    const publisher = (card.getAttribute('data-publisher') || '').toLowerCase();
+
+    const matchesSection = (activeSectionFilter === 'all' || cardSection === activeSectionFilter);
+    const matchesSearch = !query || title.includes(query) || author.includes(query) || publisher.includes(query);
+
+    if (matchesSection && matchesSearch) {
       card.style.display = 'flex';
+      totalVisibleCount++;
+      if (cardSection === 'books') visibleBooksCount++;
+      if (cardSection === 'podcasts') visiblePodcastsCount++;
     } else {
       card.style.display = 'none';
     }
   });
 
   if (sectionBooks) {
-    sectionBooks.style.display = (section === 'all' || section === 'books') ? 'block' : 'none';
+    const showBooksSection = (activeSectionFilter === 'all' || activeSectionFilter === 'books') && visibleBooksCount > 0;
+    sectionBooks.style.display = showBooksSection ? 'block' : 'none';
   }
+
   if (sectionPodcasts) {
-    sectionPodcasts.style.display = (section === 'all' || section === 'podcasts') ? 'block' : 'none';
+    const showPodcastsSection = (activeSectionFilter === 'all' || activeSectionFilter === 'podcasts') && visiblePodcastsCount > 0;
+    sectionPodcasts.style.display = showPodcastsSection ? 'block' : 'none';
+  }
+
+  if (noResultsDiv) {
+    if (totalVisibleCount === 0 && (cards.length > 0)) {
+      noResultsDiv.style.display = 'block';
+      if (searchQuerySpan) {
+        searchQuerySpan.textContent = currentSearchQuery || activeSectionFilter;
+      }
+    } else {
+      noResultsDiv.style.display = 'none';
+    }
   }
 }
 
@@ -1342,6 +1423,7 @@ function initMarkdownEditor() {
       const showId = document.getElementById('edit-show-id')?.value;
       const title = document.getElementById('edit-title-input')?.value || '';
       const author = document.getElementById('edit-author-input')?.value || '';
+      const publisher = document.getElementById('edit-publisher-input')?.value || '';
       const descInput = document.getElementById('edit-description-input');
       const description = descInput ? descInput.value : '';
       const coverFileInput = document.getElementById('edit-cover-file');
@@ -1392,7 +1474,7 @@ function initMarkdownEditor() {
         const res = await fetch(`/api/shows/${showId}/edit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, author, description })
+          body: JSON.stringify({ title, author, publisher, description })
         });
 
         if (res.ok) {
@@ -1493,11 +1575,13 @@ async function openEditModal(btn) {
   const showId = btn.getAttribute('data-show-id') || document.getElementById('edit-show-id')?.value;
   const title = btn.getAttribute('data-title') || '';
   const author = btn.getAttribute('data-author') || '';
+  const publisher = btn.getAttribute('data-publisher') || '';
   const description = btn.getAttribute('data-description') || '';
 
   const showIdInput = document.getElementById('edit-show-id');
   const titleInput = document.getElementById('edit-title-input');
   const authorInput = document.getElementById('edit-author-input');
+  const publisherInput = document.getElementById('edit-publisher-input');
   const descInput = document.getElementById('edit-description-input');
   const coverSelect = document.getElementById('edit-cover-select');
   const coverFileInput = document.getElementById('edit-cover-file');
@@ -1508,6 +1592,7 @@ async function openEditModal(btn) {
   if (showIdInput) showIdInput.value = showId;
   if (titleInput) titleInput.value = title;
   if (authorInput) authorInput.value = author;
+  if (publisherInput) publisherInput.value = publisher;
   if (descInput) descInput.value = description;
   if (coverFileInput) coverFileInput.value = '';
 
