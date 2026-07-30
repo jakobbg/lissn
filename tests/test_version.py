@@ -4,6 +4,7 @@ Unit tests for lissn.version module.
 
 from unittest.mock import patch
 
+from lissn import __version__
 from lissn.version import _clean_git_url, get_app_metadata
 
 
@@ -16,7 +17,7 @@ def test_clean_git_url():
 def test_get_app_metadata_keys():
     meta = get_app_metadata()
     assert meta["app_name"] == "lissn"
-    assert meta["app_version"] == "0.4.0"
+    assert meta["app_version"] == __version__
     assert "git_commit" in meta
     assert "git_commit_full" in meta
     assert "git_commit_name" in meta
@@ -35,6 +36,6 @@ def test_get_app_metadata_fallback():
         assert meta["git_commit_name"] == ""
         assert meta["github_url"] == "https://github.com/jakobbg/lissn"
         assert meta["git_commit_url"] == "https://github.com/jakobbg/lissn"
-        assert "Served by lissn v0.4.0 (commit unknown)" in meta["served_by_info"]
-        assert "lissn v0.4.0 (commit unknown)" in meta["tooltip_info"]
+        assert f"Served by lissn v{__version__} (commit unknown)" in meta["served_by_info"]
+        assert f"lissn v{__version__} (commit unknown)" in meta["tooltip_info"]
     get_app_metadata.cache_clear()
