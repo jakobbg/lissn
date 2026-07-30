@@ -297,6 +297,11 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   border-color: var(--accent-primary);
 }
 
+/* Back to library button is only visible on show detail pages */
+:not(.show-page) .nav-back-btn {
+  display: none !important;
+}
+
 /* Main Container */
 .main-content {
   flex: 1;
@@ -1538,14 +1543,23 @@ tr.track-row.active-track {
   }
 
   .nav-back-btn,
+  .github-link-btn,
   .theme-toggle-btn,
   .auth-btn {
-    padding: 0.4rem 0.6rem;
+    padding: 0;
     font-size: 1.05rem;
+    width: 38px;
     min-width: 38px;
     height: 38px;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
     border-radius: var(--radius-full);
+  }
+
+  .github-link-btn svg.btn-icon {
+    display: block;
+    flex-shrink: 0;
   }
 
   /* Compact single-line section filter tabs */

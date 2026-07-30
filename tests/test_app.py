@@ -1452,6 +1452,36 @@ def test_client_navigation_syncs_header_nav_actions(client: TestClient) -> None:
     assert "updateThemeButtonText" in js_text
 
 
+def test_mobile_header_buttons_and_back_button_scoping(client: TestClient) -> None:
+    """Test mobile header buttons include GitHub button in icon-only styling and back button is scoped to show detail page."""
+    # Front page checks
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert 'class="show-page"' not in index_res.text
+    assert 'class="nav-back-btn"' not in index_res.text
+    assert 'class="github-link-btn"' in index_res.text
+
+    # Show detail page checks
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    assert len(shows) > 0
+    show_id = shows[0]["show_id"]
+
+    show_res = client.get(f"/show/{show_id}")
+    assert show_res.status_code == 200
+    assert '<body class="show-page"' in show_res.text
+    assert 'class="nav-back-btn"' in show_res.text
+
+    # CSS rules verification
+    css_res = client.get("/static/style.css")
+    assert css_res.status_code == 200
+    css_text = css_res.text
+    assert ":not(.show-page) .nav-back-btn" in css_text
+    assert ".github-link-btn" in css_text
+    assert ".github-link-btn svg.btn-icon" in css_text
+
+
+
 
 
 
