@@ -236,6 +236,8 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
             )
             itunes_dur.text = str(dur_seconds)
 
+    ET.indent(rss, space="  ")
     xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
     return xml_declaration + ET.tostring(rss, encoding="utf-8").decode("utf-8")
+
 
