@@ -305,3 +305,27 @@ def test_subfolder_scanning(tmp_path: Path) -> None:
     assert episodes[1]["filename"] == "Papaya.2026.1901-2101/Papaya.2026-01-20.mp3"
 
 
+def test_update_show_metadata_and_cover_non_existent(tmp_path: Path) -> None:
+    """Test scanner update_show_metadata and update_show_cover return None for invalid show IDs."""
+    from lissn.scanner import LibraryScanner
+
+    books_dir = tmp_path / "books"
+    podcasts_dir = tmp_path / "podcasts"
+    cache_dir = tmp_path / "cache"
+    db_path = cache_dir / "lissn.db"
+    books_dir.mkdir()
+    podcasts_dir.mkdir()
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=db_path
+    )
+
+    # Call with non-existent show ID
+    res_meta = scanner.update_show_metadata("invalid_id", "Title", "Author", "Desc")
+    assert res_meta is None
+
+    res_cover = scanner.update_show_cover("invalid_id", tmp_path / "cover.jpg")
+    assert res_cover is None
+
+
+

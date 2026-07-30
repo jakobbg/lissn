@@ -24,12 +24,14 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
     "httpx[http2]>=0.24.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+addopts = "--cov=lissn --cov-report=term-missing"
 filterwarnings = [
     "ignore:.*httpx.*:Warning",
     "ignore:.*starlette.testclient.*:Warning",

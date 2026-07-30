@@ -1118,3 +1118,37 @@ def test_html_pages_etag_and_304_caching(client: TestClient) -> None:
     assert show_cond.text == ""
 
 
+def test_download_episode_edge_cases(client: TestClient) -> None:
+    """Test 404 and error handling for invalid show_id and missing audio files in download endpoint."""
+    # Invalid show ID -> 404
+    res = client.get("/download/invalid_show_id_12345/episode1.mp3")
+    assert res.status_code == 404
+    assert res.json()["detail"] == "Show not found"
+
+    # Missing audio file in valid show -> 404
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    res_missing = client.get(f"/download/{show_id}/non_existent_file_xyz.mp3")
+    assert res_missing.status_code == 404
+    assert res_missing.json()["detail"] == "Audio file not found"
+
+
+def test_api_show_mutation_invalid_show_ids(client: TestClient) -> None:
+    """Test API endpoints return 404 when mutating or fetching non-existent show IDs."""
+    # Edit non-existent show
+    edit_res = client.post("/api/show/invalid_show_id_999/edit", json={"title": "T", "author": "A", "description": "D"})
+    assert edit_res.status_code == 404
+
+    # Select cover non-existent show
+    cover_res = client.post("/api/show/invalid_show_id_999/select_cover", json={"cover_path": "/tmp/test.jpg"})
+    assert cover_res.status_code == 404
+
+    # Upload cover non-existent show
+    upload_res = client.post(
+        "/api/show/invalid_show_id_999/upload_cover",
+        files={"file": ("test.jpg", b"fake_image_bytes", "image/jpeg")},
+    )
+    assert upload_res.status_code == 404
+
+
+
