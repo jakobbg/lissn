@@ -597,7 +597,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   display: none;
 }
 
-.duration-badge, .size-badge, .bitrate-badge {
+.duration-badge, .size-badge, .bitrate-badge, .tracks-badge, .date-badge, .meta-badge {
   background-color: var(--badge-bg);
   color: var(--badge-text);
   padding: 0.15rem 0.5rem;

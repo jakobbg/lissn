@@ -95,9 +95,9 @@
         <div class="meta-row" style="font-size: 0.95rem; margin-bottom: 1.2rem;">
           <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
           <span>•</span>
-          <span>{{ show.episodes|length }} track{% if show.episodes|length != 1 %}s{% endif %}</span>
+          <span class="tracks-badge">🎵 {{ show.episodes|length }} track{% if show.episodes|length != 1 %}s{% endif %}</span>
           <span>•</span>
-          <span>📅 {{ show.fuzzy_added_date }}</span>
+          <span class="date-badge">📅 {{ show.fuzzy_added_date }}</span>
           {% if show.formatted_total_file_size %}
             <span>•</span>
             <span class="size-badge">💾 {{ show.formatted_total_file_size }} Total Size</span>
