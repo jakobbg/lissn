@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{{ show.title }} - lissn</title>
   <meta name="description" content="Listen to {{ show.title }}. Total duration: {{ show.formatted_duration }}.">
 
@@ -63,10 +63,11 @@
   <main class="main-content">
     <!-- Show Detail Banner Header -->
     <header class="show-detail-header">
-      <div>
+      <div class="detail-cover-container">
         {% if show.cover_path %}
           <button type="button" class="detail-cover-link js-zoom-cover" data-cover-url="/covers/{{ show.show_id }}" data-show-title="{{ show.title }}" aria-label="Zoom cover image for {{ show.title }}" title="Click to zoom cover image">
             <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="detail-cover">
+            <span class="cover-zoom-hint" aria-hidden="true">🔍 Zoom</span>
           </button>
         {% else %}
           <div class="placeholder-cover detail-cover">

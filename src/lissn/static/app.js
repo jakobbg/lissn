@@ -1504,6 +1504,7 @@ function initCoverModal() {
     const zoomBtn = e.target.closest('.js-zoom-cover');
     if (zoomBtn) {
       e.preventDefault();
+      e.stopPropagation();
       const modal = document.getElementById('cover-modal');
       if (modal && !modal.hasAttribute('hidden')) {
         closeCoverModal();
@@ -1535,15 +1536,17 @@ function openCoverModal(src, title) {
 
   modal.removeAttribute('hidden');
   modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeCoverModal() {
   const modal = document.getElementById('cover-modal');
-  const img = document.getElementById('cover-modal-image');
   if (modal) {
     modal.setAttribute('hidden', '');
     modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
   }
+}
   if (img) {
     img.src = '';
   }

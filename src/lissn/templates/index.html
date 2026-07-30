@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>lissn - Audio Books & Podcasts</title>
   <meta name="description" content="Personal audio library for indexed Audio Books and Podcasts with RSS podcast feed support.">
 
@@ -85,6 +85,7 @@
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
+                  <button type="button" class="card-zoom-btn js-zoom-cover" data-cover-url="/covers/{{ show.show_id }}" data-show-title="{{ show.title }}" aria-label="Zoom cover image for {{ show.title }}" title="Zoom cover image">🔍</button>
                 {% else %}
                   <div class="placeholder-cover">
                     <span>📚</span>
@@ -126,6 +127,7 @@
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
+                  <button type="button" class="card-zoom-btn js-zoom-cover" data-cover-url="/covers/{{ show.show_id }}" data-show-title="{{ show.title }}" aria-label="Zoom cover image for {{ show.title }}" title="Zoom cover image">🔍</button>
                 {% else %}
                   <div class="placeholder-cover">
                     <span>🎙️</span>
