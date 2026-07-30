@@ -1095,17 +1095,17 @@ def test_subscribe_and_copy_rss_only_on_show_page(client: TestClient) -> None:
 
 
 def test_get_subscribe_url_logic() -> None:
-    """Test get_subscribe_url constructs podcast:// for http and podcasts:// for https with ports and paths."""
+    """Test get_subscribe_url constructs podcast:// for both http and https with ports and paths."""
     from lissn.app import get_subscribe_url
 
     assert get_subscribe_url("http://192.168.1.50:8000", "show_123") == "podcast://192.168.1.50:8000/rss/show_123"
-    assert get_subscribe_url("https://lissn.example.com", "show_123") == "podcasts://lissn.example.com/rss/show_123"
-    assert get_subscribe_url("https://lissn.example.com/subpath", "show_123") == "podcasts://lissn.example.com/subpath/rss/show_123"
+    assert get_subscribe_url("https://lissn.example.com", "show_123") == "podcast://lissn.example.com/rss/show_123"
+    assert get_subscribe_url("https://lissn.example.com/subpath", "show_123") == "podcast://lissn.example.com/subpath/rss/show_123"
     assert get_subscribe_url("http://localhost:8000/", "show_123") == "podcast://localhost:8000/rss/show_123"
 
 
 def test_subscribe_url_rendering_with_custom_base_url(client: TestClient, monkeypatch) -> None:
-    """Test that show page renders podcasts:// scheme when base_url is configured with https://."""
+    """Test that show page renders podcast:// scheme when base_url is configured with https://."""
     from lissn.app import config
     monkeypatch.setattr(config, "base_url", "https://my-lissn.example.com:8443/custom")
 
@@ -1114,7 +1114,7 @@ def test_subscribe_url_rendering_with_custom_base_url(client: TestClient, monkey
     show_res = client.get(f"/show/{show_id}")
 
     assert show_res.status_code == 200
-    assert f'href="podcasts://my-lissn.example.com:8443/custom/rss/{show_id}"' in show_res.text
+    assert f'href="podcast://my-lissn.example.com:8443/custom/rss/{show_id}"' in show_res.text
     assert f'data-rss-url="https://my-lissn.example.com:8443/custom/rss/{show_id}"' in show_res.text
 
 

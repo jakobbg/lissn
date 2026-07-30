@@ -313,16 +313,18 @@ def get_host_header(request: Request) -> str:
 
 def get_subscribe_url(base_url: str, show_id: str) -> str:
     """
-    Construct podcast subscription URL using podcast:// (HTTP) or podcasts:// (HTTPS).
+    Construct podcast subscription URL using podcast:// scheme for podcast app deep-linking.
 
-    Replaces http:// with podcast:// and https:// with podcasts:// to ensure podcast app link
-    clicks preserve the full scheme (HTTP vs HTTPS), host, port, and any path prefix.
+    Replaces http:// or https:// with podcast:// (singular) to ensure podcast applications
+    (Apple Podcasts, Overcast, Pocket Casts, etc.) on macOS and iOS properly open and subscribe to feeds.
     """
     rss_url = f"{base_url.rstrip('/')}/rss/{show_id}"
     if rss_url.startswith("https://"):
-        return "podcasts://" + rss_url[8:]
+        return "podcast://" + rss_url[8:]
     elif rss_url.startswith("http://"):
         return "podcast://" + rss_url[7:]
+    elif rss_url.startswith("podcast://"):
+        return rss_url
     return f"podcast://{rss_url}"
 
 
