@@ -2032,7 +2032,7 @@ function updateShowPageDOM(show) {
   }
 
   if (show.show_id) {
-    const timestamp = show.updated_at ? Math.floor(show.updated_at) : Date.now();
+    const timestamp = Date.now();
     const coverUrl = `/covers/${show.show_id}?v=${timestamp}`;
 
     // 1. Update show page detail cover container (show.html)
