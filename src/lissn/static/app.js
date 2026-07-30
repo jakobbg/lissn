@@ -231,10 +231,10 @@ function initShareButtons() {
 }
 
 /**
- * Page-level single character keyboard shortcuts (c, r, e, d).
+ * Page-level single character keyboard shortcuts (s, r, e, d).
  * Follows Web Accessibility & UX best practices:
  * - Active only when typing focus is not inside form fields / inputs / editable elements.
- * - Does not override browser system key combinations (Cmd/Ctrl + C/R/E/D).
+ * - Does not override browser system key combinations (Cmd/Ctrl + S/R/E/D).
  */
 function initPageShortcuts() {
   document.addEventListener('keydown', (e) => {
@@ -256,7 +256,7 @@ function initPageShortcuts() {
     }
 
     const key = e.key.toLowerCase();
-    if (key === 'c') {
+    if (key === 's') {
       const shareBtn = document.querySelector('.js-share-show');
       if (shareBtn) {
         e.preventDefault();
