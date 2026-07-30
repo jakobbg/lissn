@@ -7,6 +7,7 @@ locates cover art, computes fuzzy added dates, and caches show data in SQLite.
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
+import logging
 from pathlib import Path
 import sqlite3
 from typing import Any, Dict, List, Optional, Tuple
@@ -14,8 +15,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import markdown
 import mutagen
 
+logger = logging.getLogger("lissn.scanner")
+
 AUDIO_EXTENSIONS = {".mp3", ".m4a", ".m4b", ".aac", ".flac", ".ogg", ".opus", ".wav"}
 COVER_NAMES = ["cover.jpg", "cover.jpeg", "cover.png", "folder.jpg", "folder.png", "poster.jpg"]
+
 
 
 def generate_show_id(section: str, folder_name: str) -> str:
@@ -490,8 +494,10 @@ class LibraryScanner:
 
     def scan_folder(self, section: str, root_dir: Path, force: bool = False) -> List[Dict[str, Any]]:
         """Scan a top-level media directory (Books or Podcasts)."""
+        logger.info(f"Scanning '{section}' media directory at {root_dir}")
         scanned_shows = []
         if not root_dir.exists() or not root_dir.is_dir():
+            logger.debug(f"Media directory {root_dir} does not exist or is not a directory")
             return scanned_shows
 
         for show_dir in sorted(root_dir.iterdir()):
@@ -499,6 +505,7 @@ class LibraryScanner:
                 continue
 
             show_id = generate_show_id(section, show_dir.name)
+            logger.debug(f"Indexing show directory '{show_dir.name}' (show_id={show_id})")
 
             # Determine cover image: check existing DB cache, then auto-locate
             cover_path = None
@@ -518,6 +525,7 @@ class LibraryScanner:
                     audio_files.append(item)
 
             if not audio_files:
+                logger.debug(f"No valid audio files found in {show_dir}, skipping")
                 continue
 
             # Limit number of episodes per show based on max_episodes_per_show setting
@@ -625,15 +633,20 @@ class LibraryScanner:
             self.cache.save_show(show_data, episodes)
             scanned_shows.append(show_data)
 
+        logger.info(f"Finished scanning '{section}': indexed {len(scanned_shows)} shows")
         return scanned_shows
 
     def scan_all(self, force: bool = False) -> Dict[str, Any]:
         """Scan both Books and Podcasts sections, optionally forcing full metadata re-parse."""
+        logger.info(f"Starting complete library scan (force={force})")
         books = self.scan_folder("books", self.books_dir, force=force)
         podcasts = self.scan_folder("podcasts", self.podcasts_dir, force=force)
         active_ids = [s["show_id"] for s in books + podcasts]
         self.cache.prune_deleted_shows(active_ids)
-        return {"books": books, "podcasts": podcasts, "total": len(books) + len(podcasts)}
+        total_count = len(books) + len(podcasts)
+        logger.info(f"Library scan complete: {len(books)} books, {len(podcasts)} podcasts ({total_count} total)")
+        return {"books": books, "podcasts": podcasts, "total": total_count}
+
 
     def update_show_metadata(
         self,

@@ -1,0 +1,30 @@
+[Unit]
+Description=lissn - Audiobooks and Podcasts Indexer & RSS Server
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lissn
+Group=lissn
+WorkingDirectory=/usr/local/www/lissn
+Environment="PATH=/usr/local/www/lissn/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+# Environment="LISSN_VERBOSE=true"
+ExecStart=/usr/local/www/lissn/.venv/bin/python3 -m lissn.app
+
+
+Restart=on-failure
+RestartSec=5s
+
+# Process & Logging Controls
+StandardOutput=append:/usr/local/www/lissn/logs/lissn.log
+StandardError=append:/usr/local/www/lissn/logs/lissn_error.log
+
+# Security Sandboxing Options
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

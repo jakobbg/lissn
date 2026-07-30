@@ -5,12 +5,15 @@ Produces valid Podcast RSS 2.0 XML feeds with iTunes tags for podcast player sub
 
 from datetime import datetime, timezone
 import email.utils
+import logging
 from pathlib import Path
 from typing import Any, Dict
 from urllib.parse import quote
 from xml.etree import ElementTree as ET
 
 from lissn.version import get_app_metadata
+
+logger = logging.getLogger("lissn.rss")
 
 
 MIME_TYPES = {
@@ -58,6 +61,11 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     show_id = show_data["show_id"]
     raw_title = show_data["title"]
     section = show_data.get("section", "podcasts")
+    episodes = show_data.get("episodes", [])
+    logger.debug(
+        f"Generating RSS 2.0 feed for show_id={show_id} ('{raw_title}') with {len(episodes)} episodes"
+    )
+
     if section == "podcasts":
         creator = (show_data.get("publisher") or show_data.get("author") or "").strip()
     else:

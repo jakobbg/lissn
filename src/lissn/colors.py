@@ -6,10 +6,13 @@ or deterministically generates vibrant fallback palettes from show IDs.
 
 import colorsys
 import hashlib
+import logging
 import math
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 import io
+
+logger = logging.getLogger("lissn.colors")
 
 try:
     from PIL import Image
@@ -35,6 +38,7 @@ def generate_fallback_colors(
     Generate a set of 3 complementary, vibrant RGB colors derived deterministically
     from a show ID hash string.
     """
+    logger.debug(f"Generating fallback color palette for show_id={show_id}")
     digest = hashlib.sha256(show_id.encode("utf-8")).hexdigest()
     hue1 = int(digest[0:4], 16) % 360
     hue2 = (hue1 + 45 + (int(digest[4:8], 16) % 60)) % 360
@@ -54,15 +58,18 @@ def extract_dominant_colors(
     Falls back to deterministic color generation if PIL is unavailable or image fails to load.
     """
     if Image is None or image_source is None:
+        logger.debug(f"Pillow unavailable or no image source for show_id={show_id}")
         return generate_fallback_colors(show_id)
 
     try:
+        logger.debug(f"Extracting dominant colors from image for show_id={show_id}")
         if isinstance(image_source, bytes):
             img_obj = Image.open(io.BytesIO(image_source))
         elif isinstance(image_source, Path) and image_source.exists():
             img_obj = Image.open(image_source)
         else:
             return generate_fallback_colors(show_id)
+
 
         with img_obj as img:
             img = img.convert("RGB")

@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# PROVIDE: lissn
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+
+# Add the following lines to /etc/rc.conf to enable lissn:
+#
+# lissn_enable (bool):   Set to "YES" to enable lissn.
+#                        Default is "NO".
+# lissn_user (str):      User account to run lissn.
+#                        Default is "lissn".
+# lissn_dir (str):       Directory where lissn is installed.
+#                        Default is "/usr/local/www/lissn".
+# lissn_python (str):    Path to Python executable in venv.
+#                        Default is "${lissn_dir}/.venv/bin/python3".
+# lissn_log (str):       Log file destination.
+#                        Default is "${lissn_dir}/logs/lissn.log".
+# lissn_verbose (bool):  Enable verbose DEBUG logging ("YES" or "NO").
+#                        Default is "NO".
+
+. /etc/rc.subr
+
+name="lissn"
+rcvar="lissn_enable"
+
+load_rc_config $name
+
+: ${lissn_enable:="NO"}
+: ${lissn_user:="lissn"}
+: ${lissn_dir:="/usr/local/www/lissn"}
+: ${lissn_python:="${lissn_dir}/.venv/bin/python3"}
+: ${lissn_log:="${lissn_dir}/logs/lissn.log"}
+: ${lissn_verbose:="NO"}
+
+pidfile="/var/run/${name}.pid"
+command="/usr/sbin/daemon"
+command_args="-f -r -P ${pidfile} -u ${lissn_user} -o ${lissn_log} -e ${lissn_log} sh -c \"cd ${lissn_dir} && LISSN_VERBOSE=${lissn_verbose} ${lissn_python} -m lissn.app\""
+
+
+
+start_precmd="lissn_precmd"
+
+lissn_precmd()
+{
+    if [ ! -d "${lissn_dir}/logs" ]; then
+        mkdir -p "${lissn_dir}/logs"
+        chown "${lissn_user}" "${lissn_dir}/logs"
+    fi
+}
+
+run_rc_command "$1"

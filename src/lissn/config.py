@@ -19,6 +19,9 @@ class Config:
         podcasts_dir: Optional[str] = None,
         cache_dir: Optional[str] = None,
         cache_db_path: Optional[str] = None,
+        log_dir: Optional[str] = None,
+        log_file_path: Optional[str] = None,
+        verbose: Optional[bool] = None,
         host: Optional[str] = None,
         port: Optional[int] = None,
         base_url: Optional[str] = None,
@@ -75,6 +78,38 @@ class Config:
         self.cache_db_path: Path = Path(raw_cache_db).resolve()
         self.cache_dir: Path = self.cache_db_path.parent
 
+        # Resolve Log Directory & File path
+        raw_log_dir = (
+            log_dir
+            or os.getenv("LISSN_LOG_DIR")
+            or json_config.get("log_dir")
+            or str(base_dir / "logs")
+        )
+        self.log_dir: Path = Path(raw_log_dir).resolve()
+
+        raw_log_file = (
+            log_file_path
+            or os.getenv("LISSN_LOG_FILE")
+            or json_config.get("log_file")
+            or str(self.log_dir / "lissn.log")
+        )
+        self.log_file_path: Path = Path(raw_log_file).resolve()
+
+        # Resolve Verbose flag (defaults to False = normal logging, True = debug logging)
+        raw_verbose = (
+            verbose
+            if verbose is not None
+            else os.getenv("LISSN_VERBOSE") or json_config.get("verbose")
+        )
+        if isinstance(raw_verbose, str):
+            self.verbose: bool = raw_verbose.lower().strip() in ("1", "true", "yes", "on")
+        else:
+            self.verbose: bool = bool(raw_verbose)
+
+        self.log_level: str = "DEBUG" if self.verbose else "INFO"
+
+
+
         self.host: str = host or os.getenv("LISSN_HOST") or json_config.get("host") or "0.0.0.0"
         self.port: int = int(port or os.getenv("LISSN_PORT") or json_config.get("port") or 8000)
         self.base_url: str = (
@@ -129,7 +164,9 @@ class Config:
         self.scan_mode: str = clean_scan_mode if clean_scan_mode in valid_scan_modes else "incremental"
 
     def ensure_directories(self) -> None:
-        """Ensure media directories exist on disk."""
+        """Ensure media, cache, and log directories exist on disk."""
         self.books_dir.mkdir(parents=True, exist_ok=True)
         self.podcasts_dir.mkdir(parents=True, exist_ok=True)
         self.cache_db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+

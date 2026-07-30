@@ -30,6 +30,8 @@ def test_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     assert config.books_dir == (tmp_path / "data" / "Books").resolve()
     assert config.podcasts_dir == (tmp_path / "data" / "Podcasts").resolve()
     assert config.cache_db_path == (tmp_path / "data" / "lissn_cache.db").resolve()
+    assert config.log_dir == (tmp_path / "logs").resolve()
+    assert config.log_file_path == (tmp_path / "logs" / "lissn.log").resolve()
     assert config.host == "0.0.0.0"
     assert config.port == 8000
     assert config.base_url == "http://localhost:8000"
@@ -37,6 +39,7 @@ def test_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     assert config.password == "incorrect"
     assert config.pattern_name == "dots"
     assert config.pattern_opacity == 0.15
+
 
 
 def test_config_environment_variable_overrides(
@@ -111,22 +114,27 @@ def test_config_ensure_directories(tmp_path: Path) -> None:
     podcasts = tmp_path / "nested" / "podcasts"
     cache = tmp_path / "nested" / "cache"
     cache_db = cache / "db.sqlite"
+    log_dir = tmp_path / "nested" / "logs"
 
     config = Config(
         books_dir=str(books),
         podcasts_dir=str(podcasts),
         cache_dir=str(cache),
         cache_db_path=str(cache_db),
+        log_dir=str(log_dir),
     )
 
     assert not books.exists()
     assert not podcasts.exists()
+    assert not log_dir.exists()
 
     config.ensure_directories()
 
     assert books.is_dir()
     assert podcasts.is_dir()
     assert cache.is_dir()
+    assert log_dir.is_dir()
+
 
 
 def test_config_pattern_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -175,5 +183,25 @@ def test_config_scan_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv("LISSN_SCAN_MODE", "invalid_mode")
     cfg4 = Config()
     assert cfg4.scan_mode == "incremental"
+
+
+def test_config_verbose(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test verbose flag initialization and env overrides."""
+    monkeypatch.delenv("LISSN_VERBOSE", raising=False)
+
+    cfg1 = Config()
+    assert cfg1.log_level == "INFO"
+    assert cfg1.verbose is False
+
+    cfg2 = Config(verbose=True)
+    assert cfg2.log_level == "DEBUG"
+    assert cfg2.verbose is True
+
+    monkeypatch.setenv("LISSN_VERBOSE", "true")
+    cfg3 = Config()
+    assert cfg3.log_level == "DEBUG"
+    assert cfg3.verbose is True
+
+
 
 

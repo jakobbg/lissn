@@ -221,5 +221,6 @@ __marimo__/
 lissn.json
 config/lissn.json
 data/
+logs/
 
 .DS_Store

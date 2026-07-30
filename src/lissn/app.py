@@ -8,9 +8,12 @@ from datetime import datetime, timezone
 import email.utils
 import hashlib
 import io
+import logging
+from logging.handlers import RotatingFileHandler
 import mimetypes
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 import zipfile
 
 import zipstream
@@ -46,6 +49,47 @@ mimetypes.add_type("audio/flac", ".flac")
 mimetypes.add_type("audio/wav", ".wav")
 mimetypes.add_type("audio/aac", ".aac")
 
+
+def configure_logging(cfg: Config) -> logging.Logger:
+    """Configure logger with console output and file handler for logs/lissn.log."""
+    cfg.ensure_directories()
+    logger = logging.getLogger("lissn")
+    
+    level_num = getattr(logging, cfg.log_level.upper(), logging.INFO)
+    logger.setLevel(level_num)
+
+    file_handler = RotatingFileHandler(
+        cfg.log_file_path,
+        maxBytes=10 * 1024 * 1024,
+        backupCount=5,
+        encoding="utf-8",
+    )
+    formatter = logging.Formatter(
+        "[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s"
+    )
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(level_num)
+
+    if not logger.handlers:
+        logger.addHandler(file_handler)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        stream_handler.setLevel(level_num)
+        logger.addHandler(stream_handler)
+    else:
+        for handler in logger.handlers:
+            handler.setLevel(level_num)
+
+    for uvicorn_logger_name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
+        u_logger = logging.getLogger(uvicorn_logger_name)
+        u_logger.setLevel(level_num)
+        if file_handler not in u_logger.handlers:
+            u_logger.addHandler(file_handler)
+
+    return logger
+
+
+
 app_meta = get_app_metadata()
 
 app = FastAPI(
@@ -56,6 +100,9 @@ app = FastAPI(
 
 config = Config()
 config.ensure_directories()
+logger = configure_logging(config)
+logger.info(f"Initialized lissn v{app_meta['app_version']} (log destination: {config.log_file_path})")
+
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))

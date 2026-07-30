@@ -78,6 +78,8 @@ Navigate to `http://localhost:8000` in your browser.
 
 **lissn** maintains a comprehensive automated test suite (`pytest` + `pytest-cov`) covering API endpoints, RSS feed generation, HTTP range streaming, authentication, conditional ETag caching, and file security restrictions.
 
+See the complete [Testing & Code Quality Guide](docs/testing.md) for details.
+
 ### Run Test Suite
 ```bash
 python3 -m pytest
@@ -88,23 +90,11 @@ python3 -m pytest
 python3 -m pytest --cov=lissn --cov-report=term-missing
 ```
 
-### Coverage Metrics
-```text
-Name                    Stmts   Miss  Cover   Missing Lines
------------------------------------------------------------
-src/lissn/__init__.py       1      0   100%
-src/lissn/app.py          431     62    86%   (error & fallback paths)
-src/lissn/colors.py        89      6    93%   (invalid image fallbacks)
-src/lissn/config.py        49      4    92%   (dir creation fallbacks)
-src/lissn/rss.py           78      1    99%   (fallback generator)
-src/lissn/scanner.py      402     35    91%   (corrupt tag fallbacks)
------------------------------------------------------------
-TOTAL                    1050    108    90%
-```
-
 ---
 
-## 🔒 Production Deployment & Reverse Proxy
+## 🔒 Production Deployment & Services
+
+For running **lissn** as a service daemon on **FreeBSD** (`rc.d`) or **Linux** (`systemd`) with automatic logging to `./logs/lissn.log`, see the [Running lissn as a Service Guide](docs/service.md).
 
 In production, run **lissn** behind a reverse proxy for HTTPS termination:
 
@@ -138,6 +128,7 @@ server {
     }
 }
 ```
+
 
 ---
 
