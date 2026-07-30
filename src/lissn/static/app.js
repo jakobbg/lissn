@@ -1998,6 +1998,11 @@ function escapeHtml(str) {
 
 function updateShowPageDOM(show) {
   if (!show) return;
+
+  if (show.show_colors && show.show_colors.css_variables) {
+    document.body.setAttribute('style', show.show_colors.css_variables);
+  }
+
   const detailTitle = document.querySelector('.detail-title');
   if (detailTitle) detailTitle.textContent = show.title;
 

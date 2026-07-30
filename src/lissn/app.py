@@ -568,6 +568,8 @@ def api_get_show(show_id: str) -> Response:
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
+    cover_path = Path(show["cover_path"]) if show.get("cover_path") else None
+    show["show_colors"] = get_show_colors(cover_path, show["show_id"])
     return show
 
 
@@ -585,6 +587,9 @@ def api_edit_show(show_id: str, payload: EditShowRequest, request: Request) -> D
     )
     if not updated_show:
         raise HTTPException(status_code=404, detail="Show not found")
+
+    cover_path = Path(updated_show["cover_path"]) if updated_show.get("cover_path") else None
+    updated_show["show_colors"] = get_show_colors(cover_path, show_id)
     return {"status": "success", "show": updated_show}
 
 
@@ -619,6 +624,9 @@ def api_select_show_cover(show_id: str, payload: SelectCoverRequest, request: Re
         raise HTTPException(status_code=400, detail="Invalid image file or path outside show directory")
 
     updated = scanner.update_show_cover(show_id, target_file)
+    if updated:
+        cover_path = Path(updated["cover_path"]) if updated.get("cover_path") else None
+        updated["show_colors"] = get_show_colors(cover_path, show_id)
     return {"status": "success", "cover_path": str(target_file), "show": updated}
 
 
@@ -655,6 +663,9 @@ if HAS_MULTIPART:
         dest_path.write_bytes(content)
 
         updated = scanner.update_show_cover(show_id, dest_path)
+        if updated:
+            cover_path = Path(updated["cover_path"]) if updated.get("cover_path") else None
+            updated["show_colors"] = get_show_colors(cover_path, show_id)
         return {"status": "success", "cover_path": str(dest_path), "filename": safe_filename, "show": updated}
 else:
     @app.post("/api/shows/{show_id}/upload-cover")

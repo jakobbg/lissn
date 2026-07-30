@@ -1361,6 +1361,9 @@ def test_cover_image_update_reflects_on_index_page(client: TestClient) -> None:
     upload_data = upload_res.json()
     assert upload_data["status"] == "success"
     assert "show" in upload_data
+    assert "show_colors" in upload_data["show"]
+    assert "css_variables" in upload_data["show"]["show_colors"]
+    assert "--show-color-1-rgb:" in upload_data["show"]["show_colors"]["css_variables"]
     updated_at = int(upload_data["show"]["updated_at"])
 
     # Index page after cover update
