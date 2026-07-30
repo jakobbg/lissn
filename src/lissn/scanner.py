@@ -245,7 +245,7 @@ Add book description in markdown format here.
         else:
             default_content = f"""---
 podcast_name: "{show_name}"
-author: "Podcast Host"
+publisher: "Podcast Publisher"
 ---
 
 # {show_name}
@@ -272,12 +272,16 @@ Add podcast description in markdown format here.
                 if isinstance(meta, dict):
                     if meta.get("title"):
                         title = str(meta["title"]).strip()
-                    if meta.get("author"):
-                        author = str(meta["author"]).strip()
-                    if meta.get("publisher"):
-                        publisher = str(meta["publisher"]).strip()
                     if meta.get("podcast_name"):
                         podcast_name = str(meta["podcast_name"]).strip()
+                    if section == "books":
+                        if meta.get("author"):
+                            author = str(meta["author"]).strip()
+                    else:
+                        if meta.get("publisher"):
+                            publisher = str(meta["publisher"]).strip()
+                        elif meta.get("author"):
+                            publisher = str(meta["author"]).strip()
             except Exception:
                 pass
 
@@ -380,6 +384,11 @@ class ScannerCache:
                 conn.execute("ALTER TABLE episodes ADD COLUMN bitrate INTEGER DEFAULT 0")
             if "formatted_bitrate" not in ep_cols:
                 conn.execute("ALTER TABLE episodes ADD COLUMN formatted_bitrate TEXT DEFAULT ''")
+
+            # Clean up section metadata so podcasts only use publisher and books only use author
+            conn.execute("UPDATE shows SET publisher = author WHERE section = 'podcasts' AND (publisher IS NULL OR publisher = '') AND author IS NOT NULL AND author != ''")
+            conn.execute("UPDATE shows SET author = '' WHERE section = 'podcasts'")
+            conn.execute("UPDATE shows SET publisher = '' WHERE section = 'books'")
 
     def save_show(self, show_data: Dict[str, Any], episodes: List[Dict[str, Any]]) -> None:
         """Save show and its associated episodes into the database cache."""
@@ -612,7 +621,8 @@ class LibraryScanner:
                 "show_id": show_id,
                 "section": section,
                 "title": display_title,
-                "author": notes_info.get("author", ""),
+                "author": notes_info.get("author", "") if section == "books" else "",
+                "publisher": notes_info.get("publisher", "") if section == "podcasts" else "",
                 "podcast_name": notes_info.get("podcast_name", display_title),
                 "folder_path": str(show_dir.resolve()),
                 "cover_path": str(cover_path.resolve()) if cover_path else None,
@@ -658,14 +668,16 @@ class LibraryScanner:
 
         section = show["section"]
         title = title.strip()
-        author = author.strip()
-        publisher = publisher.strip()
         description = description.strip()
 
         if section == "books":
-            yaml_header = f'---\ntitle: "{title}"\nauthor: "{author}"\npublisher: "{publisher}"\n---'
+            author = author.strip()
+            publisher = ""
+            yaml_header = f'---\ntitle: "{title}"\nauthor: "{author}"\n---'
         else:
-            yaml_header = f'---\npodcast_name: "{title}"\nauthor: "{author}"\npublisher: "{publisher}"\n---'
+            publisher = publisher.strip() or author.strip()
+            author = ""
+            yaml_header = f'---\npodcast_name: "{title}"\npublisher: "{publisher}"\n---'
 
         notes_content = f"{yaml_header}\n\n{description}\n"
         notes_file.write_text(notes_content, encoding="utf-8")

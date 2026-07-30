@@ -52,13 +52,18 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     """
     show_id = show_data["show_id"]
     raw_title = show_data["title"]
-    author = (show_data.get("author") or "").strip()
-    if author:
-        title = f"{raw_title} ({author})"
+    section = show_data.get("section", "podcasts")
+    if section == "podcasts":
+        creator = (show_data.get("publisher") or show_data.get("author") or "").strip()
+    else:
+        creator = (show_data.get("author") or "").strip()
+
+    if creator:
+        title = f"{raw_title} ({creator})"
     else:
         title = raw_title
 
-    description = show_data.get("description") or f"{raw_title} ({show_data['section'].capitalize()})"
+    description = show_data.get("description") or f"{raw_title} ({section.capitalize()})"
     clean_base = base_url.rstrip("/")
 
     feed_url = f"{clean_base}/rss/{show_id}"
@@ -80,8 +85,8 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     ET.SubElement(channel, "language").text = "en-us"
     ET.SubElement(channel, "generator").text = "lissn v0.1"
 
-    if author:
-        ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}author").text = author
+    if creator:
+        ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}author").text = creator
 
     itunes_summary = ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}summary")
     itunes_summary.text = description

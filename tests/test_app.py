@@ -692,7 +692,8 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
 def test_edit_show_markdown_and_notes_file(client: TestClient) -> None:
     """Test editing show title, author, and markdown description updates notes.md and cache."""
     shows_res = client.get("/api/shows")
-    show_id = shows_res.json()["shows"][0]["show_id"]
+    show = next(s for s in shows_res.json()["shows"] if s["section"] == "books")
+    show_id = show["show_id"]
 
     markdown_desc = "# Overview\n\nThis is an **amazing** audio book with *italic* text."
     edit_res = client.post(
@@ -1291,11 +1292,12 @@ def test_api_edit_show_with_publisher(client: TestClient) -> None:
     """Test editing show title, author, publisher, and description via API."""
     shows = scanner.cache.get_all_shows()
     assert len(shows) > 0
-    show_id = shows[0]["show_id"]
+    show = next(s for s in shows if s["section"] == "podcasts")
+    show_id = show["show_id"]
 
     payload = {
         "title": "New Title",
-        "author": "New Author",
+        "author": "Ignored Author",
         "publisher": "New Publisher House",
         "description": "New markdown description."
     }
@@ -1304,6 +1306,7 @@ def test_api_edit_show_with_publisher(client: TestClient) -> None:
     data = response.json()
     assert data["status"] == "success"
     assert data["show"]["publisher"] == "New Publisher House"
+    assert data["show"]["author"] == ""
     assert data["show"]["title"] == "New Title"
 
 

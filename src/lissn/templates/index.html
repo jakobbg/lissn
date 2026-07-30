@@ -81,7 +81,7 @@
       {% if books %}
         <div class="shows-grid">
           {% for show in books %}
-            <article class="show-card" id="show-{{ show.show_id }}" data-section="books" data-title="{{ show.title|lower }}" data-author="{{ (show.author or '')|lower }}" data-publisher="{{ (show.publisher or '')|lower }}" tabindex="-1">
+            <article class="show-card" id="show-{{ show.show_id }}" data-section="books" data-title="{{ show.title|lower }}" data-author="{{ (show.author or '')|lower }}" data-publisher="" tabindex="-1">
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
@@ -95,11 +95,9 @@
               </a>
               <div class="card-body">
                 <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
-                {% if show.author or show.publisher %}
+                {% if show.author %}
                   <div class="card-byline">
-                    {% if show.author %}by {{ show.author }}{% endif %}
-                    {% if show.author and show.publisher %} • {% endif %}
-                    {% if show.publisher %}<span class="publisher-label">{{ show.publisher }}</span>{% endif %}
+                    by {{ show.author }}
                   </div>
                 {% endif %}
                 <div class="meta-row">
@@ -124,7 +122,7 @@
       {% if podcasts %}
         <div class="shows-grid">
           {% for show in podcasts %}
-            <article class="show-card" id="show-{{ show.show_id }}" data-section="podcasts" data-title="{{ show.title|lower }}" data-author="{{ (show.author or '')|lower }}" data-publisher="{{ (show.publisher or '')|lower }}" tabindex="-1">
+            <article class="show-card" id="show-{{ show.show_id }}" data-section="podcasts" data-title="{{ show.title|lower }}" data-author="" data-publisher="{{ (show.publisher or '')|lower }}" tabindex="-1">
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
@@ -138,11 +136,9 @@
               </a>
               <div class="card-body">
                 <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
-                {% if show.author or show.publisher %}
+                {% if show.publisher %}
                   <div class="card-byline">
-                    {% if show.author %}by {{ show.author }}{% endif %}
-                    {% if show.author and show.publisher %} • {% endif %}
-                    {% if show.publisher %}<span class="publisher-label">{{ show.publisher }}</span>{% endif %}
+                    <span class="publisher-label">{{ show.publisher }}</span>
                   </div>
                 {% endif %}
                 <div class="meta-row">

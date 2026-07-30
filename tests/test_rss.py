@@ -63,23 +63,23 @@ def test_generate_rss_feed() -> None:
 
 
 def test_generate_rss_feed_with_author_podcast_and_book() -> None:
-    """Test that author/publisher is appended in parenthesis after title for podcasts and audiobooks."""
-    # Test Podcast section with author
+    """Test that publisher/author is appended in parenthesis after title for podcasts and audiobooks."""
+    # Test Podcast section with publisher
     podcast_data = {
         "show_id": "pod_1",
         "section": "podcasts",
         "title": "Tech Talk",
-        "author": "Jane Host",
+        "publisher": "Tech Media Corp",
         "description": "Podcast about tech.",
         "episodes": [],
     }
     xml_podcast = generate_rss_feed(show_data=podcast_data, base_url="http://localhost:8000")
     root_pod = ET.fromstring(xml_podcast.split("\n", 1)[1])
     chan_pod = root_pod.find("channel")
-    assert chan_pod.find("title").text == "Tech Talk (Jane Host)"
+    assert chan_pod.find("title").text == "Tech Talk (Tech Media Corp)"
     itunes_author_pod = chan_pod.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}author")
     assert itunes_author_pod is not None
-    assert itunes_author_pod.text == "Jane Host"
+    assert itunes_author_pod.text == "Tech Media Corp"
 
     # Test Audiobook (books section) with author/publisher
     book_data = {

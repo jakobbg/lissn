@@ -383,21 +383,21 @@ def test_incremental_scanning_and_pruning(temp_library, monkeypatch: pytest.Monk
 
 
 def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
-    """Test parsing, cache migration, and metadata updating for publisher field."""
+    """Test parsing, cache migration, and metadata updating for publisher field in podcasts."""
     from lissn.scanner import get_or_create_notes, ScannerCache, LibraryScanner
 
-    notes_dir = tmp_path / "books" / "Test Book"
+    notes_dir = tmp_path / "podcasts" / "Test Podcast"
     notes_dir.mkdir(parents=True, exist_ok=True)
     notes_file = notes_dir / "notes.md"
     notes_file.write_text(
-        '---\ntitle: "Test Book"\nauthor: "Test Author"\npublisher: "Penguin Random House"\n---\n\nBook description.',
+        '---\npodcast_name: "Test Podcast"\npublisher: "Penguin Random House"\n---\n\nPodcast description.',
         encoding="utf-8"
     )
 
-    parsed = get_or_create_notes(tmp_path, "books", "Test Book")
-    assert parsed["title"] == "Test Book"
-    assert parsed["author"] == "Test Author"
+    parsed = get_or_create_notes(tmp_path, "podcasts", "Test Podcast")
+    assert parsed["title"] == "Test Podcast"
     assert parsed["publisher"] == "Penguin Random House"
+    assert parsed["author"] == ""
 
     db_path = tmp_path / "cache.db"
     cache = ScannerCache(db_path)
@@ -405,11 +405,11 @@ def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
     show_id = "test_show_1"
     show_data = {
         "show_id": show_id,
-        "section": "books",
-        "title": "Test Book",
-        "author": "Test Author",
+        "section": "podcasts",
+        "title": "Test Podcast",
+        "author": "",
         "publisher": "Penguin Random House",
-        "podcast_name": "",
+        "podcast_name": "Test Podcast",
         "folder_path": str(tmp_path),
         "cover_path": "",
         "total_duration": 100.0,
@@ -418,8 +418,8 @@ def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
         "formatted_total_file_size": "1.0 KB",
         "added_timestamp": 123456789.0,
         "fuzzy_added_date": "Recently",
-        "description": "Book description.",
-        "description_html": "<p>Book description.</p>",
+        "description": "Podcast description.",
+        "description_html": "<p>Podcast description.</p>",
         "notes_path": str(notes_file),
     }
 
@@ -434,12 +434,12 @@ def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
     updated = scanner.update_show_metadata(
         show_id=show_id,
         title="Updated Title",
-        author="Updated Author",
         description="New description",
         publisher="HarperCollins"
     )
     assert updated is not None
     assert updated["publisher"] == "HarperCollins"
+    assert updated["author"] == ""
     
     notes_content = notes_file.read_text(encoding="utf-8")
     assert 'publisher: "HarperCollins"' in notes_content

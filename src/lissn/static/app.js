@@ -1589,6 +1589,12 @@ async function openEditModal(btn) {
   const coverPlaceholder = document.getElementById('edit-cover-placeholder');
   const errorEl = document.getElementById('edit-form-error');
 
+  const section = btn.getAttribute('data-section') || '';
+  const authorGroup = document.getElementById('edit-author-group');
+  const publisherGroup = document.getElementById('edit-publisher-group');
+  if (authorGroup) authorGroup.style.display = (section === 'podcasts') ? 'none' : 'block';
+  if (publisherGroup) publisherGroup.style.display = (section === 'books' || !section) ? 'none' : 'block';
+
   if (showIdInput) showIdInput.value = showId;
   if (titleInput) titleInput.value = title;
   if (authorInput) authorInput.value = author;
@@ -1680,16 +1686,23 @@ function updateShowPageDOM(show) {
   if (detailHeader) {
     const detailInfo = detailHeader.querySelector('.detail-info');
     if (detailInfo) {
-      let authorEl = detailInfo.querySelector('div[style*="color: var(--text-muted)"]');
-      if (show.author) {
-        if (!authorEl) {
-          authorEl = document.createElement('div');
-          authorEl.style.cssText = 'font-size: 1.1rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.8rem; font-weight: 500;';
-          if (detailTitle) detailTitle.after(authorEl);
+      let bylineEl = detailInfo.querySelector('div[style*="color: var(--text-muted)"]');
+      const isBook = show.section === 'books';
+      const labelText = isBook ? (show.author ? `by ${show.author}` : '') : (show.publisher ? show.publisher : '');
+
+      if (labelText) {
+        if (!bylineEl) {
+          bylineEl = document.createElement('div');
+          bylineEl.style.cssText = 'font-size: 1.1rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.8rem; font-weight: 500;';
+          if (detailTitle) detailTitle.after(bylineEl);
         }
-        authorEl.textContent = `by ${show.author}`;
-      } else if (authorEl) {
-        authorEl.remove();
+        if (isBook) {
+          bylineEl.textContent = labelText;
+        } else {
+          bylineEl.innerHTML = `<span class="publisher-label">${labelText}</span>`;
+        }
+      } else if (bylineEl) {
+        bylineEl.remove();
       }
     }
   }
@@ -1710,6 +1723,7 @@ function updateShowPageDOM(show) {
   if (editBtn) {
     editBtn.setAttribute('data-title', show.title);
     editBtn.setAttribute('data-author', show.author || '');
+    editBtn.setAttribute('data-publisher', show.publisher || '');
     editBtn.setAttribute('data-description', show.description || '');
   }
 }
