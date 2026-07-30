@@ -260,6 +260,7 @@ Add podcast description in markdown format here.
     author = ""
     publisher = ""
     podcast_name = show_name if section == "podcasts" else ""
+    cover = ""
     body = raw_text
 
     if raw_text.startswith("---"):
@@ -274,6 +275,8 @@ Add podcast description in markdown format here.
                         title = str(meta["title"]).strip()
                     if meta.get("podcast_name"):
                         podcast_name = str(meta["podcast_name"]).strip()
+                    if meta.get("cover"):
+                        cover = str(meta["cover"]).strip()
                     if section == "books":
                         if meta.get("author"):
                             author = str(meta["author"]).strip()
@@ -292,6 +295,7 @@ Add podcast description in markdown format here.
         "author": author,
         "publisher": publisher,
         "podcast_name": podcast_name,
+        "cover": cover,
         "description": body,
         "description_html": html_description,
         "notes_path": str(notes_file.resolve()),
@@ -549,7 +553,6 @@ class LibraryScanner:
                 continue
 
             show_id = generate_show_id(section, show_dir.name)
-            cover_path = find_cover_image(show_dir)
 
             # Load or create notes.md in cache directory
             notes_info = get_or_create_notes(
@@ -557,6 +560,26 @@ class LibraryScanner:
                 section=section,
                 show_name=show_dir.name,
             )
+
+            # Determine cover image: check custom cover in notes.md first, then existing DB cache, then auto-locate
+            cover_path = None
+            custom_cover_setting = notes_info.get("cover")
+            if custom_cover_setting:
+                candidate = show_dir / custom_cover_setting
+                if candidate.is_file():
+                    cover_path = candidate
+                elif Path(custom_cover_setting).is_file():
+                    cover_path = Path(custom_cover_setting)
+
+            if not cover_path and not force:
+                cached_show = self.cache.get_show(show_id)
+                if cached_show and cached_show.get("cover_path"):
+                    cached_cover = Path(cached_show["cover_path"])
+                    if cached_cover.is_file():
+                        cover_path = cached_cover
+
+            if not cover_path:
+                cover_path = find_cover_image(show_dir)
 
             audio_files = []
             for item in sorted(show_dir.rglob("*")):
@@ -667,9 +690,15 @@ class LibraryScanner:
         return {"books": books, "podcasts": podcasts, "total": len(books) + len(podcasts)}
 
     def update_show_metadata(
-        self, show_id: str, title: str, author: str = "", description: str = "", publisher: str = ""
+        self,
+        show_id: str,
+        title: str,
+        author: str = "",
+        description: str = "",
+        publisher: str = "",
+        cover: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Update title, author, publisher, and description for a show and re-save notes.md."""
+        """Update title, author, publisher, description, and optional cover choice for a show and re-save notes.md."""
         show = self.cache.get_show(show_id)
         if not show:
             return None
@@ -686,14 +715,30 @@ class LibraryScanner:
         title = title.strip()
         description = description.strip()
 
+        # Preserve existing cover if not explicitly provided
+        if cover is None:
+            if show.get("cover_path"):
+                show_dir = Path(show["folder_path"]).resolve()
+                cover_p = Path(show["cover_path"]).resolve()
+                try:
+                    cover = str(cover_p.relative_to(show_dir))
+                except ValueError:
+                    cover = cover_p.name
+            else:
+                cover = ""
+        else:
+            cover = cover.strip()
+
+        cover_line = f'\ncover: "{cover}"' if cover else ""
+
         if section == "books":
             author = author.strip()
             publisher = ""
-            yaml_header = f'---\ntitle: "{title}"\nauthor: "{author}"\n---'
+            yaml_header = f'---\ntitle: "{title}"\nauthor: "{author}"{cover_line}\n---'
         else:
             publisher = publisher.strip() or author.strip()
             author = ""
-            yaml_header = f'---\npodcast_name: "{title}"\npublisher: "{publisher}"\n---'
+            yaml_header = f'---\npodcast_name: "{title}"\npublisher: "{publisher}"{cover_line}\n---'
 
         notes_content = f"{yaml_header}\n\n{description}\n"
         notes_file.write_text(notes_content, encoding="utf-8")
@@ -708,17 +753,36 @@ class LibraryScanner:
         show["description"] = description
         show["description_html"] = html_description
         show["notes_path"] = str(notes_file.resolve())
+        if cover:
+            show_dir = Path(show["folder_path"]).resolve()
+            candidate_cover = show_dir / cover
+            if candidate_cover.is_file():
+                show["cover_path"] = str(candidate_cover.resolve())
 
         self.cache.save_show(show, show["episodes"])
         return show
 
     def update_show_cover(self, show_id: str, new_cover_path: Path) -> Optional[Dict[str, Any]]:
-        """Update cover_path for a show in database cache."""
+        """Update cover_path for a show in database cache and persist custom choice to notes.md."""
         show = self.cache.get_show(show_id)
         if not show:
             return None
 
-        show["cover_path"] = str(new_cover_path.resolve())
-        self.cache.save_show(show, show["episodes"])
-        return show
+        resolved_cover = new_cover_path.resolve()
+        show_dir = Path(show["folder_path"]).resolve()
+        try:
+            rel_cover = str(resolved_cover.relative_to(show_dir))
+        except ValueError:
+            rel_cover = resolved_cover.name
+
+        show["cover_path"] = str(resolved_cover)
+
+        return self.update_show_metadata(
+            show_id=show_id,
+            title=show["title"],
+            author=show.get("author", ""),
+            description=show.get("description", ""),
+            publisher=show.get("publisher", ""),
+            cover=rel_cover,
+        )
 

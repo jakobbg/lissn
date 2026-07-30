@@ -445,6 +445,44 @@ def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
     assert 'publisher: "HarperCollins"' in notes_content
 
 
+def test_custom_cover_persists_across_scanner_restart(temp_library) -> None:
+    """Test that setting a custom show cover persists in notes.md and is retained after a scanner restart."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
+
+    show_folder = books_dir / "The Great Gatsby"
+    default_cover = show_folder / "cover.jpg"
+    default_cover.write_bytes(b"default cover jpg content")
+
+    custom_cover = show_folder / "alternate_cover.png"
+    custom_cover.write_bytes(b"custom cover png content")
+
+    scanner1 = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
+    res1 = scanner1.scan_all()
+    show_id = res1["books"][0]["show_id"]
+
+    # Select custom cover
+    updated = scanner1.update_show_cover(show_id, custom_cover)
+    assert updated is not None
+    assert updated["cover_path"] == str(custom_cover.resolve())
+
+    # Verify notes.md updated with cover
+    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
+    assert 'cover: "alternate_cover.png"' in notes_file.read_text(encoding="utf-8")
+
+    # Simulate app restart with a fresh LibraryScanner instance
+    scanner2 = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
+    res2 = scanner2.scan_all()
+
+    restarted_show = scanner2.cache.get_show(show_id)
+    assert restarted_show is not None
+    assert restarted_show["cover_path"] == str(custom_cover.resolve())
+
+
+
 
 
 
