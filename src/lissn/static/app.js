@@ -1591,6 +1591,21 @@ function initMarkdownEditor() {
   document.addEventListener('click', (e) => {
     const downloadBtn = e.target.closest('.js-download-track, .js-download-show');
     if (downloadBtn) {
+      if (downloadBtn.classList.contains('js-download-show')) {
+        const totalBytes = parseInt(downloadBtn.getAttribute('data-total-bytes') || '0', 10);
+        const formattedSize = downloadBtn.getAttribute('data-formatted-size') || '';
+        const sizeInfo = formattedSize ? ` (${formattedSize})` : '';
+        const hundredMB = 100 * 1024 * 1024;
+        if (totalBytes >= hundredMB) {
+          const confirmMsg = `This show is over 100 MB${sizeInfo}.\n\nAudio files are already compressed, so the ZIP archive will be large with minimal additional compression.\n\nDo you want to proceed with downloading?`;
+          if (!window.confirm(confirmMsg)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return;
+          }
+        }
+      }
+
       if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
         e.preventDefault();
         const href = downloadBtn.getAttribute('href');
