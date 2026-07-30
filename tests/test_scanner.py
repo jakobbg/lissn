@@ -557,6 +557,55 @@ def test_sqlite_blob_cover_storage(temp_library) -> None:
     assert retained_blob[0] == raw_blob_bytes
 
 
+def test_legacy_sqlite_db_file_migration(tmp_path: Path) -> None:
+    """Test that a legacy lissn_cache.db inside cache_dir is moved intact to target db_path before DB connection."""
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    legacy_db = cache_dir / "lissn_cache.db"
+    target_db = tmp_path / "data" / "lissn_cache.db"
+
+    # Populate legacy_db with test show
+    from lissn.scanner import ScannerCache
+    legacy_cache = ScannerCache(legacy_db)
+    legacy_cache.save_show(
+        {
+            "show_id": "legacy_123",
+            "section": "books",
+            "title": "Legacy Book Title",
+            "author": "Legacy Author",
+            "publisher": "",
+            "podcast_name": "",
+            "folder_path": str(tmp_path),
+            "cover_path": "",
+            "total_duration": 50.0,
+            "formatted_duration": "50s",
+            "total_file_size": 512,
+            "formatted_total_file_size": "512 B",
+            "added_timestamp": 1000.0,
+            "fuzzy_added_date": "Long ago",
+            "description": "Legacy description",
+            "description_html": "<p>Legacy description</p>",
+            "notes_path": "",
+        },
+        [],
+    )
+
+    assert legacy_db.exists()
+    assert not target_db.exists()
+
+    # Launch LibraryScanner pointing to target_db
+    scanner = LibraryScanner(books_dir=tmp_path, podcasts_dir=tmp_path, cache_dir=cache_dir, db_path=target_db)
+
+    # Verify target_db exists and legacy_db was moved to target_db
+    assert target_db.exists()
+    assert not legacy_db.exists()
+
+    show = scanner.cache.get_show("legacy_123")
+    assert show is not None
+    assert show["title"] == "Legacy Book Title"
+    assert show["author"] == "Legacy Author"
+
+
 
 
 

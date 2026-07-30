@@ -636,6 +636,25 @@ class LibraryScanner:
         self.podcasts_dir = podcasts_dir
         self.cache_dir = cache_dir
         self.max_episodes_per_show = max_episodes_per_show
+
+        # Pre-connection legacy DB migration check:
+        # Move legacy_db (e.g. data/cache/lissn_cache.db) to db_path (data/lissn_cache.db) BEFORE ScannerCache opens connection
+        dirs_to_check = []
+        if cache_dir:
+            dirs_to_check.append(cache_dir)
+        default_cache = Path.cwd() / "data" / "cache"
+        if default_cache not in dirs_to_check:
+            dirs_to_check.append(default_cache)
+
+        for c_dir in dirs_to_check:
+            if c_dir.exists():
+                legacy_db = c_dir / "lissn_cache.db"
+                if legacy_db.is_file() and legacy_db.resolve() != db_path.resolve():
+                    if not db_path.exists() or db_path.stat().st_size == 0:
+                        db_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.move(str(legacy_db), str(db_path))
+                    break
+
         self.cache = ScannerCache(db_path)
 
     def scan_folder(self, section: str, root_dir: Path, force: bool = False) -> List[Dict[str, Any]]:
