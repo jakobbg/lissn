@@ -1063,18 +1063,13 @@ function updateAuthButtonUI() {
   const authBtn = document.getElementById('auth-btn');
   if (!authBtn) return;
 
-  if (!globalAuthState.passwordRequired) {
-    authBtn.hidden = true;
-    return;
-  }
-
   authBtn.hidden = false;
   if (globalAuthState.authenticated) {
     authBtn.textContent = '🚪 Log Out';
     authBtn.setAttribute('aria-label', 'Log out of session');
   } else {
-    authBtn.textContent = '🔑 Authenticate';
-    authBtn.setAttribute('aria-label', 'Authenticate session');
+    authBtn.textContent = '🔑 Log In';
+    authBtn.setAttribute('aria-label', 'Log in to session');
   }
 }
 

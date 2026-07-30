@@ -602,7 +602,7 @@ def test_protected_endpoints_require_auth(unauthenticated_client: TestClient, mo
 
 
 def test_authenticate_header_button_rendering_and_toggle(unauthenticated_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test header renders #auth-btn before #theme-toggle, showing Authenticate when unauthenticated and Log Out when logged in."""
+    """Test header always renders #auth-btn before #theme-toggle, showing Log In when unauthenticated and Log Out when logged in."""
     from lissn.app import config
 
     client = unauthenticated_client
@@ -615,7 +615,7 @@ def test_authenticate_header_button_rendering_and_toggle(unauthenticated_client:
 
     assert 'id="auth-btn"' in html_unauth
     assert 'class="auth-btn"' in html_unauth
-    assert "🔑 Authenticate" in html_unauth
+    assert "🔑 Log In" in html_unauth
     assert "🚪 Log Out" not in html_unauth
 
     # Verify #auth-btn appears before #theme-toggle in nav-actions
@@ -635,7 +635,7 @@ def test_authenticate_header_button_rendering_and_toggle(unauthenticated_client:
 
     assert 'id="auth-btn"' in html_auth
     assert "🚪 Log Out" in html_auth
-    assert "🔑 Authenticate" not in html_auth
+    assert "🔑 Log In" not in html_auth
 
 
 def test_edit_show_markdown_and_notes_file(client: TestClient) -> None:
