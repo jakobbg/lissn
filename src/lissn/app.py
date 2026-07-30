@@ -24,6 +24,16 @@ from lissn.config import Config
 from lissn.rss import generate_rss_feed
 from lissn.scanner import LibraryScanner, AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, list_show_images
 
+try:
+    import python_multipart  # noqa: F401
+    HAS_MULTIPART = True
+except ImportError:
+    try:
+        import multipart  # noqa: F401
+        HAS_MULTIPART = True
+    except ImportError:
+        HAS_MULTIPART = False
+
 # Register audio MIME types for audiobook and podcast formats
 mimetypes.add_type("audio/mp4", ".m4b")
 mimetypes.add_type("audio/mp4", ".m4a")
@@ -593,36 +603,45 @@ def api_select_show_cover(show_id: str, payload: SelectCoverRequest, request: Re
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB limit
 
 
-@app.post("/api/shows/{show_id}/upload-cover")
-async def api_upload_show_cover(show_id: str, request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
-    """Upload a new cover image file (WebP, PNG, JPEG; max 5MB) for a show."""
-    require_auth(request)
-    show = scanner.cache.get_show(show_id)
-    if not show:
-        raise HTTPException(status_code=404, detail="Show not found")
+if HAS_MULTIPART:
+    @app.post("/api/shows/{show_id}/upload-cover")
+    async def api_upload_show_cover(show_id: str, request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
+        """Upload a new cover image file (WebP, PNG, JPEG; max 5MB) for a show."""
+        require_auth(request)
+        show = scanner.cache.get_show(show_id)
+        if not show:
+            raise HTTPException(status_code=404, detail="Show not found")
 
-    ext = Path(file.filename or "").suffix.lower()
-    if ext not in IMAGE_EXTENSIONS:
+        ext = Path(file.filename or "").suffix.lower()
+        if ext not in IMAGE_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid image format. Allowed formats: WebP, PNG, JPEG (.webp, .png, .jpg, .jpeg).",
+            )
+
+        content = await file.read()
+        if len(content) > MAX_UPLOAD_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail="Image file exceeds maximum allowed size of 5MB.",
+            )
+
+        folder = Path(show["folder_path"])
+        timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        safe_filename = f"cover_{timestamp_str}{ext}"
+        dest_path = (folder / safe_filename).resolve()
+        dest_path.write_bytes(content)
+
+        updated = scanner.update_show_cover(show_id, dest_path)
+        return {"status": "success", "cover_path": str(dest_path), "filename": safe_filename}
+else:
+    @app.post("/api/shows/{show_id}/upload-cover")
+    async def api_upload_show_cover_disabled(show_id: str, request: Request) -> Dict[str, Any]:
+        """Fallback handler when python-multipart package is not installed."""
         raise HTTPException(
-            status_code=400,
-            detail="Invalid image format. Allowed formats: WebP, PNG, JPEG (.webp, .png, .jpg, .jpeg).",
+            status_code=501,
+            detail="File uploads require python-multipart. Install via 'pip install python-multipart' or 'pkg install py312-python-multipart'.",
         )
-
-    content = await file.read()
-    if len(content) > MAX_UPLOAD_SIZE:
-        raise HTTPException(
-            status_code=413,
-            detail="Image file exceeds maximum allowed size of 5MB.",
-        )
-
-    folder = Path(show["folder_path"])
-    timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    safe_filename = f"cover_{timestamp_str}{ext}"
-    dest_path = (folder / safe_filename).resolve()
-    dest_path.write_bytes(content)
-
-    updated = scanner.update_show_cover(show_id, dest_path)
-    return {"status": "success", "cover_path": str(dest_path), "filename": safe_filename}
 
 
 @app.post("/api/login")
