@@ -11,6 +11,7 @@ from typing import Any, Dict
 from urllib.parse import quote
 from xml.etree import ElementTree as ET
 
+from lissn.scanner import episode_sort_key
 from lissn.version import get_app_metadata
 
 logger = logging.getLogger("lissn.rss")
@@ -157,7 +158,8 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
             {"href": cover_url},
         )
 
-    episodes = show_data.get("episodes", [])
+    episodes = list(show_data.get("episodes", []))
+    episodes.sort(key=lambda ep: episode_sort_key(ep.get("filename") or ep.get("title") or ""))
     for ep in episodes:
         item = ET.SubElement(channel, "item")
         ET.SubElement(item, "title").text = ep["title"]

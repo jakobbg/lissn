@@ -129,3 +129,71 @@ def test_generate_rss_feed_with_author_podcast_and_book() -> None:
     assert itunes_author_book is not None
     assert itunes_author_book.text == "F. Scott Fitzgerald"
 
+
+def test_generate_rss_feed_sorts_episodes_folder_first_naturally() -> None:
+    """Test generate_rss_feed outputs items sorted by folder first, then naturally by filename."""
+    show_data = {
+        "show_id": "out_of_order_book",
+        "section": "books",
+        "title": "Out of Order Book",
+        "description": "Book with jumbled episodes.",
+        "episodes": [
+            {
+                "episode_id": "ep_10",
+                "title": "CD 10 Track 1",
+                "filename": "CD 10/01.mp3",
+                "file_size": 1000,
+                "duration": 100.0,
+                "added_timestamp": 1700000000.0,
+            },
+            {
+                "episode_id": "ep_2",
+                "title": "CD 2 Track 1",
+                "filename": "CD 2/01.mp3",
+                "file_size": 1000,
+                "duration": 100.0,
+                "added_timestamp": 1700000000.0,
+            },
+            {
+                "episode_id": "ep_1_10",
+                "title": "CD 1 Track 10",
+                "filename": "CD 1/10.mp3",
+                "file_size": 1000,
+                "duration": 100.0,
+                "added_timestamp": 1700000000.0,
+            },
+            {
+                "episode_id": "ep_1_2",
+                "title": "CD 1 Track 2",
+                "filename": "CD 1/02.mp3",
+                "file_size": 1000,
+                "duration": 100.0,
+                "added_timestamp": 1700000000.0,
+            },
+            {
+                "episode_id": "ep_intro",
+                "title": "Intro",
+                "filename": "00_Intro.mp3",
+                "file_size": 1000,
+                "duration": 100.0,
+                "added_timestamp": 1700000000.0,
+            },
+        ],
+    }
+
+    xml_output = generate_rss_feed(show_data=show_data, base_url="http://localhost:8000")
+    root = ET.fromstring(xml_output.split("\n", 1)[1])
+    channel = root.find("channel")
+    items = channel.findall("item")
+
+    item_titles = [item.find("title").text for item in items]
+    expected_titles = [
+        "Intro",
+        "CD 1 Track 2",
+        "CD 1 Track 10",
+        "CD 2 Track 1",
+        "CD 10 Track 1",
+    ]
+    assert item_titles == expected_titles
+
+

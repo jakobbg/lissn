@@ -8,9 +8,10 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import logging
-from pathlib import Path
+from pathlib import Path, PurePath
+import re
 import sqlite3
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import markdown
 import mutagen
@@ -19,6 +20,40 @@ logger = logging.getLogger("lissn.scanner")
 
 AUDIO_EXTENSIONS = {".mp3", ".m4a", ".m4b", ".aac", ".flac", ".ogg", ".opus", ".wav"}
 COVER_NAMES = ["cover.jpg", "cover.jpeg", "cover.png", "folder.jpg", "folder.png", "poster.jpg"]
+
+
+def natural_sort_key(s: str) -> Tuple[Tuple[Union[int, str], ...], str]:
+    """
+    Generate a natural sort key for a string.
+    Splits string into numeric and non-numeric tokens so numbers sort numerically.
+    Includes the lowercased original string as a tie-breaker.
+    """
+    s_str = str(s)
+    tokens = tuple(
+        int(text) if text.isdigit() else text.lower()
+        for text in re.split(r"(\d+)", s_str)
+    )
+    return (tokens, s_str.lower())
+
+
+def episode_sort_key(
+    filename_or_path: Union[str, Path, PurePath]
+) -> Tuple[Tuple[Tuple[Union[int, str], ...], str], Tuple[Tuple[Union[int, str], ...], str]]:
+    """
+    Generate sort key for an episode relative file path:
+    1. Primary sort: Folder path components (folder first, naturally sorted).
+       Files in root show directory have empty folder tuple () and sort before subfolders.
+    2. Secondary sort: Filename in folder (naturally sorted).
+    """
+    norm_path = str(filename_or_path).replace("\\", "/")
+    p = PurePath(norm_path)
+    folder_parts = p.parts[:-1]
+    file_name = p.parts[-1] if p.parts else ""
+
+    folder_key = tuple(natural_sort_key(part) for part in folder_parts)
+    file_key = natural_sort_key(file_name)
+
+    return (folder_key, file_key)
 
 
 
@@ -328,6 +363,10 @@ class ScannerCache:
     def save_show(self, show_data: Dict[str, Any], episodes: List[Dict[str, Any]]) -> None:
         """Save show and its associated episodes into the database cache."""
         now = datetime.now(timezone.utc).timestamp()
+        sorted_episodes = sorted(
+            episodes,
+            key=lambda ep: episode_sort_key(ep.get("filename") or ep.get("title") or ""),
+        )
         with self._get_connection() as conn:
             conn.execute(
                 """
@@ -365,7 +404,7 @@ class ScannerCache:
             )
 
             conn.execute("DELETE FROM episodes WHERE show_id = ?", (show_data["show_id"],))
-            for ep in episodes:
+            for ep in sorted_episodes:
                 conn.execute(
                     """
                     INSERT INTO episodes (
@@ -419,9 +458,11 @@ class ScannerCache:
                 show.pop("cover_data", None)
 
             ep_cursor = conn.execute(
-                "SELECT * FROM episodes WHERE show_id = ? ORDER BY filename ASC", (show_id,)
+                "SELECT * FROM episodes WHERE show_id = ?", (show_id,)
             )
-            show["episodes"] = [dict(ep) for ep in ep_cursor.fetchall()]
+            episodes = [dict(ep) for ep in ep_cursor.fetchall()]
+            episodes.sort(key=lambda ep: episode_sort_key(ep.get("filename") or ep.get("title") or ""))
+            show["episodes"] = episodes
             return show
 
     def get_show_cover_data(self, show_id: str) -> Optional[Tuple[bytes, str]]:
@@ -520,13 +561,15 @@ class LibraryScanner:
                 cover_path = find_cover_image(show_dir)
 
             audio_files = []
-            for item in sorted(show_dir.rglob("*")):
+            for item in show_dir.rglob("*"):
                 if item.is_file() and item.suffix.lower() in AUDIO_EXTENSIONS:
                     audio_files.append(item)
 
             if not audio_files:
                 logger.debug(f"No valid audio files found in {show_dir}, skipping")
                 continue
+
+            audio_files.sort(key=lambda item: episode_sort_key(item.relative_to(show_dir)))
 
             # Limit number of episodes per show based on max_episodes_per_show setting
             audio_files = audio_files[: self.max_episodes_per_show]

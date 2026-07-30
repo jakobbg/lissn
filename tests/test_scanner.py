@@ -473,6 +473,80 @@ def test_sqlite_blob_cover_storage(temp_library) -> None:
     assert retained_blob[0] == raw_blob_bytes
 
 
+def test_episode_sort_key_folder_first_and_natural_sorting() -> None:
+    """Test episode_sort_key orders files folder-first and naturally by filename."""
+    from lissn.scanner import episode_sort_key
+
+    raw_files = [
+        "CD 10/01 Track.mp3",
+        "CD 2/01 Track.mp3",
+        "CD 1/10 Track.mp3",
+        "CD 1/02 Track.mp3",
+        "CD 1/01 Track.mp3",
+        "00 Intro.mp3",
+    ]
+
+    sorted_files = sorted(raw_files, key=episode_sort_key)
+
+    expected = [
+        "00 Intro.mp3",
+        "CD 1/01 Track.mp3",
+        "CD 1/02 Track.mp3",
+        "CD 1/10 Track.mp3",
+        "CD 2/01 Track.mp3",
+        "CD 10/01 Track.mp3",
+    ]
+
+    assert sorted_files == expected
+
+
+def test_library_scanner_sorts_episodes_folder_first_naturally(tmp_path: Path) -> None:
+    """Test LibraryScanner scans and caches episodes sorted by folder first, then naturally by filename."""
+    books_dir = tmp_path / "books"
+    podcasts_dir = tmp_path / "podcasts"
+    cache_dir = tmp_path / "cache"
+    db_path = cache_dir / "test.db"
+
+    books_dir.mkdir()
+    podcasts_dir.mkdir()
+    cache_dir.mkdir()
+
+    book_dir = books_dir / "Complex Audiobook"
+    book_dir.mkdir()
+
+    (book_dir / "CD 10").mkdir()
+    (book_dir / "CD 2").mkdir()
+    (book_dir / "CD 1").mkdir()
+
+    (book_dir / "CD 10" / "01.wav").write_bytes(b"data")
+    (book_dir / "CD 2" / "01.wav").write_bytes(b"data")
+    (book_dir / "CD 1" / "10.wav").write_bytes(b"data")
+    (book_dir / "CD 1" / "02.wav").write_bytes(b"data")
+    (book_dir / "CD 1" / "01.wav").write_bytes(b"data")
+    (book_dir / "00_Intro.wav").write_bytes(b"data")
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=db_path
+    )
+    res = scanner.scan_all()
+    assert res["total"] == 1
+
+    show = scanner.cache.get_show(res["books"][0]["show_id"])
+    assert show is not None
+
+    filenames = [ep["filename"] for ep in show["episodes"]]
+    expected_filenames = [
+        "00_Intro.wav",
+        "CD 1/01.wav",
+        "CD 1/02.wav",
+        "CD 1/10.wav",
+        "CD 2/01.wav",
+        "CD 10/01.wav",
+    ]
+    assert filenames == expected_filenames
+
+
+
 
 
 

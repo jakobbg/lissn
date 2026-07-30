@@ -1482,6 +1482,77 @@ def test_mobile_header_buttons_and_back_button_scoping(client: TestClient) -> No
     assert ".github-link-btn svg.btn-icon" in css_text
 
 
+def test_show_page_and_api_episodes_folder_first_naturally_sorted(tmp_path: Path, client: TestClient) -> None:
+    """Test that /show/{show_id} HTML track listing and /api/shows/{show_id} return episodes sorted by folder first, then naturally by filename."""
+    from lissn.scanner import LibraryScanner
+    import lissn.app as app_mod
+
+    books_dir = tmp_path / "books"
+    podcasts_dir = tmp_path / "podcasts"
+    cache_dir = tmp_path / "cache"
+    db_path = cache_dir / "test.db"
+
+    books_dir.mkdir()
+    podcasts_dir.mkdir()
+    cache_dir.mkdir()
+
+    book_dir = books_dir / "Jumbled Series"
+    book_dir.mkdir()
+
+    (book_dir / "CD 10").mkdir()
+    (book_dir / "CD 2").mkdir()
+    (book_dir / "CD 1").mkdir()
+
+    (book_dir / "CD 10" / "01.mp3").write_bytes(b"data 10")
+    (book_dir / "CD 2" / "01.mp3").write_bytes(b"data 2")
+    (book_dir / "CD 1" / "10.mp3").write_bytes(b"data 1_10")
+    (book_dir / "CD 1" / "02.mp3").write_bytes(b"data 1_2")
+    (book_dir / "00_Intro.mp3").write_bytes(b"data intro")
+
+    test_scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=db_path
+    )
+    test_scanner.scan_all()
+
+    old_scanner = app_mod.scanner
+    app_mod.scanner = test_scanner
+    try:
+        shows_res = client.get("/api/shows")
+        shows = shows_res.json()["shows"]
+        show_id = shows[0]["show_id"]
+
+        # API endpoint check
+        api_res = client.get(f"/api/shows/{show_id}")
+        assert api_res.status_code == 200
+        episodes = api_res.json()["episodes"]
+        filenames = [ep["filename"] for ep in episodes]
+        expected_filenames = [
+            "00_Intro.mp3",
+            "CD 1/02.mp3",
+            "CD 1/10.mp3",
+            "CD 2/01.mp3",
+            "CD 10/01.mp3",
+        ]
+        assert filenames == expected_filenames
+
+        # HTML track listing check
+        html_res = client.get(f"/show/{show_id}")
+        assert html_res.status_code == 200
+        html_text = html_res.text
+        # Verify tracks appear in exact order in HTML
+        pos_intro = html_text.find("00_Intro.mp3")
+        pos_cd1_2 = html_text.find("CD 1/02.mp3")
+        pos_cd1_10 = html_text.find("CD 1/10.mp3")
+        pos_cd2_1 = html_text.find("CD 2/01.mp3")
+        pos_cd10_1 = html_text.find("CD 10/01.mp3")
+
+        assert pos_intro != -1
+        assert pos_intro < pos_cd1_2 < pos_cd1_10 < pos_cd2_1 < pos_cd10_1
+    finally:
+        app_mod.scanner = old_scanner
+
+
+
 
 
 
