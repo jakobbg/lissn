@@ -32,6 +32,8 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["src"]
 filterwarnings = [
+    "ignore:.*Couldn't import C tracer.*:Warning",
+    "ignore::coverage.exceptions.CoverageWarning",
     "ignore:.*httpx.*:Warning",
     "ignore:.*starlette.testclient.*:Warning",
     "ignore::Warning:fastapi.testclient",
