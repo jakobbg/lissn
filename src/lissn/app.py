@@ -288,8 +288,9 @@ def show_detail_page(show_id: str, request: Request) -> Response:
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
 
-    cover_path = Path(show["cover_path"]) if show.get("cover_path") else None
-    colors = get_show_colors(cover_path, show["show_id"])
+    cover_info = scanner.cache.get_show_cover_data(show["show_id"])
+    cover_source = cover_info[0] if cover_info else (Path(show["cover_path"]) if show.get("cover_path") else None)
+    colors = get_show_colors(cover_source, show["show_id"])
 
     response = templates.TemplateResponse(
         request,
@@ -340,6 +341,21 @@ def get_cover_image(show_id: str, ext: Optional[str] = None, request: Request = 
             candidate = (folder / file).resolve()
             if candidate.is_relative_to(folder) and candidate.is_file() and candidate.suffix.lower() in IMAGE_EXTENSIONS:
                 cover_file = candidate
+
+        if not cover_file and not file:
+            cover_info = scanner.cache.get_show_cover_data(show["show_id"])
+            if cover_info:
+                cover_bytes, mime_type = cover_info
+                etag = f'"{hashlib.md5(cover_bytes).hexdigest()}"'
+                headers = {
+                    "ETag": etag,
+                    "Cache-Control": "no-cache, must-revalidate",
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": str(len(cover_bytes)),
+                }
+                if check_conditional_headers(request, etag=etag):
+                    return Response(status_code=304, headers=headers)
+                return Response(content=cover_bytes, media_type=mime_type, headers=headers)
 
         if not cover_file and show.get("cover_path"):
             cover_file = Path(show["cover_path"])
@@ -572,8 +588,9 @@ def api_get_show(show_id: str) -> Response:
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
-    cover_path = Path(show["cover_path"]) if show.get("cover_path") else None
-    show["show_colors"] = get_show_colors(cover_path, show["show_id"])
+    cover_info = scanner.cache.get_show_cover_data(show["show_id"])
+    cover_source = cover_info[0] if cover_info else (Path(show["cover_path"]) if show.get("cover_path") else None)
+    show["show_colors"] = get_show_colors(cover_source, show["show_id"])
     return show
 
 
@@ -592,8 +609,9 @@ def api_edit_show(show_id: str, payload: EditShowRequest, request: Request) -> D
     if not updated_show:
         raise HTTPException(status_code=404, detail="Show not found")
 
-    cover_path = Path(updated_show["cover_path"]) if updated_show.get("cover_path") else None
-    updated_show["show_colors"] = get_show_colors(cover_path, show_id)
+    cover_info = scanner.cache.get_show_cover_data(show_id)
+    cover_source = cover_info[0] if cover_info else (Path(updated_show["cover_path"]) if updated_show.get("cover_path") else None)
+    updated_show["show_colors"] = get_show_colors(cover_source, show_id)
     return {"status": "success", "show": updated_show}
 
 
@@ -629,9 +647,15 @@ def api_select_show_cover(show_id: str, payload: SelectCoverRequest, request: Re
 
     updated = scanner.update_show_cover(show_id, target_file)
     if updated:
-        cover_path = Path(updated["cover_path"]) if updated.get("cover_path") else None
-        updated["show_colors"] = get_show_colors(cover_path, show_id)
-    return {"status": "success", "cover_path": str(target_file), "show": updated}
+        cover_info = scanner.cache.get_show_cover_data(show_id)
+        cover_source = cover_info[0] if cover_info else (Path(updated["cover_path"]) if updated.get("cover_path") else None)
+        updated["show_colors"] = get_show_colors(cover_source, show_id)
+    return {
+        "status": "success",
+        "cover_path": str(target_file),
+        "cover_url": f"/covers/{show_id}",
+        "show": updated,
+    }
 
 
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB limit
@@ -660,17 +684,39 @@ if HAS_MULTIPART:
                 detail="Image file exceeds maximum allowed size of 5MB.",
             )
 
-        folder = Path(show["folder_path"])
+        folder = Path(show["folder_path"]).resolve()
         timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         safe_filename = f"cover_{timestamp_str}{ext}"
         dest_path = (folder / safe_filename).resolve()
-        dest_path.write_bytes(content)
+        try:
+            dest_path.write_bytes(content)
+        except Exception:
+            pass
 
-        updated = scanner.update_show_cover(show_id, dest_path)
+        mime_type = file.content_type
+        if not mime_type or mime_type == "application/octet-stream":
+            if ext in [".jpg", ".jpeg"]:
+                mime_type = "image/jpeg"
+            elif ext == ".png":
+                mime_type = "image/png"
+            elif ext == ".webp":
+                mime_type = "image/webp"
+
+        updated = scanner.update_show_cover_data(
+            show_id, content, mime_type, safe_filename, cover_path=dest_path if dest_path.is_file() else None
+        )
         if updated:
-            cover_path = Path(updated["cover_path"]) if updated.get("cover_path") else None
-            updated["show_colors"] = get_show_colors(cover_path, show_id)
-        return {"status": "success", "cover_path": str(dest_path), "filename": safe_filename, "show": updated}
+            cover_info = scanner.cache.get_show_cover_data(show_id)
+            cover_source = cover_info[0] if cover_info else (Path(updated["cover_path"]) if updated.get("cover_path") else None)
+            updated["show_colors"] = get_show_colors(cover_source, show_id)
+        cover_path_str = str(dest_path) if dest_path.is_file() else f"/covers/{show_id}"
+        return {
+            "status": "success",
+            "cover_path": cover_path_str,
+            "cover_url": f"/covers/{show_id}",
+            "filename": safe_filename,
+            "show": updated,
+        }
 else:
     @app.post("/api/shows/{show_id}/upload-cover")
     async def api_upload_show_cover_disabled(show_id: str, request: Request) -> Dict[str, Any]:

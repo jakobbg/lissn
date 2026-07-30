@@ -379,6 +379,12 @@ class ScannerCache:
                 conn.execute("ALTER TABLE shows ADD COLUMN formatted_total_file_size TEXT DEFAULT ''")
             if "publisher" not in show_cols:
                 conn.execute("ALTER TABLE shows ADD COLUMN publisher TEXT DEFAULT ''")
+            if "cover_data" not in show_cols:
+                conn.execute("ALTER TABLE shows ADD COLUMN cover_data BLOB")
+            if "cover_mime" not in show_cols:
+                conn.execute("ALTER TABLE shows ADD COLUMN cover_mime TEXT DEFAULT ''")
+            if "cover_filename" not in show_cols:
+                conn.execute("ALTER TABLE shows ADD COLUMN cover_filename TEXT DEFAULT ''")
 
             cursor = conn.execute("PRAGMA table_info(episodes)")
             ep_cols = {row["name"] for row in cursor.fetchall()}
@@ -404,8 +410,8 @@ class ScannerCache:
                     show_id, section, title, author, publisher, podcast_name, folder_path, cover_path,
                     total_duration, formatted_duration, total_file_size, formatted_total_file_size,
                     added_timestamp, fuzzy_added_date, description, description_html, notes_path,
-                    episode_count, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    cover_data, cover_mime, cover_filename, episode_count, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     show_data["show_id"],
@@ -425,6 +431,9 @@ class ScannerCache:
                     show_data.get("description", ""),
                     show_data.get("description_html", ""),
                     show_data.get("notes_path", ""),
+                    show_data.get("cover_data"),
+                    show_data.get("cover_mime", ""),
+                    show_data.get("cover_filename", ""),
                     len(episodes),
                     now,
                 ),
@@ -466,9 +475,14 @@ class ScannerCache:
                 )
             else:
                 cursor = conn.execute("SELECT * FROM shows ORDER BY added_timestamp DESC")
-            return [dict(row) for row in cursor.fetchall()]
+            shows = []
+            for row in cursor.fetchall():
+                d = dict(row)
+                d.pop("cover_data", None)
+                shows.append(d)
+            return shows
 
-    def get_show(self, show_id: str) -> Optional[Dict[str, Any]]:
+    def get_show(self, show_id: str, include_cover_data: bool = False) -> Optional[Dict[str, Any]]:
         """Retrieve single show data with associated episodes."""
         with self._get_connection() as conn:
             cursor = conn.execute("SELECT * FROM shows WHERE show_id = ?", (show_id,))
@@ -476,12 +490,23 @@ class ScannerCache:
             if not row:
                 return None
             show = dict(row)
+            if not include_cover_data:
+                show.pop("cover_data", None)
 
             ep_cursor = conn.execute(
                 "SELECT * FROM episodes WHERE show_id = ? ORDER BY filename ASC", (show_id,)
             )
             show["episodes"] = [dict(ep) for ep in ep_cursor.fetchall()]
             return show
+
+    def get_show_cover_data(self, show_id: str) -> Optional[Tuple[bytes, str]]:
+        """Retrieve binary cover_data BLOB and cover_mime string for a given show_id."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("SELECT cover_data, cover_mime FROM shows WHERE show_id = ?", (show_id,))
+            row = cursor.fetchone()
+            if row and row["cover_data"]:
+                return row["cover_data"], row["cover_mime"] or "image/jpeg"
+            return None
 
     def get_episodes_map(self, show_id: str) -> Dict[str, Dict[str, Any]]:
         """Retrieve map of resolved file_path -> episode data dict for a given show_id."""
@@ -653,26 +678,37 @@ class LibraryScanner:
             if earliest_timestamp == float("inf"):
                 earliest_timestamp = show_dir.stat().st_mtime
 
-            # Derive title: use notes.md title or podcast_name if custom, else folder name
-            display_title = notes_info["title"] or show_dir.name
+            # Fetch existing cached show metadata from SQLite to preserve custom cover BLOB & metadata across scans
+            cached_show = self.cache.get_show(show_id, include_cover_data=True)
+            cached_cover_data = cached_show.get("cover_data") if cached_show else None
+            cached_cover_mime = cached_show.get("cover_mime", "") if cached_show else ""
+            cached_cover_filename = cached_show.get("cover_filename", "") if cached_show else ""
+
+            # Derive metadata: preference given to existing SQLite edits if force is False
+            display_title = (cached_show.get("title") if (cached_show and not force) else None) or notes_info["title"] or show_dir.name
+            description = (cached_show.get("description") if (cached_show and not force) else None) or notes_info.get("description", "")
+            description_html = (cached_show.get("description_html") if (cached_show and not force) else None) or notes_info.get("description_html", "")
 
             show_data = {
                 "show_id": show_id,
                 "section": section,
                 "title": display_title,
-                "author": notes_info.get("author", "") if section == "books" else "",
-                "publisher": notes_info.get("publisher", "") if section == "podcasts" else "",
-                "podcast_name": notes_info.get("podcast_name", display_title),
+                "author": (cached_show.get("author") if (cached_show and not force) else None) or (notes_info.get("author", "") if section == "books" else ""),
+                "publisher": (cached_show.get("publisher") if (cached_show and not force) else None) or (notes_info.get("publisher", "") if section == "podcasts" else ""),
+                "podcast_name": (cached_show.get("podcast_name") if (cached_show and not force) else None) or notes_info.get("podcast_name", display_title),
                 "folder_path": str(show_dir.resolve()),
                 "cover_path": str(cover_path.resolve()) if cover_path else None,
+                "cover_data": cached_cover_data,
+                "cover_mime": cached_cover_mime,
+                "cover_filename": cached_cover_filename,
                 "total_duration": total_duration,
                 "formatted_duration": format_duration(total_duration),
                 "total_file_size": total_file_size,
                 "formatted_total_file_size": format_file_size(total_file_size),
                 "added_timestamp": earliest_timestamp,
                 "fuzzy_added_date": format_fuzzy_date(earliest_timestamp),
-                "description": notes_info.get("description", ""),
-                "description_html": notes_info.get("description_html", ""),
+                "description": description,
+                "description_html": description_html,
                 "notes_path": notes_info.get("notes_path", ""),
             }
 
@@ -698,52 +734,45 @@ class LibraryScanner:
         publisher: str = "",
         cover: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Update title, author, publisher, description, and optional cover choice for a show and re-save notes.md."""
-        show = self.cache.get_show(show_id)
+        """Update title, author, publisher, description, and optional cover choice for a show in SQLite database."""
+        show = self.cache.get_show(show_id, include_cover_data=True)
         if not show:
             return None
-
-        notes_path_str = show.get("notes_path")
-        if notes_path_str and Path(notes_path_str).parent.exists():
-            notes_file = Path(notes_path_str)
-        else:
-            folder_name = Path(show["folder_path"]).name
-            notes_file = self.cache_dir / show["section"] / folder_name / "notes.md"
-            notes_file.parent.mkdir(parents=True, exist_ok=True)
 
         section = show["section"]
         title = title.strip()
         description = description.strip()
 
-        # Preserve existing cover if not explicitly provided
-        if cover is None:
-            if show.get("cover_path"):
-                show_dir = Path(show["folder_path"]).resolve()
-                cover_p = Path(show["cover_path"]).resolve()
-                try:
-                    cover = str(cover_p.relative_to(show_dir))
-                except ValueError:
-                    cover = cover_p.name
-            else:
-                cover = ""
-        else:
-            cover = cover.strip()
-
-        cover_line = f'\ncover: "{cover}"' if cover else ""
-
         if section == "books":
             author = author.strip()
             publisher = ""
-            yaml_header = f'---\ntitle: "{title}"\nauthor: "{author}"{cover_line}\n---'
         else:
             publisher = publisher.strip() or author.strip()
             author = ""
-            yaml_header = f'---\npodcast_name: "{title}"\npublisher: "{publisher}"{cover_line}\n---'
-
-        notes_content = f"{yaml_header}\n\n{description}\n"
-        notes_file.write_text(notes_content, encoding="utf-8")
 
         html_description = markdown.markdown(description, extensions=["extra"]) if description else ""
+
+        if cover:
+            show["cover_filename"] = cover
+            show_dir = Path(show["folder_path"]).resolve()
+            candidate_cover = show_dir / cover
+            if candidate_cover.is_file():
+                show["cover_path"] = str(candidate_cover.resolve())
+
+        notes_path_str = show.get("notes_path")
+        if notes_path_str:
+            try:
+                notes_file = Path(notes_path_str)
+                notes_file.parent.mkdir(parents=True, exist_ok=True)
+                cover_val = cover or show.get("cover_filename") or ""
+                cover_line = f'\ncover: "{cover_val}"' if cover_val else ""
+                if section == "books":
+                    yaml_hdr = f'---\ntitle: "{title}"\nauthor: "{author}"{cover_line}\n---'
+                else:
+                    yaml_hdr = f'---\npodcast_name: "{title}"\npublisher: "{publisher}"{cover_line}\n---'
+                notes_file.write_text(f"{yaml_hdr}\n\n{description}\n", encoding="utf-8")
+            except Exception:
+                pass
 
         show["title"] = title
         show["author"] = author
@@ -752,23 +781,47 @@ class LibraryScanner:
             show["podcast_name"] = title
         show["description"] = description
         show["description_html"] = html_description
-        show["notes_path"] = str(notes_file.resolve())
-        if cover:
-            show_dir = Path(show["folder_path"]).resolve()
-            candidate_cover = show_dir / cover
-            if candidate_cover.is_file():
-                show["cover_path"] = str(candidate_cover.resolve())
 
         self.cache.save_show(show, show["episodes"])
-        return show
+        return self.cache.get_show(show_id)
+
+    def update_show_cover_data(
+        self, show_id: str, cover_bytes: bytes, mime_type: str, filename: str, cover_path: Optional[Path] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Update cover image binary BLOB in database cache and optional file path."""
+        show = self.cache.get_show(show_id, include_cover_data=True)
+        if not show:
+            return None
+
+        show["cover_data"] = cover_bytes
+        show["cover_mime"] = mime_type
+        show["cover_filename"] = filename
+        if cover_path:
+            show["cover_path"] = str(cover_path.resolve())
+
+        self.cache.save_show(show, show["episodes"])
+        return self.cache.get_show(show_id)
 
     def update_show_cover(self, show_id: str, new_cover_path: Path) -> Optional[Dict[str, Any]]:
-        """Update cover_path for a show in database cache and persist custom choice to notes.md."""
-        show = self.cache.get_show(show_id)
+        """Update cover_path and persist cover image binary BLOB in SQLite database."""
+        show = self.cache.get_show(show_id, include_cover_data=True)
         if not show:
             return None
 
         resolved_cover = new_cover_path.resolve()
+        if not resolved_cover.is_file():
+            return None
+
+        content = resolved_cover.read_bytes()
+        ext = resolved_cover.suffix.lower()
+        mime = "image/jpeg"
+        if ext == ".png":
+            mime = "image/png"
+        elif ext == ".webp":
+            mime = "image/webp"
+        elif ext == ".svg":
+            mime = "image/svg+xml"
+
         show_dir = Path(show["folder_path"]).resolve()
         try:
             rel_cover = str(resolved_cover.relative_to(show_dir))
@@ -776,6 +829,11 @@ class LibraryScanner:
             rel_cover = resolved_cover.name
 
         show["cover_path"] = str(resolved_cover)
+        show["cover_data"] = content
+        show["cover_mime"] = mime
+        show["cover_filename"] = rel_cover
+
+        self.cache.save_show(show, show["episodes"])
 
         return self.update_show_metadata(
             show_id=show_id,

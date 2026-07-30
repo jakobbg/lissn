@@ -8,7 +8,8 @@ import colorsys
 import hashlib
 import math
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
+import io
 
 try:
     from PIL import Image
@@ -46,17 +47,24 @@ def generate_fallback_colors(
 
 
 def extract_dominant_colors(
-    image_path: Path, show_id: str
+    image_source: Optional[Union[Path, bytes]], show_id: str
 ) -> Tuple[Tuple[int, int, int], Tuple[int, int, int], Tuple[int, int, int]]:
     """
-    Extract primary base, secondary base, and accent colors from an image cover file.
+    Extract primary base, secondary base, and accent colors from an image cover file or raw binary bytes.
     Falls back to deterministic color generation if PIL is unavailable or image fails to load.
     """
-    if Image is None or not image_path.exists():
+    if Image is None or image_source is None:
         return generate_fallback_colors(show_id)
 
     try:
-        with Image.open(image_path) as img:
+        if isinstance(image_source, bytes):
+            img_obj = Image.open(io.BytesIO(image_source))
+        elif isinstance(image_source, Path) and image_source.exists():
+            img_obj = Image.open(image_source)
+        else:
+            return generate_fallback_colors(show_id)
+
+        with img_obj as img:
             img = img.convert("RGB")
             img = img.resize((100, 100))
 
@@ -122,15 +130,15 @@ def extract_dominant_colors(
     return generate_fallback_colors(show_id)
 
 
-def get_show_colors(cover_path: Optional[Path], show_id: str) -> Dict[str, str]:
+def get_show_colors(image_source: Optional[Union[Path, bytes]], show_id: str) -> Dict[str, str]:
     """
     Retrieve CSS variable declarations and color strings for a show background gradient.
 
     Returns:
         Dict containing color RGB strings and CSS inline style rules.
     """
-    if cover_path and cover_path.exists():
-        color1, color2, color3 = extract_dominant_colors(cover_path, show_id)
+    if image_source:
+        color1, color2, color3 = extract_dominant_colors(image_source, show_id)
     else:
         color1, color2, color3 = generate_fallback_colors(show_id)
 

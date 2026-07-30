@@ -482,6 +482,34 @@ def test_custom_cover_persists_across_scanner_restart(temp_library) -> None:
     assert restarted_show["cover_path"] == str(custom_cover.resolve())
 
 
+def test_sqlite_blob_cover_storage(temp_library) -> None:
+    """Test storing cover binary BLOBs in SQLite and retrieving bytes via get_show_cover_data."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
+    res = scanner.scan_all()
+    show_id = res["books"][0]["show_id"]
+
+    raw_blob_bytes = b"\x89PNG\r\n\x1a\nfake_sqlite_png_blob_bytes"
+    updated = scanner.update_show_cover_data(show_id, raw_blob_bytes, "image/png", "custom_cover.png")
+    assert updated is not None
+
+    blob_data = scanner.cache.get_show_cover_data(show_id)
+    assert blob_data is not None
+    bytes_out, mime_out = blob_data
+    assert bytes_out == raw_blob_bytes
+    assert mime_out == "image/png"
+
+    # Verify scan_all retains SQLite BLOB across rescans
+    scanner.scan_all()
+    retained_blob = scanner.cache.get_show_cover_data(show_id)
+    assert retained_blob is not None
+    assert retained_blob[0] == raw_blob_bytes
+
+
+
 
 
 
