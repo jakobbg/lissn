@@ -877,6 +877,31 @@ button.detail-cover-link {
   gap: 0.8rem;
 }
 
+@media (min-width: 769px) {
+  .show-detail-header {
+    position: relative;
+  }
+
+  .detail-actions {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    justify-content: flex-end;
+    max-width: 50%;
+    z-index: 10;
+    gap: 0.6rem;
+  }
+
+  .detail-title {
+    padding-right: 340px;
+  }
+
+  .detail-description {
+    margin-bottom: 0;
+  }
+}
+
+
 /* Track Listing Table */
 .track-list-container {
   background-color: var(--bg-surface);
