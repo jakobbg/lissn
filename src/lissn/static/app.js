@@ -40,8 +40,9 @@ function initTheme() {
 }
 
 function updateThemeButtonText(btn, theme) {
-  btn.innerHTML = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
-  btn.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+  const isDark = theme === 'dark';
+  btn.innerHTML = `<span class="btn-icon">${isDark ? '☀️' : '🌙'}</span><span class="btn-text"> ${isDark ? 'Light' : 'Dark'}</span>`;
+  btn.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} mode`);
 }
 
 let activeSectionFilter = 'all';
@@ -1328,10 +1329,10 @@ function updateAuthButtonUI() {
 
   authBtn.hidden = false;
   if (globalAuthState.authenticated) {
-    authBtn.textContent = '🚪 Log Out';
+    authBtn.innerHTML = '<span class="btn-icon">🚪</span><span class="btn-text"> Log Out</span>';
     authBtn.setAttribute('aria-label', 'Log out of session');
   } else {
-    authBtn.textContent = '🔑 Log In';
+    authBtn.innerHTML = '<span class="btn-icon">🔑</span><span class="btn-text"> Log In</span>';
     authBtn.setAttribute('aria-label', 'Log in to session');
   }
 }
@@ -1541,12 +1542,12 @@ function openCoverModal(src, title) {
 
 function closeCoverModal() {
   const modal = document.getElementById('cover-modal');
+  const img = document.getElementById('cover-modal-image');
   if (modal) {
     modal.setAttribute('hidden', '');
     modal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
-}
   if (img) {
     img.src = '';
   }

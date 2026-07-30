@@ -46,10 +46,10 @@
       </a>
       <div class="nav-actions">
         <button id="auth-btn" class="auth-btn" aria-label="{% if authenticated %}Log out{% else %}Log in{% endif %}">
-          {% if authenticated %}🚪 Log Out{% else %}🔑 Log In{% endif %}
+          <span class="btn-icon">{% if authenticated %}🚪{% else %}🔑{% endif %}</span><span class="btn-text">{% if authenticated %} Log Out{% else %} Log In{% endif %}</span>
         </button>
         <button id="theme-toggle" class="theme-toggle-btn" aria-label="Switch light/dark theme">
-          🌙 Dark
+          <span class="btn-icon">🌙</span><span class="btn-text"> Dark</span>
         </button>
       </div>
     </div>
@@ -59,9 +59,9 @@
     <div class="toolbar">
       <div class="toolbar-filter-group">
         <div class="section-tabs" role="tablist" aria-label="Library section filter">
-          <button class="tab-btn active" data-section="all" role="tab" aria-selected="true">All Shows</button>
-          <button class="tab-btn" data-section="books" role="tab" aria-selected="false">📚 Audio Books ({{ books|length }})</button>
-          <button class="tab-btn" data-section="podcasts" role="tab" aria-selected="false">🎙️ Podcasts ({{ podcasts|length }})</button>
+          <button class="tab-btn active" data-section="all" role="tab" aria-selected="true"><span class="tab-text-full">All Shows</span><span class="tab-text-short">All</span></button>
+          <button class="tab-btn" data-section="books" role="tab" aria-selected="false">📚 <span class="tab-text-full">Audio Books</span><span class="tab-text-short">Books</span> ({{ books|length }})</button>
+          <button class="tab-btn" data-section="podcasts" role="tab" aria-selected="false">🎙️ <span class="tab-text-full">Podcasts</span><span class="tab-text-short">Podcasts</span> ({{ podcasts|length }})</button>
         </div>
         <div class="search-filter-wrapper">
           <input type="search" id="library-search-input" class="search-input" placeholder="🔍 Search title, author, publisher..." aria-label="Search shows by title, author, or publisher" autocomplete="off" spellcheck="false">
@@ -85,7 +85,6 @@
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
-                  <button type="button" class="card-zoom-btn js-zoom-cover" data-cover-url="/covers/{{ show.show_id }}" data-show-title="{{ show.title }}" aria-label="Zoom cover image for {{ show.title }}" title="Zoom cover image">🔍</button>
                 {% else %}
                   <div class="placeholder-cover">
                     <span>📚</span>
@@ -127,7 +126,6 @@
               <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
                 {% if show.cover_path %}
                   <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
-                  <button type="button" class="card-zoom-btn js-zoom-cover" data-cover-url="/covers/{{ show.show_id }}" data-show-title="{{ show.title }}" aria-label="Zoom cover image for {{ show.title }}" title="Zoom cover image">🔍</button>
                 {% else %}
                   <div class="placeholder-cover">
                     <span>🎙️</span>

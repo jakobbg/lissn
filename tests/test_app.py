@@ -96,7 +96,7 @@ def test_back_to_library_anchor_and_show_card_ids(client: TestClient) -> None:
 
     html = response.text
     assert f'href="/#show-{show_id}"' in html
-    assert "← Back to Library" in html
+    assert "Back to Library" in html
     assert 'href="/" class="brand-link"' in html
 
 
@@ -624,8 +624,8 @@ def test_authenticate_header_button_rendering_and_toggle(unauthenticated_client:
 
     assert 'id="auth-btn"' in html_unauth
     assert 'class="auth-btn"' in html_unauth
-    assert "🔑 Log In" in html_unauth
-    assert "🚪 Log Out" not in html_unauth
+    assert "Log In" in html_unauth
+    assert "Log Out" not in html_unauth
 
     # Verify #auth-btn appears before #theme-toggle in nav-actions
     auth_pos = html_unauth.find('id="auth-btn"')
@@ -643,8 +643,8 @@ def test_authenticate_header_button_rendering_and_toggle(unauthenticated_client:
     html_auth = res_index_auth.text
 
     assert 'id="auth-btn"' in html_auth
-    assert "🚪 Log Out" in html_auth
-    assert "🔑 Log In" not in html_auth
+    assert "Log Out" in html_auth
+    assert "Log In" not in html_auth
 
 
 def test_all_authenticated_options_hidden_until_login(unauthenticated_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:

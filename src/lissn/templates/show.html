@@ -49,12 +49,14 @@
         <span>lissn</span>
       </a>
       <div class="nav-actions">
-        <a href="/#show-{{ show.show_id }}" class="nav-back-btn" aria-label="Back to Library" title="Return to Library">← Back to Library</a>
+        <a href="/#show-{{ show.show_id }}" class="nav-back-btn" aria-label="Back to Library" title="Return to Library">
+          <span class="btn-icon">←</span><span class="btn-text"> Back to Library</span>
+        </a>
         <button id="auth-btn" class="auth-btn" aria-label="{% if authenticated %}Log out{% else %}Log in{% endif %}">
-          {% if authenticated %}🚪 Log Out{% else %}🔑 Log In{% endif %}
+          <span class="btn-icon">{% if authenticated %}🚪{% else %}🔑{% endif %}</span><span class="btn-text">{% if authenticated %} Log Out{% else %} Log In{% endif %}</span>
         </button>
         <button id="theme-toggle" class="theme-toggle-btn" aria-label="Switch light/dark theme">
-          🌙 Dark
+          <span class="btn-icon">🌙</span><span class="btn-text"> Dark</span>
         </button>
       </div>
     </div>

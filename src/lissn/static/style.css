@@ -508,35 +508,6 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   cursor: pointer;
 }
 
-.card-zoom-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 5;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  border-radius: var(--radius-full);
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.82rem;
-  cursor: zoom-in;
-  opacity: 0.85;
-  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
-}
-
-.card-zoom-btn:hover,
-.card-zoom-btn:focus-visible {
-  opacity: 1;
-  transform: scale(1.1);
-  background: rgba(15, 23, 42, 0.9);
-}
-
 .cover-wrapper:hover .cover-image {
   transform: scale(1.04);
 }
@@ -1416,54 +1387,119 @@ tr.track-row.active-track {
   border-left: 3px solid var(--accent-primary);
 }
 
+/* Desktop / Default styles for tab labels */
+@media (min-width: 641px) {
+  .tab-text-short {
+    display: none;
+  }
+  .tab-text-full {
+    display: inline;
+  }
+}
+
+/* Word wrap and overflow bounds for detail page elements */
+.show-detail-header,
+.detail-info,
+.detail-description,
+.detail-description p,
+.detail-title {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.detail-description pre,
+.detail-description code {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 /* Responsive adjustments for mobile viewports */
 @media (max-width: 768px) {
   .main-content {
-    padding: 1rem 1rem calc(6.5rem + env(safe-area-inset-bottom, 0px));
+    padding: 1rem 0.85rem calc(6.5rem + env(safe-area-inset-bottom, 0px));
   }
 
+  /* Show Detail Banner: Cover floated upper left so text flows right and under */
   .show-detail-header {
-    grid-template-columns: 140px 1fr;
-    gap: 1.25rem;
-    padding: 1.25rem;
+    display: block;
+    padding: 1.15rem;
+    position: relative;
+    overflow: hidden;
   }
 
   .detail-cover-container {
-    width: 140px;
+    float: left;
+    width: 125px;
+    margin-right: 1rem;
+    margin-bottom: 0.6rem;
   }
 
   .detail-cover {
-    width: 140px;
-    height: 140px;
+    width: 125px;
+    height: 125px;
+    border-radius: var(--radius-md);
+  }
+
+  .detail-info {
+    display: block;
+  }
+
+  .detail-title {
+    font-size: 1.45rem;
+    line-height: 1.25;
+    margin-bottom: 0.4rem;
+  }
+
+  .detail-description {
+    font-size: 0.92rem;
+    margin-top: 0.5rem;
+  }
+
+  .detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    clear: both;
+  }
+
+  .detail-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
   }
 
   .shows-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 0.75rem;
     margin-bottom: 2rem;
   }
 
   .show-card .card-body {
-    padding: 0.75rem;
+    padding: 0.65rem;
   }
 
   .show-card .show-title-link {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
   }
 
   .bottom-player-container {
     flex-wrap: wrap;
-    padding: 0.5rem 0.85rem;
-    gap: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    gap: 0.4rem;
   }
 
   .player-track-info {
     max-width: 50%;
-    min-width: 140px;
+    min-width: 130px;
   }
 
   .player-right-controls {
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 
   .player-volume-slider {
@@ -1481,37 +1517,117 @@ tr.track-row.active-track {
   }
 }
 
+@media (max-width: 640px) {
+  /* Icon-only nav buttons in header */
+  .nav-actions {
+    gap: 0.35rem;
+  }
+
+  .nav-actions .btn-text {
+    display: none;
+  }
+
+  .nav-back-btn,
+  .theme-toggle-btn,
+  .auth-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 1.05rem;
+    min-width: 38px;
+    height: 38px;
+    justify-content: center;
+    border-radius: var(--radius-full);
+  }
+
+  /* Compact single-line section filter tabs */
+  .tab-text-full {
+    display: none;
+  }
+
+  .tab-text-short {
+    display: inline;
+  }
+
+  .toolbar-filter-group {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .section-tabs {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 3px;
+  }
+
+  .section-tabs .tab-btn {
+    padding: 0.38rem 0.45rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Episode Track Table Optimization for Mobile */
+  .track-table th:nth-child(5),
+  .track-table td:nth-child(5),
+  .track-table th:nth-child(6),
+  .track-table td:nth-child(6) {
+    display: none;
+  }
+
+  .track-title-text {
+    display: inline-block;
+    max-width: 130px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+
+  .track-table th,
+  .track-table td {
+    padding: 0.45rem 0.3rem;
+    font-size: 0.82rem;
+  }
+}
+
 @media (max-width: 480px) {
   .show-detail-header {
-    grid-template-columns: 110px 1fr;
-    gap: 0.85rem;
-    padding: 1rem;
+    padding: 0.95rem;
   }
 
   .detail-cover-container {
-    width: 110px;
+    width: 105px;
+    margin-right: 0.85rem;
+    margin-bottom: 0.4rem;
   }
 
   .detail-cover {
-    width: 110px;
-    height: 110px;
+    width: 105px;
+    height: 105px;
   }
 
   .detail-title {
-    font-size: 1.35rem;
-    margin-bottom: 0.35rem;
+    font-size: 1.3rem;
+    margin-bottom: 0.3rem;
   }
 
   .detail-description {
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
+    font-size: 0.88rem;
+    margin-bottom: 0.85rem;
   }
 
   .cover-zoom-hint {
-    font-size: 0.65rem;
-    padding: 0.15rem 0.4rem;
-    bottom: 0.35rem;
-    right: 0.35rem;
+    font-size: 0.62rem;
+    padding: 0.15rem 0.35rem;
+    bottom: 0.3rem;
+    right: 0.3rem;
+  }
+
+  .track-title-text {
+    max-width: 105px;
   }
 }
 
