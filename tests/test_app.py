@@ -117,7 +117,7 @@ def test_show_detail_page_with_opengraph_tags(client: TestClient) -> None:
     assert f"/covers/{show_id}" in html
     assert 'class="detail-cover-link' in html
     assert 'js-zoom-cover' in html
-    assert f'data-cover-url="/covers/{show_id}"' in html
+    assert f'data-cover-url="/covers/{show_id}' in html
     assert f'href="/covers/{show_id}"' not in html
     assert "--show-color-1-rgb:" in html
     assert "--show-color-2-rgb:" in html
@@ -142,7 +142,7 @@ def test_show_cover_zoom_modal_markup(client: TestClient) -> None:
     assert 'id="cover-modal-image"' in html
     assert 'class="modal-close-btn cover-modal-close js-close-cover-modal"' in html
     assert 'js-zoom-cover' in html
-    assert f'data-cover-url="/covers/{show_id}"' in html
+    assert f'data-cover-url="/covers/{show_id}' in html
 
 
 def test_bottom_media_player_and_auto_continue(client: TestClient) -> None:
@@ -1108,7 +1108,7 @@ def test_cover_image_etag_and_304_caching(client: TestClient) -> None:
     assert res.status_code == 200
     assert "etag" in res.headers
     assert "last-modified" in res.headers
-    assert "public, max-age=86400" in res.headers.get("cache-control", "")
+    assert "no-cache, must-revalidate" in res.headers.get("cache-control", "")
     etag = res.headers["etag"]
     last_mod = res.headers["last-modified"]
 
@@ -1338,6 +1338,36 @@ def test_modal_backdrop_click_and_escape_js_handlers(client: TestClient) -> None
     assert "target.id === 'edit-modal'" in js_content
     assert "isBackdropClick" in js_content
     assert "!isAnyModalOpen() && bottomPlayer.classList.contains('visible')" in js_content
+
+
+def test_cover_image_update_reflects_on_index_page(client: TestClient) -> None:
+    """Test that updating a cover image changes updated_at timestamp and index page renders updated cover URL."""
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    assert len(shows) > 0
+    show_id = shows[0]["show_id"]
+
+    # Initial index page request
+    index_res1 = client.get("/")
+    assert index_res1.status_code == 200
+
+    # Upload new cover image
+    file_content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\aeB`"
+    upload_res = client.post(
+        f"/api/shows/{show_id}/upload-cover",
+        files={"file": ("new_cover.png", file_content, "image/png")}
+    )
+    assert upload_res.status_code == 200
+    upload_data = upload_res.json()
+    assert upload_data["status"] == "success"
+    assert "show" in upload_data
+    updated_at = int(upload_data["show"]["updated_at"])
+
+    # Index page after cover update
+    index_res2 = client.get("/")
+    assert index_res2.status_code == 200
+    assert f"/covers/{show_id}?v={updated_at}" in index_res2.text
+
 
 
 

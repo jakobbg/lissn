@@ -355,7 +355,7 @@ def get_cover_image(show_id: str, ext: Optional[str] = None, request: Request = 
         etag = f'"{hashlib.md5(svg_content.encode("utf-8")).hexdigest()}"'
         headers = {
             "ETag": etag,
-            "Cache-Control": "public, max-age=3600",
+            "Cache-Control": "no-cache, must-revalidate",
             "Accept-Ranges": "bytes",
         }
         if check_conditional_headers(request, etag=etag):
@@ -372,7 +372,7 @@ def get_cover_image(show_id: str, ext: Optional[str] = None, request: Request = 
     headers = {
         "ETag": etag,
         "Last-Modified": last_modified_str,
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "no-cache, must-revalidate",
         "Accept-Ranges": "bytes",
         "Content-Length": str(file_size),
     }
@@ -619,7 +619,7 @@ def api_select_show_cover(show_id: str, payload: SelectCoverRequest, request: Re
         raise HTTPException(status_code=400, detail="Invalid image file or path outside show directory")
 
     updated = scanner.update_show_cover(show_id, target_file)
-    return {"status": "success", "cover_path": str(target_file)}
+    return {"status": "success", "cover_path": str(target_file), "show": updated}
 
 
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB limit
@@ -655,7 +655,7 @@ if HAS_MULTIPART:
         dest_path.write_bytes(content)
 
         updated = scanner.update_show_cover(show_id, dest_path)
-        return {"status": "success", "cover_path": str(dest_path), "filename": safe_filename}
+        return {"status": "success", "cover_path": str(dest_path), "filename": safe_filename, "show": updated}
 else:
     @app.post("/api/shows/{show_id}/upload-cover")
     async def api_upload_show_cover_disabled(show_id: str, request: Request) -> Dict[str, Any]:

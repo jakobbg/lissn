@@ -67,8 +67,8 @@
     <header class="show-detail-header">
       <div class="detail-cover-container">
         {% if show.cover_path %}
-          <button type="button" class="detail-cover-link js-zoom-cover" data-cover-url="/covers/{{ show.show_id }}" data-show-title="{{ show.title }}" aria-label="Zoom cover image for {{ show.title }}" title="Click to zoom cover image">
-            <img src="/covers/{{ show.show_id }}" alt="Cover for {{ show.title }}" class="detail-cover">
+          <button type="button" class="detail-cover-link js-zoom-cover" data-cover-url="/covers/{{ show.show_id }}{% if show.updated_at %}?v={{ show.updated_at|int }}{% endif %}" data-show-title="{{ show.title }}" aria-label="Zoom cover image for {{ show.title }}" title="Click to zoom cover image">
+            <img src="/covers/{{ show.show_id }}{% if show.updated_at %}?v={{ show.updated_at|int }}{% endif %}" alt="Cover for {{ show.title }}" class="detail-cover">
             <span class="cover-zoom-hint" aria-hidden="true">🔍 Zoom</span>
           </button>
         {% else %}
@@ -164,7 +164,7 @@
                       data-audio-src="/audio/{{ show.show_id }}/{{ ep.filename | urlencode }}" 
                       data-track-title="{{ ep.title }}" 
                       data-show-title="{{ show.title }}"
-                      {% if show.cover_path %}data-cover-url="/covers/{{ show.show_id }}"{% endif %}
+                      {% if show.cover_path %}data-cover-url="/covers/{{ show.show_id }}{% if show.updated_at %}?v={{ show.updated_at|int }}{% endif %}"{% endif %}
                     {% endif %}>
                   {% if authenticated %}
                     <td style="width: 40px; text-align: center; vertical-align: middle;">
@@ -390,7 +390,7 @@
           <label class="form-label">Cover Art</label>
           <div class="cover-edit-container">
             <button type="button" class="cover-preview-wrapper" id="edit-cover-preview-wrapper" aria-label="Upload cover image" title="Click or drag & drop image to upload">
-              <img id="edit-cover-preview" src="{% if show and show.cover_path %}/covers/{{ show.show_id }}{% endif %}" alt="Current cover preview" class="edit-cover-img" {% if not show or not show.cover_path %}style="display: none;"{% endif %}>
+              <img id="edit-cover-preview" src="{% if show and show.cover_path %}/covers/{{ show.show_id }}{% if show.updated_at %}?v={{ show.updated_at|int }}{% endif %}{% endif %}" alt="Current cover preview" class="edit-cover-img" {% if not show or not show.cover_path %}style="display: none;"{% endif %}>
               <div id="edit-cover-placeholder" class="edit-cover-placeholder" {% if show and show.cover_path %}style="display: none;"{% endif %}>🖼️</div>
               <div class="cover-drop-overlay">
                 <span class="cover-drop-icon">📷</span>

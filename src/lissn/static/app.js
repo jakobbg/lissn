@@ -1655,6 +1655,7 @@ function initMarkdownEditor() {
       if (!showId) return;
 
       try {
+        let updatedCoverShow = null;
         // Handle cover file upload if selected
         if (coverFileInput && coverFileInput.files && coverFileInput.files.length > 0) {
           const file = coverFileInput.files[0];
@@ -1673,6 +1674,9 @@ function initMarkdownEditor() {
               errorEl.hidden = false;
             }
             return;
+          } else {
+            const uData = await uploadRes.json().catch(() => ({}));
+            if (uData.show) updatedCoverShow = uData.show;
           }
         } else if (coverSelect && coverSelect.value) {
           // Handle existing image selection
@@ -1689,6 +1693,9 @@ function initMarkdownEditor() {
               errorEl.hidden = false;
             }
             return;
+          } else {
+            const sData = await selectRes.json().catch(() => ({}));
+            if (sData.show) updatedCoverShow = sData.show;
           }
         }
 
@@ -1703,7 +1710,11 @@ function initMarkdownEditor() {
           const data = await res.json();
           showToast('✨ Show details saved successfully!');
           closeEditModal();
-          updateShowPageDOM(data.show);
+          const finalShow = data.show || updatedCoverShow;
+          if (updatedCoverShow && updatedCoverShow.updated_at && finalShow) {
+            finalShow.updated_at = updatedCoverShow.updated_at;
+          }
+          updateShowPageDOM(finalShow);
         } else {
           const errData = await res.json().catch(() => ({}));
           if (res.status === 401) {
@@ -2021,8 +2032,8 @@ function updateShowPageDOM(show) {
   }
 
   if (show.show_id) {
-    const timestamp = Date.now();
-    const coverUrl = `/covers/${show.show_id}?t=${timestamp}`;
+    const timestamp = show.updated_at ? Math.floor(show.updated_at) : Date.now();
+    const coverUrl = `/covers/${show.show_id}?v=${timestamp}`;
 
     // 1. Update show page detail cover container (show.html)
     const detailCoverContainer = document.querySelector('.detail-cover-container');
