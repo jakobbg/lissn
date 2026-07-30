@@ -64,6 +64,33 @@ def test_index_page(client: TestClient) -> None:
     assert 'tabindex="-1"' in response.text
 
 
+def test_version_and_git_headers_and_html_elements(client: TestClient) -> None:
+    """Test response headers, head meta elements, logo tooltips, and GitHub link on HTML pages."""
+    response = client.get("/")
+    assert response.status_code == 200
+
+    # Verify HTTP response headers
+    assert "X-Lissn-Version" in response.headers
+    assert "X-Lissn-Commit" in response.headers
+    assert "X-Lissn-Commit-Url" in response.headers
+    assert "X-Lissn-GitHub" in response.headers
+    assert "Link" in response.headers
+    assert 'rel="version-history"' in response.headers["Link"]
+    assert 'rel="repository"' in response.headers["Link"]
+
+    # Verify HTML meta elements
+    assert '<meta name="version" content="' in response.text
+    assert '<meta name="git-commit" content="' in response.text
+    assert '<meta name="github-repository" content="' in response.text
+    assert '<link rel="revision"' in response.text
+    assert '<link rel="repository"' in response.text
+
+    # Verify tooltips and GitHub link
+    assert 'title="lissn v' in response.text
+    assert 'class="github-link-btn"' in response.text
+    assert 'href="https://github.com/jakobbg/lissn"' in response.text
+
+
 def test_background_pattern_overlay_rendering(client: TestClient) -> None:
     """Test index and show detail pages render background pattern overlay element with configured SVG and opacity."""
     index_res = client.get("/")

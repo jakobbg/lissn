@@ -24,6 +24,7 @@ from lissn.colors import get_show_colors
 from lissn.config import Config
 from lissn.rss import generate_rss_feed
 from lissn.scanner import LibraryScanner, AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, list_show_images
+from lissn.version import get_app_metadata
 
 try:
     import python_multipart  # noqa: F401
@@ -45,10 +46,12 @@ mimetypes.add_type("audio/flac", ".flac")
 mimetypes.add_type("audio/wav", ".wav")
 mimetypes.add_type("audio/aac", ".aac")
 
+app_meta = get_app_metadata()
+
 app = FastAPI(
     title="lissn",
     description="Audiobook and Podcast Indexer & RSS Feed Generator",
-    version="0.3.0",
+    version=app_meta["app_version"],
 )
 
 config = Config()
@@ -57,7 +60,25 @@ config.ensure_directories()
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 templates.env.filters["urlencode"] = lambda s: quote(str(s), safe="/")
+
+# Inject version & git metadata globals into Jinja2 templates
+for key, value in app_meta.items():
+    templates.env.globals[key] = value
+
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+
+
+@app.middleware("http")
+async def add_version_headers(request: Request, call_next):
+    """Add version, git commit, and repository Link headers to all HTTP responses."""
+    response = await call_next(request)
+    meta = get_app_metadata()
+    response.headers["X-Lissn-Version"] = meta["app_version"]
+    response.headers["X-Lissn-Commit"] = meta["git_commit"]
+    response.headers["X-Lissn-Commit-Url"] = meta["git_commit_url"]
+    response.headers["X-Lissn-GitHub"] = meta["github_url"]
+    response.headers["Link"] = f'<{meta["git_commit_url"]}>; rel="version-history", <{meta["github_url"]}>; rel="repository"'
+    return response
 
 
 def check_conditional_headers(

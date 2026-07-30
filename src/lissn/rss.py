@@ -10,6 +10,8 @@ from typing import Any, Dict
 from urllib.parse import quote
 from xml.etree import ElementTree as ET
 
+from lissn.version import get_app_metadata
+
 
 MIME_TYPES = {
     ".mp3": "audio/mpeg",
@@ -52,6 +54,7 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     Returns:
         XML string representing the podcast RSS feed.
     """
+    app_meta = get_app_metadata()
     show_id = show_data["show_id"]
     raw_title = show_data["title"]
     section = show_data.get("section", "podcasts")
@@ -65,7 +68,10 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     else:
         title = raw_title
 
-    description = show_data.get("description") or f"{raw_title} ({section.capitalize()})"
+    base_desc = show_data.get("description") or f"{raw_title} ({section.capitalize()})"
+    served_by_suffix = app_meta["served_by_info"]
+    description = f"{base_desc}\n\n{served_by_suffix}"
+
     clean_base = base_url.rstrip("/")
 
     feed_url = f"{clean_base}/rss/{show_id}"
@@ -92,7 +98,7 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     ET.SubElement(channel, "link").text = show_page_url
     ET.SubElement(channel, "description").text = description
     ET.SubElement(channel, "language").text = "en-us"
-    ET.SubElement(channel, "generator").text = "lissn v0.1"
+    ET.SubElement(channel, "generator").text = f"lissn v{app_meta['app_version']} (commit {app_meta['git_commit']})"
 
     # Self Atom link for PSP-1 & RSS standard compliance
     ET.SubElement(

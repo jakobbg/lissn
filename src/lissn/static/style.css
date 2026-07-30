@@ -270,6 +270,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 }
 
 .nav-back-btn,
+.github-link-btn,
 .theme-toggle-btn,
 .auth-btn {
   background: var(--bg-surface-elevated);
@@ -288,6 +289,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 }
 
 .nav-back-btn:hover,
+.github-link-btn:hover,
 .theme-toggle-btn:hover,
 .auth-btn:hover {
   background-color: var(--border-color);

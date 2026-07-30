@@ -68,6 +68,14 @@ def test_generate_rss_feed() -> None:
     assert cover_image is not None
     assert cover_image.attrib["href"] == "http://localhost:8000/covers/test_show_123.jpg"
 
+    generator = channel.find("generator")
+    assert generator is not None
+    assert "lissn v" in generator.text
+
+    description = channel.find("description")
+    assert description is not None
+    assert "Served by lissn v" in description.text
+
     items = channel.findall("item")
     assert len(items) == 1
 
