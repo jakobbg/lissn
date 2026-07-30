@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 import zipfile
 
+import zipstream
 from fastapi import FastAPI, File, HTTPException, Query, Request, Response, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -458,27 +459,30 @@ def stream_audio(show_id: str, filename: str, request: Request = None) -> Respon
 
 @app.get("/download/show/{show_id}")
 def download_show_zip(show_id: str, request: Request) -> Response:
-    """Download all audio files for a show bundled into a single ZIP archive."""
+    """Download all audio files for a show bundled into a streaming ZIP archive."""
     require_auth(request)
     show = scanner.cache.get_show(show_id)
     if not show or not show.get("episodes"):
         raise HTTPException(status_code=404, detail="Show or tracks not found")
 
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        for ep in show["episodes"]:
-            ep_path = Path(ep["file_path"])
-            if ep_path.is_file() and ep_path.suffix.lower() in AUDIO_EXTENSIONS:
-                zf.write(ep_path, arcname=ep["filename"])
+    zs = zipstream.ZipStream()
+    file_added = False
+    for ep in show["episodes"]:
+        ep_path = Path(ep["file_path"])
+        if ep_path.is_file() and ep_path.suffix.lower() in AUDIO_EXTENSIONS:
+            zs.add_path(ep_path, arcname=ep["filename"])
+            file_added = True
 
-    buffer.seek(0)
+    if not file_added:
+        raise HTTPException(status_code=404, detail="No downloadable audio tracks found")
+
     # Sanitize title for filename while preserving Unicode letters
     safe_title = "".join(c for c in show["title"] if c.isalnum() or c in (" ", "_", "-")).strip() or "show"
     zip_filename = f"{safe_title}.zip"
     encoded_filename = quote(zip_filename)
 
-    return Response(
-        content=buffer.getvalue(),
+    return StreamingResponse(
+        zs,
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{safe_title}.zip"; filename*=UTF-8\'\'{encoded_filename}'},
     )

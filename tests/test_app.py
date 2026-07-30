@@ -1194,6 +1194,10 @@ def test_download_episode_edge_cases(client: TestClient) -> None:
     assert res.status_code == 404
     assert res.json()["detail"] == "Show not found"
 
+    # Invalid show ID for zip download -> 404
+    res_zip_invalid = client.get("/download/show/invalid_show_id_12345")
+    assert res_zip_invalid.status_code == 404
+
     # Missing audio file in valid show -> 404
     shows_res = client.get("/api/shows")
     show_id = shows_res.json()["shows"][0]["show_id"]
