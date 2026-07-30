@@ -1416,6 +1416,22 @@ function initMarkdownEditor() {
     applyMarkdownFormatting(descInput, action);
   });
 
+  // Ctrl+Enter / Cmd+Enter keyboard shortcut to submit edit form
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      const editModal = document.getElementById('edit-modal');
+      const editForm = document.getElementById('edit-show-form');
+      if (editModal && !editModal.hidden && editForm) {
+        e.preventDefault();
+        if (typeof editForm.requestSubmit === 'function') {
+          editForm.requestSubmit();
+        } else {
+          editForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      }
+    }
+  });
+
   // Save changes form submission
   document.addEventListener('submit', async (e) => {
     if (e.target && e.target.id === 'edit-show-form') {
@@ -1725,6 +1741,23 @@ function updateShowPageDOM(show) {
     editBtn.setAttribute('data-author', show.author || '');
     editBtn.setAttribute('data-publisher', show.publisher || '');
     editBtn.setAttribute('data-description', show.description || '');
+  }
+
+  if (show.author) {
+    const authorsDatalist = document.getElementById('all-authors-list');
+    if (authorsDatalist && !Array.from(authorsDatalist.options).some(opt => opt.value === show.author)) {
+      const opt = document.createElement('option');
+      opt.value = show.author;
+      authorsDatalist.appendChild(opt);
+    }
+  }
+  if (show.publisher) {
+    const publishersDatalist = document.getElementById('all-publishers-list');
+    if (publishersDatalist && !Array.from(publishersDatalist.options).some(opt => opt.value === show.publisher)) {
+      const opt = document.createElement('option');
+      opt.value = show.publisher;
+      publishersDatalist.appendChild(opt);
+    }
   }
 }
 

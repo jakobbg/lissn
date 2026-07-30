@@ -296,6 +296,8 @@ def show_detail_page(show_id: str, request: Request) -> Response:
         context={
             "show": show,
             "show_colors": colors,
+            "all_authors": scanner.cache.get_all_authors(),
+            "all_publishers": scanner.cache.get_all_publishers(),
             "base_url": get_base_url(request),
             "host_header": get_host_header(request),
             "authenticated": is_authenticated(request),

@@ -369,14 +369,25 @@
           <input type="text" id="edit-title-input" class="form-control" required placeholder="Show title" value="{{ show.title if show else '' }}">
         </div>
 
+        <datalist id="all-authors-list">
+          {% for author_name in all_authors %}
+            <option value="{{ author_name }}">
+          {% endfor %}
+        </datalist>
+        <datalist id="all-publishers-list">
+          {% for pub_name in all_publishers %}
+            <option value="{{ pub_name }}">
+          {% endfor %}
+        </datalist>
+
         <div class="form-group" id="edit-author-group" {% if show and show.section == 'podcasts' %}style="display: none;"{% endif %}>
           <label for="edit-author-input" class="form-label">Author</label>
-          <input type="text" id="edit-author-input" class="form-control" placeholder="Author name" value="{{ show.author if show else '' }}">
+          <input type="text" id="edit-author-input" list="all-authors-list" class="form-control" placeholder="Author name" value="{{ show.author if show else '' }}" autocomplete="off">
         </div>
 
         <div class="form-group" id="edit-publisher-group" {% if not show or show.section == 'books' %}style="display: none;"{% endif %}>
           <label for="edit-publisher-input" class="form-label">Publisher</label>
-          <input type="text" id="edit-publisher-input" class="form-control" placeholder="Publisher name" value="{{ show.publisher if show else '' }}">
+          <input type="text" id="edit-publisher-input" list="all-publishers-list" class="form-control" placeholder="Publisher name" value="{{ show.publisher if show else '' }}" autocomplete="off">
         </div>
 
         <!-- Cover Art Selection & Upload -->
@@ -434,6 +445,7 @@
         <div id="edit-form-error" class="error-message" hidden aria-live="assertive"></div>
 
         <div class="modal-actions">
+          <small class="form-text-hint modal-shortcut-hint" style="margin-right: auto; margin-bottom: 0;">💡 <code>Ctrl</code>+<code>Enter</code> or <code>⌘</code>+<code>Enter</code> to save</small>
           <button type="button" class="btn btn-secondary js-close-modal">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>

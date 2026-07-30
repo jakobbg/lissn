@@ -498,6 +498,22 @@ class ScannerCache:
                 conn.execute(f"DELETE FROM episodes WHERE show_id NOT IN ({placeholders})", active_show_ids)
                 conn.execute(f"DELETE FROM shows WHERE show_id NOT IN ({placeholders})", active_show_ids)
 
+    def get_all_authors(self) -> List[str]:
+        """Retrieve sorted list of distinct authors across all book shows."""
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT DISTINCT author FROM shows WHERE section = 'books' AND author IS NOT NULL AND author != '' ORDER BY author ASC"
+            )
+            return [row["author"] for row in cursor.fetchall()]
+
+    def get_all_publishers(self) -> List[str]:
+        """Retrieve sorted list of distinct publishers across all podcast shows."""
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT DISTINCT publisher FROM shows WHERE section = 'podcasts' AND publisher IS NOT NULL AND publisher != '' ORDER BY publisher ASC"
+            )
+            return [row["publisher"] for row in cursor.fetchall()]
+
     def clear(self) -> None:
         """Clear all cached show and episode entries."""
         with self._get_connection() as conn:
