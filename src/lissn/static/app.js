@@ -212,20 +212,38 @@ function initCopyButtons() {
 }
 
 /**
- * Subscribe button: copies HTTP/HTTPS RSS feed URL to clipboard automatically on click
- * to ensure users can paste the link if podcast:// handler fails on private IPs / ports.
+ * Subscribe button: attempts to open Apple Podcasts via the podcast:// URL scheme.
+ * Simultaneously copies the HTTPS RSS URL to clipboard so users can paste it manually
+ * if the podcast app does not launch (e.g., on Chrome where no handler is registered).
  */
 function initSubscribeButtons() {
   document.addEventListener('click', (e) => {
-    const subBtn = e.target.closest('.js-subscribe-btn, a[href^="podcast:"], a[href^="podcasts:"]');
-    if (!subBtn) return;
+    const btn = e.target.closest('.js-subscribe-btn');
+    if (!btn) return;
 
-    const rssUrl = subBtn.getAttribute('data-rss-url');
-    if (rssUrl && navigator.clipboard) {
-      navigator.clipboard.writeText(rssUrl).then(() => {
-        showToast('🎙️ Opening Podcast app (RSS URL copied to clipboard!)');
-      }).catch(() => {});
+    const rssUrl = btn.getAttribute('data-rss-url');
+    if (!rssUrl) return;
+
+    // Construct podcast:// URL by replacing the http(s):// scheme.
+    // Apple Podcasts on iOS and macOS registers podcast:// as its URL scheme handler.
+    const podcastUrl = 'podcast://' + rssUrl.replace(/^https?:\/\//, '');
+
+    // Always copy the https:// RSS URL to clipboard — this is the universal fallback
+    // that works for every podcast app (Overcast, Pocket Casts, Castro, etc.).
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(rssUrl).catch(() => {});
     }
+
+    // Attempt to launch Apple Podcasts via podcast:// scheme.
+    // On iOS Safari and macOS Safari this opens Apple Podcasts directly.
+    // On Chrome and Firefox there is no OS handler registered so nothing happens.
+    window.location.href = podcastUrl;
+
+    // After a short delay: if still on the page (podcast:// didn't navigate away or
+    // the browser has no handler), show a toast explaining the clipboard fallback.
+    setTimeout(() => {
+      showToast('🎙️ RSS URL copied — paste into your podcast app (e.g. Apple Podcasts → Library → ⋯ → Add a Show by URL)');
+    }, 700);
   });
 }
 
