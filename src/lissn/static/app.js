@@ -19,16 +19,19 @@ document.addEventListener('DOMContentLoaded', () => {
  * Initialize Light / Dark Mode theme toggle with localStorage persistence.
  */
 function initTheme() {
-  const toggleBtn = document.getElementById('theme-toggle');
-  if (!toggleBtn) return;
-
   const currentTheme = localStorage.getItem('lissn_theme');
   if (currentTheme) {
     document.documentElement.setAttribute('data-theme', currentTheme);
-    updateThemeButtonText(toggleBtn, currentTheme);
+    const toggleBtn = document.getElementById('theme-toggle');
+    if (toggleBtn) {
+      updateThemeButtonText(toggleBtn, currentTheme);
+    }
   }
 
-  toggleBtn.addEventListener('click', () => {
+  document.addEventListener('click', (e) => {
+    const toggleBtn = e.target.closest('#theme-toggle');
+    if (!toggleBtn) return;
+
     const activeTheme = document.documentElement.getAttribute('data-theme') ||
       (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     
@@ -560,6 +563,20 @@ async function navigateTo(urlStr, isPushState = true) {
 
     // Replace main content
     currentMain.innerHTML = newMain.innerHTML;
+
+    // Synchronize header navigation actions (e.g. Back to Library button)
+    const newNavActions = doc.querySelector('.nav-actions');
+    const currentNavActions = document.querySelector('.nav-actions');
+    if (newNavActions && currentNavActions) {
+      currentNavActions.innerHTML = newNavActions.innerHTML;
+      updateAuthButtonUI();
+      const activeTheme = document.documentElement.getAttribute('data-theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const toggleBtn = document.getElementById('theme-toggle');
+      if (toggleBtn) {
+        updateThemeButtonText(toggleBtn, activeTheme);
+      }
+    }
 
     // Push browser history
     if (isPushState) {
@@ -1423,31 +1440,31 @@ function initAuthSystem() {
   updateAuthButtonUI();
   checkAuthStatus();
 
-  const authBtn = document.getElementById('auth-btn');
-  if (authBtn) {
-    authBtn.addEventListener('click', async () => {
-      if (globalAuthState.authenticated) {
-        try {
-          const res = await fetch('/api/logout', { method: 'POST' });
-          if (res.ok) {
-            globalAuthState.authenticated = false;
-            updateAuthButtonUI();
-            showToast('🔒 Logged out successfully');
-            setTimeout(() => window.location.reload(), 400);
-          } else {
-            showToast('❌ Logout failed');
-          }
-        } catch (err) {
-          showToast('❌ Error connecting to server');
-        }
-      } else {
-        openPasswordModal(() => {
+  document.addEventListener('click', async (e) => {
+    const authBtn = e.target.closest('#auth-btn');
+    if (!authBtn) return;
+
+    if (globalAuthState.authenticated) {
+      try {
+        const res = await fetch('/api/logout', { method: 'POST' });
+        if (res.ok) {
+          globalAuthState.authenticated = false;
           updateAuthButtonUI();
+          showToast('🔒 Logged out successfully');
           setTimeout(() => window.location.reload(), 400);
-        });
+        } else {
+          showToast('❌ Logout failed');
+        }
+      } catch (err) {
+        showToast('❌ Error connecting to server');
       }
-    });
-  }
+    } else {
+      openPasswordModal(() => {
+        updateAuthButtonUI();
+        setTimeout(() => window.location.reload(), 400);
+      });
+    }
+  });
 
   const passwordForm = document.getElementById('password-form');
   const passwordError = document.getElementById('password-error');
