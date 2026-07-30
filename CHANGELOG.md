@@ -5,7 +5,34 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v0.5.3] – 2026-07-30
+
+### 🎨 Desktop UI & Vertical Space Optimization
+
+- **Upper-right show action buttons on desktop** — positioned the action button bar
+  (`.detail-actions`) in the top-right corner of the show header box on viewports
+  wider than 768px. This reclaims ~50–60px of vertical space previously used by the
+  bottom button row and moves track listings up higher.
+
+### 🎙️ Audio Book vs Podcast RSS Feed Differentiation
+
+- **Serial vs Episodic feed types** — added `<itunes:type>serial</itunes:type>` for audio
+  books and `<itunes:type>episodic</itunes:type>` for podcasts.
+- **Sequential playback for Audio Books** — preserved natural chapter ordering in XML items
+  and assigned `pubDate` timestamps so Chapter 1 receives the newest timestamp, ensuring
+  podcast apps play audiobooks sequentially from start to finish.
+- **Reverse chronological order for Podcasts** — newest podcast episodes are placed first at
+  the top of the feed with the newest timestamp.
+
+### 📜 Pretty-printed RSS XML
+
+- **Formatted RSS XML output** — added 2-space XML indentation formatting via `ET.indent()`
+  to `generate_rss_feed()`, making generated RSS feeds clean and easy to read.
+
+---
+
 ## [v0.5.2] – 2026-07-30
+
 
 ### 🎙️ Subscribe Button & RSS UX
 
