@@ -25,6 +25,8 @@ MIME_TYPES = {
 
 ET.register_namespace("itunes", "http://www.itunes.com/dtds/podcast-1.0.dtd")
 ET.register_namespace("content", "http://purl.org/rss/1.0/modules/content/")
+ET.register_namespace("podcast", "https://podcastindex.org/podcast-1.0")
+ET.register_namespace("atom", "http://www.w3.org/2005/Atom")
 
 
 def get_mime_type(filename: str) -> str:
@@ -68,7 +70,14 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
 
     feed_url = f"{clean_base}/rss/{show_id}"
     show_page_url = f"{clean_base}/show/{show_id}"
-    cover_url = f"{clean_base}/covers/{show_id}" if show_data.get("cover_path") else ""
+
+    if show_data.get("cover_path"):
+        ext = Path(show_data["cover_path"]).suffix.lower()
+        if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+            ext = ".jpg"
+        cover_url = f"{clean_base}/covers/{show_id}{ext}"
+    else:
+        cover_url = ""
 
     rss = ET.Element(
         "rss",
@@ -85,6 +94,31 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     ET.SubElement(channel, "language").text = "en-us"
     ET.SubElement(channel, "generator").text = "lissn v0.1"
 
+    # Self Atom link for PSP-1 & RSS standard compliance
+    ET.SubElement(
+        channel,
+        "{http://www.w3.org/2005/Atom}link",
+        {
+            "href": feed_url,
+            "rel": "self",
+            "type": "application/rss+xml",
+        },
+    )
+
+    # iTunes podcast category & explicit rating
+    category = (show_data.get("category") or "Technology").strip()
+    ET.SubElement(
+        channel,
+        "{http://www.itunes.com/dtds/podcast-1.0.dtd}category",
+        {"text": category},
+    )
+
+    is_explicit = "true" if show_data.get("explicit") else "false"
+    ET.SubElement(
+        channel,
+        "{http://www.itunes.com/dtds/podcast-1.0.dtd}explicit",
+    ).text = is_explicit
+
     if creator:
         ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}author").text = creator
 
@@ -97,7 +131,7 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
         ET.SubElement(image_elem, "title").text = title
         ET.SubElement(image_elem, "link").text = show_page_url
 
-        itunes_image = ET.SubElement(
+        ET.SubElement(
             channel,
             "{http://www.itunes.com/dtds/podcast-1.0.dtd}image",
             {"href": cover_url},
@@ -107,6 +141,10 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     for ep in episodes:
         item = ET.SubElement(channel, "item")
         ET.SubElement(item, "title").text = ep["title"]
+
+        ep_link = f"{show_page_url}#ep-{ep['episode_id']}"
+        ET.SubElement(item, "link").text = ep_link
+
         ET.SubElement(item, "guid", {"isPermaLink": "false"}).text = ep["episode_id"]
 
         pub_date = format_rfc822(ep["added_timestamp"])
@@ -125,6 +163,11 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
             },
         )
 
+        ET.SubElement(
+            item,
+            "{http://www.itunes.com/dtds/podcast-1.0.dtd}explicit",
+        ).text = is_explicit
+
         if ep.get("duration"):
             dur_seconds = int(ep["duration"])
             itunes_dur = ET.SubElement(
@@ -134,3 +177,4 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
 
     xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
     return xml_declaration + ET.tostring(rss, encoding="utf-8").decode("utf-8")
+

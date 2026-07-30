@@ -313,6 +313,21 @@ def test_get_podcast_rss(client: TestClient) -> None:
     assert "<rss " in response.text
     assert 'version="2.0"' in response.text
     assert "<enclosure" in response.text
+    assert "<itunes:category" in response.text
+    assert "<itunes:explicit>" in response.text
+    assert "rel=\"self\"" in response.text
+
+
+def test_get_cover_image_with_extension(client: TestClient) -> None:
+    """Test cover image endpoint with .jpg extension in path."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    res_ext = client.get(f"/covers/{show_id}.jpg")
+    assert res_ext.status_code == 200
+    assert "accept-ranges" in res_ext.headers
+    assert res_ext.headers["accept-ranges"] == "bytes"
+    assert "content-length" in res_ext.headers
 
 
 def test_get_podcast_rss_not_found(client: TestClient) -> None:

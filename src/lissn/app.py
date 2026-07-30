@@ -323,9 +323,15 @@ def show_detail_page(show_id: str, request: Request) -> Response:
 
 @app.get("/covers/{show_id}")
 @app.head("/covers/{show_id}")
-def get_cover_image(show_id: str, request: Request = None, file: Optional[str] = None) -> Response:
+@app.get("/covers/{show_id}.{ext}")
+@app.head("/covers/{show_id}.{ext}")
+def get_cover_image(show_id: str, ext: Optional[str] = None, request: Request = None, file: Optional[str] = None) -> Response:
     """Serve cover art image for a show (or specific image file in show folder) with byte range, ETag, and 304 support."""
     show = scanner.cache.get_show(show_id)
+    if not show and "." in show_id:
+        base_id = show_id.rsplit(".", 1)[0]
+        show = scanner.cache.get_show(base_id)
+
     cover_file = None
     if show:
         if file:
@@ -359,7 +365,8 @@ def get_cover_image(show_id: str, request: Request = None, file: Optional[str] =
 
     stat_res = cover_file.stat()
     mtime = stat_res.st_mtime
-    etag = f'"{hashlib.md5(f"{cover_file}:{mtime}:{stat_res.st_size}".encode("utf-8")).hexdigest()}"'
+    file_size = stat_res.st_size
+    etag = f'"{hashlib.md5(f"{cover_file}:{mtime}:{file_size}".encode("utf-8")).hexdigest()}"'
     last_modified_str = email.utils.formatdate(mtime, usegmt=True)
 
     headers = {
@@ -367,6 +374,7 @@ def get_cover_image(show_id: str, request: Request = None, file: Optional[str] =
         "Last-Modified": last_modified_str,
         "Cache-Control": "public, max-age=86400",
         "Accept-Ranges": "bytes",
+        "Content-Length": str(file_size),
     }
 
     if check_conditional_headers(request, etag=etag, last_modified=mtime):
@@ -422,8 +430,9 @@ def stream_audio(show_id: str, filename: str, request: Request = None) -> Respon
         raise HTTPException(status_code=404, detail="Audio file not found")
 
     stat_res = audio_file.stat()
+    file_size = stat_res.st_size
     mtime = stat_res.st_mtime
-    etag = f'"{hashlib.md5(f"{audio_file}:{mtime}:{stat_res.st_size}".encode("utf-8")).hexdigest()}"'
+    etag = f'"{hashlib.md5(f"{audio_file}:{mtime}:{file_size}".encode("utf-8")).hexdigest()}"'
     last_modified_str = email.utils.formatdate(mtime, usegmt=True)
 
     headers = {
@@ -431,6 +440,7 @@ def stream_audio(show_id: str, filename: str, request: Request = None) -> Respon
         "Last-Modified": last_modified_str,
         "Cache-Control": "public, max-age=31536000, immutable",
         "Accept-Ranges": "bytes",
+        "Content-Length": str(file_size),
     }
 
     if request and "range" not in request.headers and check_conditional_headers(request, etag=etag, last_modified=mtime):

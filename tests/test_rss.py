@@ -49,11 +49,31 @@ def test_generate_rss_feed() -> None:
     assert channel.find("title").text == "Daily Tech Podcast"
     assert channel.find("link").text == "http://localhost:8000/show/test_show_123"
 
+    # Test Atom link, category, and explicit elements
+    atom_link = channel.find("{http://www.w3.org/2005/Atom}link")
+    assert atom_link is not None
+    assert atom_link.attrib["href"] == "http://localhost:8000/rss/test_show_123"
+    assert atom_link.attrib["rel"] == "self"
+    assert atom_link.attrib["type"] == "application/rss+xml"
+
+    itunes_category = channel.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}category")
+    assert itunes_category is not None
+    assert itunes_category.attrib["text"] == "Technology"
+
+    itunes_explicit = channel.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}explicit")
+    assert itunes_explicit is not None
+    assert itunes_explicit.text == "false"
+
+    cover_image = channel.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}image")
+    assert cover_image is not None
+    assert cover_image.attrib["href"] == "http://localhost:8000/covers/test_show_123.jpg"
+
     items = channel.findall("item")
     assert len(items) == 1
 
     item = items[0]
     assert item.find("title").text == "Episode 1: Launch Day"
+    assert item.find("link").text == "http://localhost:8000/show/test_show_123#ep-test_show_123_ep_1"
 
     enclosure = item.find("enclosure")
     assert enclosure is not None
