@@ -33,9 +33,12 @@ function initTheme() {
     const toggleBtn = e.target.closest('#theme-toggle');
     if (!toggleBtn) return;
 
-    const activeTheme = document.documentElement.getAttribute('data-theme') ||
-      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    
+    const activeTheme =
+      document.documentElement.getAttribute('data-theme') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light');
+
     const newTheme = activeTheme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('lissn_theme', newTheme);
@@ -71,9 +74,10 @@ function initSectionFiltering() {
   initSearchFilter();
   applyCombinedFilters();
 
-  tabs.forEach(tab => {
+  tabs.forEach((tab) => {
     tab.addEventListener('click', (e) => {
-      activeSectionFilter = e.currentTarget.getAttribute('data-section') || 'all';
+      activeSectionFilter =
+        e.currentTarget.getAttribute('data-section') || 'all';
       applyCombinedFilters();
       updateFilterUrl();
     });
@@ -129,7 +133,7 @@ function updateFilterUrl() {
 
 function applyCombinedFilters() {
   const tabs = document.querySelectorAll('.toolbar .tab-btn');
-  tabs.forEach(tab => {
+  tabs.forEach((tab) => {
     const sec = tab.getAttribute('data-section');
     if (sec === activeSectionFilter) {
       tab.classList.add('active');
@@ -151,14 +155,23 @@ function applyCombinedFilters() {
   let visiblePodcastsCount = 0;
   let totalVisibleCount = 0;
 
-  cards.forEach(card => {
+  cards.forEach((card) => {
     const cardSection = card.getAttribute('data-section');
-    const title = (card.getAttribute('data-title') || card.querySelector('.show-title-link')?.textContent || '').toLowerCase();
+    const title = (
+      card.getAttribute('data-title') ||
+      card.querySelector('.show-title-link')?.textContent ||
+      ''
+    ).toLowerCase();
     const author = (card.getAttribute('data-author') || '').toLowerCase();
     const publisher = (card.getAttribute('data-publisher') || '').toLowerCase();
 
-    const matchesSection = (activeSectionFilter === 'all' || cardSection === activeSectionFilter);
-    const matchesSearch = !query || title.includes(query) || author.includes(query) || publisher.includes(query);
+    const matchesSection =
+      activeSectionFilter === 'all' || cardSection === activeSectionFilter;
+    const matchesSearch =
+      !query ||
+      title.includes(query) ||
+      author.includes(query) ||
+      publisher.includes(query);
 
     if (matchesSection && matchesSearch) {
       card.style.display = 'flex';
@@ -171,17 +184,21 @@ function applyCombinedFilters() {
   });
 
   if (sectionBooks) {
-    const showBooksSection = (activeSectionFilter === 'all' || activeSectionFilter === 'books') && visibleBooksCount > 0;
+    const showBooksSection =
+      (activeSectionFilter === 'all' || activeSectionFilter === 'books') &&
+      visibleBooksCount > 0;
     sectionBooks.style.display = showBooksSection ? 'block' : 'none';
   }
 
   if (sectionPodcasts) {
-    const showPodcastsSection = (activeSectionFilter === 'all' || activeSectionFilter === 'podcasts') && visiblePodcastsCount > 0;
+    const showPodcastsSection =
+      (activeSectionFilter === 'all' || activeSectionFilter === 'podcasts') &&
+      visiblePodcastsCount > 0;
     sectionPodcasts.style.display = showPodcastsSection ? 'block' : 'none';
   }
 
   if (noResultsDiv) {
-    if (totalVisibleCount === 0 && (cards.length > 0)) {
+    if (totalVisibleCount === 0 && cards.length > 0) {
       noResultsDiv.style.display = 'block';
       if (searchQuerySpan) {
         searchQuerySpan.textContent = currentSearchQuery || activeSectionFilter;
@@ -203,11 +220,14 @@ function initCopyButtons() {
     const url = copyBtn.getAttribute('data-rss-url');
     if (!url) return;
 
-    navigator.clipboard.writeText(url).then(() => {
-      showToast('📋 RSS feed URL copied to clipboard!');
-    }).catch(() => {
-      showToast('❌ Failed to copy RSS feed link.');
-    });
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        showToast('📋 RSS feed URL copied to clipboard!');
+      })
+      .catch(() => {
+        showToast('❌ Failed to copy RSS feed link.');
+      });
   });
 }
 
@@ -267,26 +287,35 @@ function initSubscribeButtons() {
     if (window.innerWidth > 640) {
       const rect = btn.getBoundingClientRect();
       const scrollY = window.scrollY;
-      popover.style.top = (rect.bottom + scrollY + 8) + 'px';
-      const left = Math.min(rect.left, window.innerWidth - popover.offsetWidth - 12);
+      popover.style.top = rect.bottom + scrollY + 8 + 'px';
+      const left = Math.min(
+        rect.left,
+        window.innerWidth - popover.offsetWidth - 12,
+      );
       popover.style.left = Math.max(8, left) + 'px';
     }
 
     activePopover = popover;
 
     // Copy button inside popover
-    popover.querySelector('.subscribe-popover-copy').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(rssUrl).then(() => showToast('📋 RSS URL copied!'));
-      }
-    });
+    popover
+      .querySelector('.subscribe-popover-copy')
+      .addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        if (navigator.clipboard) {
+          navigator.clipboard
+            .writeText(rssUrl)
+            .then(() => showToast('📋 RSS URL copied!'));
+        }
+      });
 
     // Close button
-    popover.querySelector('.subscribe-popover-close').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      closeSubscribePopover();
-    });
+    popover
+      .querySelector('.subscribe-popover-close')
+      .addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        closeSubscribePopover();
+      });
   }
 
   // Open popover on Subscribe button click
@@ -330,10 +359,12 @@ function initShareButtons() {
     const url = shareBtn.getAttribute('data-url') || window.location.href;
 
     if (navigator.share) {
-      navigator.share({
-        title: title,
-        url: url
-      }).catch(() => {});
+      navigator
+        .share({
+          title: title,
+          url: url,
+        })
+        .catch(() => {});
     } else {
       navigator.clipboard.writeText(url).then(() => {
         showToast('🔗 Show link copied to clipboard!');
@@ -458,7 +489,11 @@ function toggleShortcutsModal() {
 function initPageShortcuts() {
   document.addEventListener('keydown', (e) => {
     const activeEl = document.activeElement;
-    if (activeEl && (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) || activeEl.isContentEditable)) {
+    if (
+      activeEl &&
+      (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) ||
+        activeEl.isContentEditable)
+    ) {
       return;
     }
     if (e.ctrlKey || e.metaKey || e.altKey) {
@@ -492,7 +527,9 @@ function initPageShortcuts() {
         shareBtn.click();
       }
     } else if (key === 'r') {
-      const copyRssBtn = document.querySelector('.js-subscribe-btn, .js-copy-rss');
+      const copyRssBtn = document.querySelector(
+        '.js-subscribe-btn, .js-copy-rss',
+      );
       if (copyRssBtn) {
         e.preventDefault();
         copyRssBtn.click();
@@ -574,7 +611,12 @@ function initClientNavigation() {
     // Handle Alt-click (Option key on macOS) on podcast show cards or show elements to open show in new window
     if (e.altKey) {
       const showCard = e.target.closest('.show-card');
-      if (showCard && !e.target.closest('.card-actions, .js-copy-rss, a[href^="podcast:"], a[href^="podcasts:"]')) {
+      if (
+        showCard &&
+        !e.target.closest(
+          '.card-actions, .js-copy-rss, a[href^="podcast:"], a[href^="podcasts:"]',
+        )
+      ) {
         const showLink = showCard.querySelector('a[href^="/show/"]');
         if (showLink) {
           const href = showLink.getAttribute('href');
@@ -643,7 +685,7 @@ function initClientNavigation() {
 async function navigateTo(urlStr, isPushState = true) {
   try {
     const response = await fetch(urlStr, {
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
     });
 
     if (!response.ok) {
@@ -680,8 +722,11 @@ async function navigateTo(urlStr, isPushState = true) {
     if (newNavActions && currentNavActions) {
       currentNavActions.innerHTML = newNavActions.innerHTML;
       updateAuthButtonUI();
-      const activeTheme = document.documentElement.getAttribute('data-theme') ||
-        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const activeTheme =
+        document.documentElement.getAttribute('data-theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light');
       const toggleBtn = document.getElementById('theme-toggle');
       if (toggleBtn) {
         updateThemeButtonText(toggleBtn, activeTheme);
@@ -710,7 +755,10 @@ async function navigateTo(urlStr, isPushState = true) {
     // Scroll down to and focus target show card if returning to library
     handleHashNavigation(urlStr);
   } catch (err) {
-    console.warn('Navigation fetch error, falling back to full page load:', err);
+    console.warn(
+      'Navigation fetch error, falling back to full page load:',
+      err,
+    );
     window.location.href = urlStr;
   }
 }
@@ -720,7 +768,10 @@ async function navigateTo(urlStr, isPushState = true) {
  */
 function handleHashNavigation(urlStr) {
   try {
-    const targetUrl = new URL(urlStr || window.location.href, window.location.origin);
+    const targetUrl = new URL(
+      urlStr || window.location.href,
+      window.location.origin,
+    );
     let targetId = null;
 
     if (targetUrl.hash) {
@@ -742,7 +793,9 @@ function handleHashNavigation(urlStr) {
     const cardSection = targetCard.getAttribute('data-section');
     if (cardSection) {
       const activeTab = document.querySelector('.tab-btn.active');
-      const activeSection = activeTab ? activeTab.getAttribute('data-section') : 'all';
+      const activeSection = activeTab
+        ? activeTab.getAttribute('data-section')
+        : 'all';
       if (activeSection !== 'all' && activeSection !== cardSection) {
         applyFilter('all');
       }
@@ -763,7 +816,6 @@ function handleHashNavigation(urlStr) {
     };
 
     setTimeout(scrollAndFocus, 60);
-
   } catch (err) {
     console.warn('Error handling hash navigation:', err);
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -804,7 +856,8 @@ function initMediaPlayer() {
   let activePlaylist = [];
   let currentTrackIndex = -1;
   let isAutoContinue = localStorage.getItem('lissn_auto_continue') !== 'false'; // Default to true
-  let isRemainingTimeMode = localStorage.getItem('lissn_remaining_time_mode') === 'true';
+  let isRemainingTimeMode =
+    localStorage.getItem('lissn_remaining_time_mode') === 'true';
   let sleepTimerInterval = null;
   let sleepTimerEndTime = null;
   let pendingRestoreTime = null;
@@ -817,7 +870,9 @@ function initMediaPlayer() {
 
     const announcer = document.getElementById('aria-announcer');
     if (announcer) {
-      announcer.textContent = isRemainingTimeMode ? 'Displaying remaining episode time' : 'Displaying total episode duration';
+      announcer.textContent = isRemainingTimeMode
+        ? 'Displaying remaining episode time'
+        : 'Displaying total episode duration';
     }
   }
 
@@ -844,11 +899,17 @@ function initMediaPlayer() {
     if (isRemainingTimeMode) {
       const remaining = Math.max(0, dur - cur);
       totalTimeEl.textContent = '-' + formatTime(remaining);
-      totalTimeEl.setAttribute('aria-label', `Remaining time: ${formatTime(remaining)}. Click to toggle total duration`);
+      totalTimeEl.setAttribute(
+        'aria-label',
+        `Remaining time: ${formatTime(remaining)}. Click to toggle total duration`,
+      );
       totalTimeEl.setAttribute('title', 'Click to toggle total duration');
     } else {
       totalTimeEl.textContent = formatTime(dur);
-      totalTimeEl.setAttribute('aria-label', `Total duration: ${formatTime(dur)}. Click to toggle remaining time`);
+      totalTimeEl.setAttribute(
+        'aria-label',
+        `Total duration: ${formatTime(dur)}. Click to toggle remaining time`,
+      );
       totalTimeEl.setAttribute('title', 'Click to toggle remaining time');
     }
   }
@@ -870,7 +931,7 @@ function initMediaPlayer() {
 
   function startSleepTimer(minutes) {
     cancelSleepTimer(false);
-    sleepTimerEndTime = Date.now() + (minutes * 60 * 1000);
+    sleepTimerEndTime = Date.now() + minutes * 60 * 1000;
 
     const labelStr = minutes === 60 ? '1 hour' : `${minutes} minutes`;
     showToast(`🌙 Sleep timer set for ${labelStr}`);
@@ -942,10 +1003,15 @@ function initMediaPlayer() {
 
   // Helper to check if a playlist track matches the currently loaded audio element src
   function isCurrentlyLoadedTrack(track, altSrc = null) {
-    const srcToCheck = (track && track.src) ? track.src : altSrc;
+    const srcToCheck = track && track.src ? track.src : altSrc;
     if (!srcToCheck) return false;
     const currentSrc = audioElement.getAttribute('src') || audioElement.src;
-    if (!currentSrc || currentSrc === window.location.href || currentSrc.endsWith('/')) return false;
+    if (
+      !currentSrc ||
+      currentSrc === window.location.href ||
+      currentSrc.endsWith('/')
+    )
+      return false;
     try {
       const normCurrent = new URL(currentSrc, window.location.origin).href;
       const normTrack = new URL(srcToCheck, window.location.origin).href;
@@ -959,17 +1025,21 @@ function initMediaPlayer() {
   function syncPlayerWithPage() {
     const trackRows = Array.from(document.querySelectorAll('.track-row'));
     if (trackRows.length > 0) {
-      activePlaylist = trackRows.map((row, idx) => ({
-        index: idx,
-        src: row.getAttribute('data-audio-src'),
-        trackTitle: row.getAttribute('data-track-title') || 'Track',
-        showTitle: row.getAttribute('data-show-title') || 'lissn',
-        coverUrl: row.getAttribute('data-cover-url'),
-        element: row
-      })).filter(t => Boolean(t.src));
+      activePlaylist = trackRows
+        .map((row, idx) => ({
+          index: idx,
+          src: row.getAttribute('data-audio-src'),
+          trackTitle: row.getAttribute('data-track-title') || 'Track',
+          showTitle: row.getAttribute('data-show-title') || 'lissn',
+          coverUrl: row.getAttribute('data-cover-url'),
+          element: row,
+        }))
+        .filter((t) => Boolean(t.src));
 
       // Check if current playing src matches any track on the current page
-      const foundIdx = activePlaylist.findIndex(t => isCurrentlyLoadedTrack(t));
+      const foundIdx = activePlaylist.findIndex((t) =>
+        isCurrentlyLoadedTrack(t),
+      );
       currentTrackIndex = foundIdx;
     } else if (activePlaylist.length === 0) {
       currentTrackIndex = -1;
@@ -995,7 +1065,7 @@ function initMediaPlayer() {
       trackTitle: trackRow.getAttribute('data-track-title') || 'Track',
       showTitle: trackRow.getAttribute('data-show-title') || 'lissn',
       coverUrl: trackRow.getAttribute('data-cover-url'),
-      element: trackRow
+      element: trackRow,
     };
   }
 
@@ -1019,17 +1089,21 @@ function initMediaPlayer() {
       } else {
         const playPromise = audioElement.play();
         if (playPromise !== undefined) {
-          playPromise.then(() => updatePlayButtonUI(true)).catch(err => {
-            console.warn('Play error:', err);
-            updatePlayButtonUI(false);
-          });
+          playPromise
+            .then(() => updatePlayButtonUI(true))
+            .catch((err) => {
+              console.warn('Play error:', err);
+              updatePlayButtonUI(false);
+            });
         }
       }
       return;
     }
 
     // Try finding matching index in activePlaylist
-    let foundIdx = activePlaylist.findIndex(t => isCurrentlyLoadedTrack(t, clickedTrack.src));
+    let foundIdx = activePlaylist.findIndex((t) =>
+      isCurrentlyLoadedTrack(t, clickedTrack.src),
+    );
     if (foundIdx !== -1) {
       playTrack(foundIdx);
     } else {
@@ -1040,7 +1114,13 @@ function initMediaPlayer() {
 
   // Handle click on track rows anywhere in the page (via delegation)
   document.addEventListener('click', (e) => {
-    if (e.target.closest('audio') || e.target.closest('a') || e.target.closest('button.btn-secondary') || e.target.closest('.js-copy-rss')) return;
+    if (
+      e.target.closest('audio') ||
+      e.target.closest('a') ||
+      e.target.closest('button.btn-secondary') ||
+      e.target.closest('.js-copy-rss')
+    )
+      return;
 
     const trackRow = e.target.closest('.track-row');
     if (trackRow) {
@@ -1050,8 +1130,14 @@ function initMediaPlayer() {
 
   // Support Keyboard Enter key on focused track row
   document.addEventListener('keydown', (e) => {
-    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
-    if (document.activeElement && document.activeElement.classList.contains('track-row')) {
+    if (
+      ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)
+    )
+      return;
+    if (
+      document.activeElement &&
+      document.activeElement.classList.contains('track-row')
+    ) {
       if (e.key === 'Enter') {
         e.preventDefault();
         handleTrackActivation(document.activeElement);
@@ -1062,12 +1148,14 @@ function initMediaPlayer() {
   function updateMediaSessionMetadata(track) {
     if ('mediaSession' in navigator && track) {
       try {
-        const artwork = track.coverUrl ? [{ src: track.coverUrl, sizes: '512x512', type: 'image/png' }] : [];
+        const artwork = track.coverUrl
+          ? [{ src: track.coverUrl, sizes: '512x512', type: 'image/png' }]
+          : [];
         navigator.mediaSession.metadata = new MediaMetadata({
           title: track.trackTitle || 'lissn',
           artist: track.showTitle || 'lissn',
           album: track.showTitle || 'lissn',
-          artwork: artwork
+          artwork: artwork,
         });
       } catch (e) {}
     }
@@ -1091,12 +1179,16 @@ function initMediaPlayer() {
       track = activePlaylist[target];
     } else if (typeof target === 'object' && target !== null && target.src) {
       track = target;
-      const existingIdx = activePlaylist.findIndex(t => isCurrentlyLoadedTrack(t, track.src));
+      const existingIdx = activePlaylist.findIndex((t) =>
+        isCurrentlyLoadedTrack(t, track.src),
+      );
       if (existingIdx !== -1) {
         currentTrackIndex = existingIdx;
       } else {
         syncPlayerWithPage();
-        const recheckIdx = activePlaylist.findIndex(t => isCurrentlyLoadedTrack(t, track.src));
+        const recheckIdx = activePlaylist.findIndex((t) =>
+          isCurrentlyLoadedTrack(t, track.src),
+        );
         if (recheckIdx !== -1) {
           currentTrackIndex = recheckIdx;
         } else {
@@ -1110,21 +1202,24 @@ function initMediaPlayer() {
 
     pendingRestoreTime = null;
     audioElement.src = track.src;
-    audioElement.playbackRate = parseFloat(speedSelect ? speedSelect.value : 1.0) || 1.0;
+    audioElement.playbackRate =
+      parseFloat(speedSelect ? speedSelect.value : 1.0) || 1.0;
 
     const playPromise = audioElement.play();
     if (playPromise !== undefined) {
-      playPromise.then(() => {
-        updatePlayButtonUI(true);
-        savePlayerState();
-        updateMediaSessionMetadata(track);
-      }).catch(err => {
-        console.warn('Playback play promise error:', err);
-        updatePlayButtonUI(false);
-        if (err.name === 'NotAllowedError') {
-          showToast('▶ Click play button to start audio playback');
-        }
-      });
+      playPromise
+        .then(() => {
+          updatePlayButtonUI(true);
+          savePlayerState();
+          updateMediaSessionMetadata(track);
+        })
+        .catch((err) => {
+          console.warn('Playback play promise error:', err);
+          updatePlayButtonUI(false);
+          if (err.name === 'NotAllowedError') {
+            showToast('▶ Click play button to start audio playback');
+          }
+        });
     }
 
     // Update metadata UI
@@ -1144,12 +1239,18 @@ function initMediaPlayer() {
     updateMediaSessionMetadata(track);
   }
 
-  const SVG_PLAY = '<svg class="player-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>';
-  const SVG_PAUSE = '<svg class="player-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
-  const SVG_VOL_HIGH = '<svg class="player-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
-  const SVG_VOL_MUTE = '<svg class="player-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="1" y1="1" x2="23" y2="23"></line><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon></svg>';
-  const SVG_TRACK_PLAY = '<svg class="btn-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-  const SVG_TRACK_PAUSE = '<svg class="btn-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
+  const SVG_PLAY =
+    '<svg class="player-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>';
+  const SVG_PAUSE =
+    '<svg class="player-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
+  const SVG_VOL_HIGH =
+    '<svg class="player-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+  const SVG_VOL_MUTE =
+    '<svg class="player-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="1" y1="1" x2="23" y2="23"></line><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon></svg>';
+  const SVG_TRACK_PLAY =
+    '<svg class="btn-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+  const SVG_TRACK_PAUSE =
+    '<svg class="btn-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
 
   function highlightActiveTrackRow() {
     const trackRows = document.querySelectorAll('.track-row');
@@ -1161,7 +1262,10 @@ function initMediaPlayer() {
 
       if (isCurrent) {
         row.classList.add('active-track');
-        if (playBtnEl) playBtnEl.innerHTML = audioElement.paused ? SVG_TRACK_PLAY : SVG_TRACK_PAUSE;
+        if (playBtnEl)
+          playBtnEl.innerHTML = audioElement.paused
+            ? SVG_TRACK_PLAY
+            : SVG_TRACK_PAUSE;
       } else {
         row.classList.remove('active-track');
         if (playBtnEl) playBtnEl.innerHTML = SVG_TRACK_PLAY;
@@ -1172,7 +1276,10 @@ function initMediaPlayer() {
   function updatePlayButtonUI(isPlaying) {
     if (playBtn) {
       playBtn.innerHTML = isPlaying ? SVG_PAUSE : SVG_PLAY;
-      playBtn.setAttribute('aria-label', isPlaying ? 'Pause audio' : 'Play audio');
+      playBtn.setAttribute(
+        'aria-label',
+        isPlaying ? 'Pause audio' : 'Play audio',
+      );
     }
     highlightActiveTrackRow();
   }
@@ -1253,7 +1360,10 @@ function initMediaPlayer() {
 
   if (skipFwdBtn) {
     skipFwdBtn.addEventListener('click', () => {
-      audioElement.currentTime = Math.min(audioElement.duration || 0, audioElement.currentTime + 10);
+      audioElement.currentTime = Math.min(
+        audioElement.duration || 0,
+        audioElement.currentTime + 10,
+      );
     });
   }
 
@@ -1263,7 +1373,11 @@ function initMediaPlayer() {
       isAutoContinue = !isAutoContinue;
       localStorage.setItem('lissn_auto_continue', isAutoContinue);
       updateAutoContinueUI();
-      showToast(isAutoContinue ? '🔁 Auto-continue enabled' : '⏸ Auto-continue disabled');
+      showToast(
+        isAutoContinue
+          ? '🔁 Auto-continue enabled'
+          : '⏸ Auto-continue disabled',
+      );
     });
   }
 
@@ -1281,10 +1395,19 @@ function initMediaPlayer() {
   // Handle End of Track (Auto-Continue to next episode/chapter)
   audioElement.addEventListener('ended', () => {
     updatePlayButtonUI(false);
-    if (isAutoContinue && currentTrackIndex >= 0 && currentTrackIndex < activePlaylist.length - 1) {
-      showToast(`▶ Auto-continuing: ${activePlaylist[currentTrackIndex + 1].trackTitle}`);
+    if (
+      isAutoContinue &&
+      currentTrackIndex >= 0 &&
+      currentTrackIndex < activePlaylist.length - 1
+    ) {
+      showToast(
+        `▶ Auto-continuing: ${activePlaylist[currentTrackIndex + 1].trackTitle}`,
+      );
       playTrack(currentTrackIndex + 1);
-    } else if (currentTrackIndex >= activePlaylist.length - 1 && activePlaylist.length > 0) {
+    } else if (
+      currentTrackIndex >= activePlaylist.length - 1 &&
+      activePlaylist.length > 0
+    ) {
       showToast('🎉 End of show playlist');
     }
   });
@@ -1352,8 +1475,13 @@ function initMediaPlayer() {
     try {
       if (audioElement.readyState >= 1) {
         audioElement.currentTime = pendingRestoreTime;
-        if (currentTimeEl) currentTimeEl.textContent = formatTime(pendingRestoreTime);
-        if (!isNaN(audioElement.duration) && audioElement.duration > 0 && seekBar) {
+        if (currentTimeEl)
+          currentTimeEl.textContent = formatTime(pendingRestoreTime);
+        if (
+          !isNaN(audioElement.duration) &&
+          audioElement.duration > 0 &&
+          seekBar
+        ) {
           seekBar.value = (pendingRestoreTime / audioElement.duration) * 100;
         }
         pendingRestoreTime = null;
@@ -1377,7 +1505,11 @@ function initMediaPlayer() {
     if (!audioElement.src) return;
 
     let timeToSave = audioElement.currentTime || 0;
-    if (pendingRestoreTime !== null && pendingRestoreTime > 0 && timeToSave === 0) {
+    if (
+      pendingRestoreTime !== null &&
+      pendingRestoreTime > 0 &&
+      timeToSave === 0
+    ) {
       timeToSave = pendingRestoreTime;
     }
 
@@ -1385,9 +1517,10 @@ function initMediaPlayer() {
       src: audioElement.getAttribute('src') || audioElement.src,
       trackTitle: trackTitleEl ? trackTitleEl.textContent : '',
       showTitle: showTitleEl ? showTitleEl.textContent : '',
-      coverUrl: (coverImg && coverImg.style.display !== 'none') ? coverImg.src : null,
+      coverUrl:
+        coverImg && coverImg.style.display !== 'none' ? coverImg.src : null,
       currentTime: timeToSave,
-      paused: audioElement.paused
+      paused: audioElement.paused,
     };
     try {
       sessionStorage.setItem('lissn_player_state', JSON.stringify(state));
@@ -1407,8 +1540,10 @@ function initMediaPlayer() {
       audioElement.setAttribute('src', state.src);
       audioElement.src = state.src;
 
-      if (trackTitleEl && state.trackTitle) trackTitleEl.textContent = state.trackTitle;
-      if (showTitleEl && state.showTitle) showTitleEl.textContent = state.showTitle;
+      if (trackTitleEl && state.trackTitle)
+        trackTitleEl.textContent = state.trackTitle;
+      if (showTitleEl && state.showTitle)
+        showTitleEl.textContent = state.showTitle;
 
       if (state.coverUrl) {
         coverImg.src = state.coverUrl;
@@ -1427,16 +1562,21 @@ function initMediaPlayer() {
       }
 
       if (!state.paused) {
-        if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+        if (
+          globalAuthState.passwordRequired &&
+          !globalAuthState.authenticated
+        ) {
           openPasswordModal(() => {
             const playPromise = audioElement.play();
             if (playPromise !== undefined) {
-              playPromise.then(() => {
-                updatePlayButtonUI(true);
-              }).catch((err) => {
-                console.warn('Playback error after auth unlock:', err);
-                updatePlayButtonUI(false);
-              });
+              playPromise
+                .then(() => {
+                  updatePlayButtonUI(true);
+                })
+                .catch((err) => {
+                  console.warn('Playback error after auth unlock:', err);
+                  updatePlayButtonUI(false);
+                });
             }
           });
           return;
@@ -1444,12 +1584,17 @@ function initMediaPlayer() {
 
         const playPromise = audioElement.play();
         if (playPromise !== undefined) {
-          playPromise.then(() => {
-            updatePlayButtonUI(true);
-          }).catch((err) => {
-            console.warn('Autoplay on restore blocked by browser policy:', err);
-            updatePlayButtonUI(false);
-          });
+          playPromise
+            .then(() => {
+              updatePlayButtonUI(true);
+            })
+            .catch((err) => {
+              console.warn(
+                'Autoplay on restore blocked by browser policy:',
+                err,
+              );
+              updatePlayButtonUI(false);
+            });
         } else {
           updatePlayButtonUI(false);
         }
@@ -1481,7 +1626,8 @@ function initMediaPlayer() {
     if (trackTitleEl) trackTitleEl.textContent = 'Select a track';
     if (showTitleEl) showTitleEl.textContent = 'lissn player';
     if (currentTimeEl) currentTimeEl.textContent = '0:00';
-    if (totalTimeEl) totalTimeEl.textContent = isRemainingTimeMode ? '-0:00' : '0:00';
+    if (totalTimeEl)
+      totalTimeEl.textContent = isRemainingTimeMode ? '-0:00' : '0:00';
     if (seekBar) seekBar.value = 0;
 
     highlightActiveTrackRow();
@@ -1493,7 +1639,10 @@ function initMediaPlayer() {
 
   // Global Keyboard Shortcuts (Left/Right seek, N next, P prev, Esc close)
   document.addEventListener('keydown', (e) => {
-    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+    if (
+      ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)
+    )
+      return;
 
     if (e.code === 'ArrowLeft') {
       e.preventDefault();
@@ -1535,7 +1684,7 @@ function getInitialAuthState() {
       const data = JSON.parse(el.textContent);
       return {
         authenticated: Boolean(data.authenticated),
-        passwordRequired: Boolean(data.password_required)
+        passwordRequired: Boolean(data.password_required),
       };
     } catch (e) {}
   }
@@ -1551,10 +1700,12 @@ function updateAuthButtonUI() {
 
   authBtn.hidden = false;
   if (globalAuthState.authenticated) {
-    authBtn.innerHTML = '<span class="btn-icon">🚪</span><span class="btn-text"> Log Out</span>';
+    authBtn.innerHTML =
+      '<span class="btn-icon">🚪</span><span class="btn-text"> Log Out</span>';
     authBtn.setAttribute('aria-label', 'Log out of session');
   } else {
-    authBtn.innerHTML = '<span class="btn-icon">🔑</span><span class="btn-text"> Log In</span>';
+    authBtn.innerHTML =
+      '<span class="btn-icon">🔑</span><span class="btn-text"> Log In</span>';
     authBtn.setAttribute('aria-label', 'Log in to session');
   }
 }
@@ -1587,14 +1738,18 @@ let pendingDownloadAction = null;
 function isAnyModalOpen() {
   const passwordModal = document.getElementById('password-modal');
   const editModal = document.getElementById('edit-modal');
-  const downloadWarningModal = document.getElementById('download-warning-modal');
+  const downloadWarningModal = document.getElementById(
+    'download-warning-modal',
+  );
   const coverModal = document.getElementById('cover-modal');
   const shortcutsModal = document.getElementById('shortcuts-modal');
-  return (passwordModal && !passwordModal.hidden) ||
-         (editModal && !editModal.hidden) ||
-         (downloadWarningModal && !downloadWarningModal.hidden) ||
-         (coverModal && !coverModal.hasAttribute('hidden')) ||
-         (shortcutsModal && !shortcutsModal.hidden);
+  return (
+    (passwordModal && !passwordModal.hidden) ||
+    (editModal && !editModal.hidden) ||
+    (downloadWarningModal && !downloadWarningModal.hidden) ||
+    (coverModal && !coverModal.hasAttribute('hidden')) ||
+    (shortcutsModal && !shortcutsModal.hidden)
+  );
 }
 
 function openDownloadWarningModal(pendingAction, formattedSize) {
@@ -1690,7 +1845,7 @@ function initAuthSystem() {
         const res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
+          body: JSON.stringify({ password }),
         });
 
         if (res.ok) {
@@ -1712,7 +1867,8 @@ function initAuthSystem() {
           globalAuthState.authenticated = false;
           updateAuthButtonUI();
           if (passwordError) {
-            passwordError.textContent = errData.detail || 'Sorry, the password is incorrect.';
+            passwordError.textContent =
+              errData.detail || 'Sorry, the password is incorrect.';
             passwordError.hidden = false;
           }
         }
@@ -1734,7 +1890,9 @@ function initAuthSystem() {
           if (audioElement.src) {
             const playPromise = audioElement.play();
             if (playPromise !== undefined) {
-              playPromise.then(() => updatePlayButtonUI(true)).catch(() => updatePlayButtonUI(false));
+              playPromise
+                .then(() => updatePlayButtonUI(true))
+                .catch(() => updatePlayButtonUI(false));
             }
           }
         });
@@ -1750,9 +1908,14 @@ function initAuthSystem() {
 
   // Modal close button delegation and backdrop click listener for login, edit, and download warning modals
   document.addEventListener('click', (e) => {
-    const isCloseBtn = e.target.matches('.js-close-modal') || e.target.closest('.js-close-modal');
+    const isCloseBtn =
+      e.target.matches('.js-close-modal') ||
+      e.target.closest('.js-close-modal');
     const target = e.target;
-    const isBackdropClick = target.classList && target.classList.contains('modal-backdrop') && mouseDownTarget === target;
+    const isBackdropClick =
+      target.classList &&
+      target.classList.contains('modal-backdrop') &&
+      mouseDownTarget === target;
 
     if (isCloseBtn) {
       closePasswordModal();
@@ -1809,7 +1972,9 @@ function initCoverModal() {
       if (modal && !modal.hasAttribute('hidden')) {
         closeCoverModal();
       } else {
-        const coverUrl = zoomBtn.getAttribute('data-cover-url') || zoomBtn.querySelector('img')?.src;
+        const coverUrl =
+          zoomBtn.getAttribute('data-cover-url') ||
+          zoomBtn.querySelector('img')?.src;
         const showTitle = zoomBtn.getAttribute('data-show-title') || '';
         if (coverUrl) {
           openCoverModal(coverUrl, showTitle);
@@ -1865,12 +2030,17 @@ function initMarkdownEditor() {
 
   // Delegated click listener for protected download actions
   document.addEventListener('click', (e) => {
-    const downloadBtn = e.target.closest('.js-download-track, .js-download-show');
+    const downloadBtn = e.target.closest(
+      '.js-download-track, .js-download-show',
+    );
     if (downloadBtn) {
       const href = downloadBtn.getAttribute('href');
 
       const triggerDownload = () => {
-        if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+        if (
+          globalAuthState.passwordRequired &&
+          !globalAuthState.authenticated
+        ) {
           openPasswordModal(() => {
             if (href) window.location.href = href;
           });
@@ -1880,8 +2050,12 @@ function initMarkdownEditor() {
       };
 
       if (downloadBtn.classList.contains('js-download-show')) {
-        const totalBytes = parseInt(downloadBtn.getAttribute('data-total-bytes') || '0', 10);
-        const formattedSize = downloadBtn.getAttribute('data-formatted-size') || '';
+        const totalBytes = parseInt(
+          downloadBtn.getAttribute('data-total-bytes') || '0',
+          10,
+        );
+        const formattedSize =
+          downloadBtn.getAttribute('data-formatted-size') || '';
         const hundredMB = 100 * 1024 * 1024;
         if (totalBytes >= hundredMB) {
           e.preventDefault();
@@ -1933,7 +2107,9 @@ function initMarkdownEditor() {
         if (typeof editForm.requestSubmit === 'function') {
           editForm.requestSubmit();
         } else {
-          editForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          editForm.dispatchEvent(
+            new Event('submit', { cancelable: true, bubbles: true }),
+          );
         }
       }
     }
@@ -1946,7 +2122,8 @@ function initMarkdownEditor() {
       const showId = document.getElementById('edit-show-id')?.value;
       const title = document.getElementById('edit-title-input')?.value || '';
       const author = document.getElementById('edit-author-input')?.value || '';
-      const publisher = document.getElementById('edit-publisher-input')?.value || '';
+      const publisher =
+        document.getElementById('edit-publisher-input')?.value || '';
       const descInput = document.getElementById('edit-description-input');
       const description = descInput ? descInput.value : '';
       const coverFileInput = document.getElementById('edit-cover-file');
@@ -1958,20 +2135,25 @@ function initMarkdownEditor() {
       try {
         let updatedCoverShow = null;
         // Handle cover file upload if selected
-        if (coverFileInput && coverFileInput.files && coverFileInput.files.length > 0) {
+        if (
+          coverFileInput &&
+          coverFileInput.files &&
+          coverFileInput.files.length > 0
+        ) {
           const file = coverFileInput.files[0];
           const formData = new FormData();
           formData.append('file', file);
 
           const uploadRes = await fetch(`/api/shows/${showId}/upload-cover`, {
             method: 'POST',
-            body: formData
+            body: formData,
           });
 
           if (!uploadRes.ok) {
             const errData = await uploadRes.json().catch(() => ({}));
             if (errorEl) {
-              errorEl.textContent = errData.detail || 'Failed to upload cover image.';
+              errorEl.textContent =
+                errData.detail || 'Failed to upload cover image.';
               errorEl.hidden = false;
             }
             return;
@@ -1984,13 +2166,14 @@ function initMarkdownEditor() {
           const selectRes = await fetch(`/api/shows/${showId}/select-cover`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: coverSelect.value })
+            body: JSON.stringify({ filename: coverSelect.value }),
           });
 
           if (!selectRes.ok) {
             const errData = await selectRes.json().catch(() => ({}));
             if (errorEl) {
-              errorEl.textContent = errData.detail || 'Failed to select cover image.';
+              errorEl.textContent =
+                errData.detail || 'Failed to select cover image.';
               errorEl.hidden = false;
             }
             return;
@@ -2004,7 +2187,7 @@ function initMarkdownEditor() {
         const res = await fetch(`/api/shows/${showId}/edit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, author, publisher, description })
+          body: JSON.stringify({ title, author, publisher, description }),
         });
 
         if (res.ok) {
@@ -2022,7 +2205,8 @@ function initMarkdownEditor() {
             closeEditModal();
             openPasswordModal();
           } else if (errorEl) {
-            errorEl.textContent = errData.detail || 'Failed to update show metadata.';
+            errorEl.textContent =
+              errData.detail || 'Failed to update show metadata.';
             errorEl.hidden = false;
           }
         }
@@ -2040,7 +2224,9 @@ function initMarkdownEditor() {
     if (e.target && e.target.id === 'edit-cover-select') {
       const showId = document.getElementById('edit-show-id')?.value;
       const coverPreview = document.getElementById('edit-cover-preview');
-      const coverPlaceholder = document.getElementById('edit-cover-placeholder');
+      const coverPlaceholder = document.getElementById(
+        'edit-cover-placeholder',
+      );
       const coverFileInput = document.getElementById('edit-cover-file');
       const errorEl = document.getElementById('edit-form-error');
 
@@ -2066,7 +2252,9 @@ function initMarkdownEditor() {
       const errorEl = document.getElementById('edit-form-error');
       const coverSelect = document.getElementById('edit-cover-select');
       const coverPreview = document.getElementById('edit-cover-preview');
-      const coverPlaceholder = document.getElementById('edit-cover-placeholder');
+      const coverPlaceholder = document.getElementById(
+        'edit-cover-placeholder',
+      );
 
       if (coverSelect) coverSelect.value = '';
       if (!file) return;
@@ -2075,7 +2263,8 @@ function initMarkdownEditor() {
       const ext = '.' + file.name.split('.').pop().toLowerCase();
       if (!allowedExts.includes(ext)) {
         if (errorEl) {
-          errorEl.textContent = 'Invalid file format. Please choose a WebP, PNG, or JPEG image.';
+          errorEl.textContent =
+            'Invalid file format. Please choose a WebP, PNG, or JPEG image.';
           errorEl.hidden = false;
         }
         e.target.value = '';
@@ -2182,7 +2371,9 @@ async function openEditModal(btn) {
   const editModal = document.getElementById('edit-modal');
   if (!editModal) return;
 
-  const showId = btn.getAttribute('data-show-id') || document.getElementById('edit-show-id')?.value;
+  const showId =
+    btn.getAttribute('data-show-id') ||
+    document.getElementById('edit-show-id')?.value;
   const title = btn.getAttribute('data-title') || '';
   const author = btn.getAttribute('data-author') || '';
   const publisher = btn.getAttribute('data-publisher') || '';
@@ -2202,8 +2393,11 @@ async function openEditModal(btn) {
   const section = btn.getAttribute('data-section') || '';
   const authorGroup = document.getElementById('edit-author-group');
   const publisherGroup = document.getElementById('edit-publisher-group');
-  if (authorGroup) authorGroup.style.display = (section === 'podcasts') ? 'none' : 'block';
-  if (publisherGroup) publisherGroup.style.display = (section === 'books' || !section) ? 'none' : 'block';
+  if (authorGroup)
+    authorGroup.style.display = section === 'podcasts' ? 'none' : 'block';
+  if (publisherGroup)
+    publisherGroup.style.display =
+      section === 'books' || !section ? 'none' : 'block';
 
   if (showIdInput) showIdInput.value = showId;
   if (titleInput) titleInput.value = title;
@@ -2223,13 +2417,14 @@ async function openEditModal(btn) {
   if (coverPlaceholder) coverPlaceholder.style.display = 'none';
 
   if (coverSelect) {
-    coverSelect.innerHTML = '<option value="">-- Keep current cover --</option>';
+    coverSelect.innerHTML =
+      '<option value="">-- Keep current cover --</option>';
     try {
       const imgRes = await fetch(`/api/shows/${showId}/images`);
       if (imgRes.ok) {
         const imgData = await imgRes.json();
         if (imgData.images && imgData.images.length > 0) {
-          imgData.images.forEach(img => {
+          imgData.images.forEach((img) => {
             const opt = document.createElement('option');
             opt.value = img.filename;
             opt.textContent = `${img.filename} (${img.formatted_size})`;
@@ -2274,7 +2469,9 @@ function switchToPreviewTab() {
   if (descInput) descInput.hidden = true;
   if (mdToolbar) mdToolbar.style.display = 'none';
   if (descPreview) {
-    descPreview.innerHTML = renderSimpleMarkdown(descInput ? descInput.value : '');
+    descPreview.innerHTML = renderSimpleMarkdown(
+      descInput ? descInput.value : '',
+    );
     descPreview.hidden = false;
   }
 }
@@ -2311,14 +2508,23 @@ function updateShowPageDOM(show) {
   if (detailHeader) {
     const detailInfo = detailHeader.querySelector('.detail-info');
     if (detailInfo) {
-      let bylineEl = detailInfo.querySelector('div[style*="color: var(--text-muted)"]');
+      let bylineEl = detailInfo.querySelector(
+        'div[style*="color: var(--text-muted)"]',
+      );
       const isBook = show.section === 'books';
-      const labelText = isBook ? (show.author ? `by ${show.author}` : '') : (show.publisher ? show.publisher : '');
+      const labelText = isBook
+        ? show.author
+          ? `by ${show.author}`
+          : ''
+        : show.publisher
+          ? show.publisher
+          : '';
 
       if (labelText) {
         if (!bylineEl) {
           bylineEl = document.createElement('div');
-          bylineEl.style.cssText = 'font-size: 1.1rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.8rem; font-weight: 500;';
+          bylineEl.style.cssText =
+            'font-size: 1.1rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.8rem; font-weight: 500;';
           if (detailTitle) detailTitle.after(bylineEl);
         }
         if (isBook) {
@@ -2342,35 +2548,48 @@ function updateShowPageDOM(show) {
     const coverUrl = `/covers/${show.show_id}?v=${timestamp}`;
 
     // 1. Update show page detail cover container (show.html)
-    const detailCoverContainer = document.querySelector('.detail-cover-container');
+    const detailCoverContainer = document.querySelector(
+      '.detail-cover-container',
+    );
     if (detailCoverContainer) {
       if (show.cover_path) {
-        const existingImg = detailCoverContainer.querySelector('img.detail-cover');
-        const existingLink = detailCoverContainer.querySelector('.detail-cover-link, .js-zoom-cover');
+        const existingImg =
+          detailCoverContainer.querySelector('img.detail-cover');
+        const existingLink = detailCoverContainer.querySelector(
+          '.detail-cover-link, .js-zoom-cover',
+        );
         if (existingImg) {
           existingImg.src = coverUrl;
           existingImg.alt = `Cover for ${show.title}`;
           if (existingLink) {
             existingLink.setAttribute('data-cover-url', coverUrl);
             existingLink.setAttribute('data-show-title', show.title);
-            existingLink.setAttribute('aria-label', `Zoom cover image for ${show.title}`);
+            existingLink.setAttribute(
+              'aria-label',
+              `Zoom cover image for ${show.title}`,
+            );
           }
         } else {
-          const placeholder = detailCoverContainer.querySelector('.placeholder-cover');
+          const placeholder =
+            detailCoverContainer.querySelector('.placeholder-cover');
           if (placeholder) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'detail-cover-link js-zoom-cover';
             btn.setAttribute('data-cover-url', coverUrl);
             btn.setAttribute('data-show-title', show.title);
-            btn.setAttribute('aria-label', `Zoom cover image for ${show.title}`);
+            btn.setAttribute(
+              'aria-label',
+              `Zoom cover image for ${show.title}`,
+            );
             btn.setAttribute('title', 'Click to zoom cover image');
             btn.innerHTML = `<img src="${coverUrl}" alt="Cover for ${escapeHtml(show.title)}" class="detail-cover"><span class="cover-zoom-hint" aria-hidden="true">🔍 Zoom</span>`;
             placeholder.replaceWith(btn);
           }
         }
       } else {
-        const existingLink = detailCoverContainer.querySelector('.detail-cover-link');
+        const existingLink =
+          detailCoverContainer.querySelector('.detail-cover-link');
         if (existingLink) {
           const placeholder = document.createElement('div');
           placeholder.className = 'placeholder-cover detail-cover';
@@ -2385,7 +2604,10 @@ function updateShowPageDOM(show) {
     if (showCard) {
       showCard.setAttribute('data-title', (show.title || '').toLowerCase());
       showCard.setAttribute('data-author', (show.author || '').toLowerCase());
-      showCard.setAttribute('data-publisher', (show.publisher || '').toLowerCase());
+      showCard.setAttribute(
+        'data-publisher',
+        (show.publisher || '').toLowerCase(),
+      );
 
       const cardTitleLink = showCard.querySelector('.show-title-link');
       if (cardTitleLink) cardTitleLink.textContent = show.title;
@@ -2399,7 +2621,8 @@ function updateShowPageDOM(show) {
             cardImg.src = coverUrl;
             cardImg.alt = `Cover for ${show.title}`;
           } else {
-            const cardPlaceholder = coverWrapper.querySelector('.placeholder-cover');
+            const cardPlaceholder =
+              coverWrapper.querySelector('.placeholder-cover');
             if (cardPlaceholder) {
               const newImg = document.createElement('img');
               newImg.src = coverUrl;
@@ -2425,7 +2648,13 @@ function updateShowPageDOM(show) {
       // Update card byline on index
       const isBook = show.section === 'books';
       let cardByline = showCard.querySelector('.card-body .card-byline');
-      const labelText = isBook ? (show.author ? `by ${show.author}` : '') : (show.publisher ? show.publisher : '');
+      const labelText = isBook
+        ? show.author
+          ? `by ${show.author}`
+          : ''
+        : show.publisher
+          ? show.publisher
+          : '';
       if (labelText) {
         if (!cardByline) {
           cardByline = document.createElement('div');
@@ -2444,22 +2673,32 @@ function updateShowPageDOM(show) {
     }
 
     // 3. Update any other matching cover images on page
-    const coverImgs = document.querySelectorAll(`.cover-image, #show-${show.show_id} .cover-image, img.detail-cover`);
-    coverImgs.forEach(img => {
+    const coverImgs = document.querySelectorAll(
+      `.cover-image, #show-${show.show_id} .cover-image, img.detail-cover`,
+    );
+    coverImgs.forEach((img) => {
       img.src = coverUrl;
     });
 
     // 4. Update data-cover-url on episode table/list rows
     if (show.cover_path) {
-      document.querySelectorAll(`[data-audio-src*="/audio/${show.show_id}/"]`).forEach(el => {
-        el.setAttribute('data-cover-url', coverUrl);
-      });
+      document
+        .querySelectorAll(`[data-audio-src*="/audio/${show.show_id}/"]`)
+        .forEach((el) => {
+          el.setAttribute('data-cover-url', coverUrl);
+        });
     }
 
     // 5. Update audio player cover image if currently playing this show
     const playerCover = document.getElementById('player-cover');
-    const playerPlaceholder = document.getElementById('player-cover-placeholder');
-    if (playerCover && playerCover.src && playerCover.src.includes(`/covers/${show.show_id}`)) {
+    const playerPlaceholder = document.getElementById(
+      'player-cover-placeholder',
+    );
+    if (
+      playerCover &&
+      playerCover.src &&
+      playerCover.src.includes(`/covers/${show.show_id}`)
+    ) {
       if (show.cover_path) {
         playerCover.src = coverUrl;
         playerCover.style.display = 'block';
@@ -2478,7 +2717,12 @@ function updateShowPageDOM(show) {
 
   if (show.author) {
     const authorsDatalist = document.getElementById('all-authors-list');
-    if (authorsDatalist && !Array.from(authorsDatalist.options).some(opt => opt.value === show.author)) {
+    if (
+      authorsDatalist &&
+      !Array.from(authorsDatalist.options).some(
+        (opt) => opt.value === show.author,
+      )
+    ) {
       const opt = document.createElement('option');
       opt.value = show.author;
       authorsDatalist.appendChild(opt);
@@ -2486,7 +2730,12 @@ function updateShowPageDOM(show) {
   }
   if (show.publisher) {
     const publishersDatalist = document.getElementById('all-publishers-list');
-    if (publishersDatalist && !Array.from(publishersDatalist.options).some(opt => opt.value === show.publisher)) {
+    if (
+      publishersDatalist &&
+      !Array.from(publishersDatalist.options).some(
+        (opt) => opt.value === show.publisher,
+      )
+    ) {
       const opt = document.createElement('option');
       opt.value = show.publisher;
       publishersDatalist.appendChild(opt);
@@ -2511,10 +2760,20 @@ function applyMarkdownFormatting(textarea, action) {
       replacement = `### ${selectedText || 'Heading'}`;
       break;
     case 'list':
-      replacement = selectedText ? selectedText.split('\n').map(l => `- ${l}`).join('\n') : '- List item';
+      replacement = selectedText
+        ? selectedText
+            .split('\n')
+            .map((l) => `- ${l}`)
+            .join('\n')
+        : '- List item';
       break;
     case 'olist':
-      replacement = selectedText ? selectedText.split('\n').map((l, i) => `${i + 1}. ${l}`).join('\n') : '1. List item';
+      replacement = selectedText
+        ? selectedText
+            .split('\n')
+            .map((l, i) => `${i + 1}. ${l}`)
+            .join('\n')
+        : '1. List item';
       break;
     case 'code':
       replacement = `\`${selectedText || 'code'}\``;
@@ -2546,7 +2805,10 @@ function renderSimpleMarkdown(md) {
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/`(.*?)`/g, '<code>$1</code>')
-    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(
+      /\[(.*?)\]\((.*?)\)/g,
+      '<a href="$2" target="_blank" rel="noopener">$1</a>',
+    )
     .replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>')
     .replace(/\n\n/g, '<br><br>');
   return html;

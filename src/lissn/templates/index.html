@@ -1,177 +1,250 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" title="{{ tooltip_info }}">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>lissn - Audio Books & Podcasts</title>
-  <meta name="description" content="Personal audio library for indexed Audio Books and Podcasts with RSS podcast feed support.">
-  <meta name="version" content="{{ app_version }}">
-  <meta name="git-commit" content="{{ git_commit }}">
-  <meta name="git-commit-name" content="{{ git_commit_name }}">
-  <meta name="github-repository" content="{{ github_url }}">
-  <link rel="revision" href="{{ git_commit_url }}" title="Git Commit {{ git_commit }}">
-  <link rel="repository" href="{{ github_url }}" title="GitHub Repository">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>lissn - Audio Books & Podcasts</title>
+    <meta
+      name="description"
+      content="Personal audio library for indexed Audio Books and Podcasts with RSS podcast feed support."
+    />
+    <meta name="version" content="{{ app_version }}" />
+    <meta name="git-commit" content="{{ git_commit }}" />
+    <meta name="git-commit-name" content="{{ git_commit_name }}" />
+    <meta name="github-repository" content="{{ github_url }}" />
+    <link rel="revision" href="{{ git_commit_url }}" title="Git Commit {{ git_commit }}" />
+    <link rel="repository" href="{{ github_url }}" title="GitHub Repository" />
 
-  <!-- OpenGraph Social Meta Tags for iMessage, Instagram, Twitter, and WhatsApp -->
-  <meta property="og:type" content="music.playlist">
-  <meta property="og:site_name" content="lissn">
-  <meta property="og:title" content="lissn - Audio Books & Podcasts">
-  <meta property="og:description" content="Personal audio library for indexed Audio Books and Podcasts with RSS podcast feed support.">
-  <meta property="og:image" content="{{ base_url }}/static/logo.png">
-  <meta property="og:image:secure_url" content="{{ base_url }}/static/logo.png">
-  <meta property="og:image:type" content="image/png">
-  <meta property="og:image:width" content="600">
-  <meta property="og:image:height" content="600">
-  <meta property="og:image:alt" content="lissn logo">
+    <!-- OpenGraph Social Meta Tags for iMessage, Instagram, Twitter, and WhatsApp -->
+    <meta property="og:type" content="music.playlist" />
+    <meta property="og:site_name" content="lissn" />
+    <meta property="og:title" content="lissn - Audio Books & Podcasts" />
+    <meta
+      property="og:description"
+      content="Personal audio library for indexed Audio Books and Podcasts with RSS podcast feed support."
+    />
+    <meta property="og:image" content="{{ base_url }}/static/logo.png" />
+    <meta property="og:image:secure_url" content="{{ base_url }}/static/logo.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="600" />
+    <meta property="og:image:height" content="600" />
+    <meta property="og:image:alt" content="lissn logo" />
 
-  <!-- Twitter Card Meta Tags -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="lissn - Audio Books & Podcasts">
-  <meta name="twitter:description" content="Personal audio library for indexed Audio Books and Podcasts with RSS podcast feed support.">
-  <meta name="twitter:image" content="{{ base_url }}/static/logo.png">
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="lissn - Audio Books & Podcasts" />
+    <meta
+      name="twitter:description"
+      content="Personal audio library for indexed Audio Books and Podcasts with RSS podcast feed support."
+    />
+    <meta name="twitter:image" content="{{ base_url }}/static/logo.png" />
 
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
-  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="/static/app.js" defer></script>
-  <script id="lissn-auth-state" type="application/json">
-    {"authenticated": {{ 'true' if authenticated else 'false' }}, "password_required": {{ 'true' if password_required else 'false' }}}
-  </script>
-</head>
-<body>
-  {% if pattern_name and pattern_name != 'none' and pattern_opacity and pattern_opacity > 0 %}
-    <div class="bg-pattern-overlay" style="background-image: url('/static/pattern-{{ pattern_name }}.svg'); opacity: {{ pattern_opacity }};" aria-hidden="true"></div>
-  {% endif %}
-  <div id="aria-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand-link" aria-label="lissn homepage" title="{{ tooltip_info }}">
-        <img src="/static/logo.png" alt="lissn logo" class="brand-logo" width="56" height="56" title="{{ tooltip_info }}">
-        <span>lissn</span>
-      </a>
-      <div class="nav-actions">
-        <a href="{{ github_url }}" target="_blank" rel="noopener noreferrer" class="github-link-btn" title="lissn on GitHub (v{{ app_version }}, commit {{ git_commit }})" aria-label="View source code on GitHub">
-          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-          <span class="btn-text">GitHub</span>
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png" />
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/app.js" defer></script>
+    <script id="lissn-auth-state" type="application/json">
+      {"authenticated": {{ 'true' if authenticated else 'false' }}, "password_required": {{ 'true' if password_required else 'false' }}}
+    </script>
+  </head>
+  <body>
+    {% if pattern_name and pattern_name != 'none' and pattern_opacity and pattern_opacity > 0 %}
+    <div
+      class="bg-pattern-overlay"
+      style="background-image: url('/static/pattern-{{ pattern_name }}.svg'); opacity: {{ pattern_opacity }};"
+      aria-hidden="true"
+    ></div>
+    {% endif %}
+    <div id="aria-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <header class="site-header">
+      <div class="header-container">
+        <a href="/" class="brand-link" aria-label="lissn homepage" title="{{ tooltip_info }}">
+          <img
+            src="/static/logo.png"
+            alt="lissn logo"
+            class="brand-logo"
+            width="56"
+            height="56"
+            title="{{ tooltip_info }}"
+          />
+          <span>lissn</span>
         </a>
-        <button id="auth-btn" class="auth-btn" aria-label="{% if authenticated %}Log out{% else %}Log in{% endif %}">
-          <span class="btn-icon">{% if authenticated %}🚪{% else %}🔑{% endif %}</span><span class="btn-text">{% if authenticated %} Log Out{% else %} Log In{% endif %}</span>
-        </button>
-        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Switch light/dark theme">
-          <span class="btn-icon">🌙</span><span class="btn-text"> Dark</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <main class="main-content">
-    <div class="toolbar">
-      <div class="toolbar-filter-group">
-        <div class="section-tabs" role="tablist" aria-label="Library section filter">
-          <button class="tab-btn active" data-section="all" role="tab" aria-selected="true"><span class="tab-text-full">All Shows</span><span class="tab-text-short">All</span></button>
-          <button class="tab-btn" data-section="books" role="tab" aria-selected="false">📚 <span class="tab-text-full">Audio Books</span><span class="tab-text-short">Books</span> ({{ books|length }})</button>
-          <button class="tab-btn" data-section="podcasts" role="tab" aria-selected="false">🎙️ <span class="tab-text-full">Podcasts</span><span class="tab-text-short">Podcasts</span> ({{ podcasts|length }})</button>
+        <div class="nav-actions">
+          <a
+            href="{{ github_url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="github-link-btn"
+            title="lissn on GitHub (v{{ app_version }}, commit {{ git_commit }})"
+            aria-label="View source code on GitHub"
+          >
+            <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+              />
+            </svg>
+            <span class="btn-text">GitHub</span>
+          </a>
+          <button id="auth-btn" class="auth-btn" aria-label="{% if authenticated %}Log out{% else %}Log in{% endif %}">
+            <span class="btn-icon">{% if authenticated %}🚪{% else %}🔑{% endif %}</span
+            ><span class="btn-text">{% if authenticated %} Log Out{% else %} Log In{% endif %}</span>
+          </button>
+          <button id="theme-toggle" class="theme-toggle-btn" aria-label="Switch light/dark theme">
+            <span class="btn-icon">🌙</span><span class="btn-text"> Dark</span>
+          </button>
         </div>
-        <div class="search-filter-wrapper">
-          <input type="search" id="library-search-input" class="search-input" placeholder="🔍 Search title, author, publisher..." aria-label="Search shows by title, author, or publisher" autocomplete="off" spellcheck="false">
-          <button type="button" id="search-clear-btn" class="search-clear-btn" aria-label="Clear search" hidden>✕</button>
-        </div>
       </div>
-      {% if authenticated %}
-        <button id="rescan-btn" class="rescan-btn">
-          🔄 Rescan Library
-        </button>
-      {% endif %}
-    </div>
+    </header>
 
-    <!-- Audio Books Section -->
-    <section id="section-books" aria-labelledby="heading-books">
-      <h2 id="heading-books" class="section-title">📚 Audio Books</h2>
-      {% if books %}
+    <main class="main-content">
+      <div class="toolbar">
+        <div class="toolbar-filter-group">
+          <div class="section-tabs" role="tablist" aria-label="Library section filter">
+            <button class="tab-btn active" data-section="all" role="tab" aria-selected="true">
+              <span class="tab-text-full">All Shows</span><span class="tab-text-short">All</span>
+            </button>
+            <button class="tab-btn" data-section="books" role="tab" aria-selected="false">
+              📚 <span class="tab-text-full">Audio Books</span><span class="tab-text-short">Books</span> ({{
+              books|length }})
+            </button>
+            <button class="tab-btn" data-section="podcasts" role="tab" aria-selected="false">
+              🎙️ <span class="tab-text-full">Podcasts</span><span class="tab-text-short">Podcasts</span> ({{
+              podcasts|length }})
+            </button>
+          </div>
+          <div class="search-filter-wrapper">
+            <input
+              type="search"
+              id="library-search-input"
+              class="search-input"
+              placeholder="🔍 Search title, author, publisher..."
+              aria-label="Search shows by title, author, or publisher"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" id="search-clear-btn" class="search-clear-btn" aria-label="Clear search" hidden>
+              ✕
+            </button>
+          </div>
+        </div>
+        {% if authenticated %}
+        <button id="rescan-btn" class="rescan-btn">🔄 Rescan Library</button>
+        {% endif %}
+      </div>
+
+      <!-- Audio Books Section -->
+      <section id="section-books" aria-labelledby="heading-books">
+        <h2 id="heading-books" class="section-title">📚 Audio Books</h2>
+        {% if books %}
         <div class="shows-grid">
           {% for show in books %}
-            <article class="show-card" id="show-{{ show.show_id }}" data-section="books" data-title="{{ show.title|lower }}" data-author="{{ (show.author or '')|lower }}" data-publisher="" tabindex="-1">
-              <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
-                {% if show.cover_path %}
-                  <img src="/covers/{{ show.show_id }}{% if show.updated_at %}?v={{ show.updated_at|int }}{% endif %}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
-                {% else %}
-                  <div class="placeholder-cover">
-                    <span>📚</span>
-                    <span>{{ show.title }}</span>
-                  </div>
-                {% endif %}
-                <span class="section-badge">Book</span>
-              </a>
-              <div class="card-body">
-                <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
-                {% if show.author %}
-                  <div class="card-byline">
-                    by {{ show.author }}
-                  </div>
-                {% endif %}
+          <article
+            class="show-card"
+            id="show-{{ show.show_id }}"
+            data-section="books"
+            data-title="{{ show.title|lower }}"
+            data-author="{{ (show.author or '')|lower }}"
+            data-publisher=""
+            tabindex="-1"
+          >
+            <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
+              {% if show.cover_path %}
+              <img
+                src="/covers/{{ show.show_id }}{% if show.updated_at %}?v={{ show.updated_at|int }}{% endif %}"
+                alt="Cover for {{ show.title }}"
+                class="cover-image"
+                loading="lazy"
+              />
+              {% else %}
+              <div class="placeholder-cover">
+                <span>📚</span>
+                <span>{{ show.title }}</span>
               </div>
-            </article>
+              {% endif %}
+              <span class="section-badge">Book</span>
+            </a>
+            <div class="card-body">
+              <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
+              {% if show.author %}
+              <div class="card-byline">by {{ show.author }}</div>
+              {% endif %}
+            </div>
+          </article>
           {% endfor %}
         </div>
-      {% else %}
-        <p class="text-muted" style="margin-bottom: 2rem;">No Audio Books found in library folder.</p>
-      {% endif %}
-    </section>
+        {% else %}
+        <p class="text-muted" style="margin-bottom: 2rem">No Audio Books found in library folder.</p>
+        {% endif %}
+      </section>
 
-    <!-- Podcasts Section -->
-    <section id="section-podcasts" aria-labelledby="heading-podcasts">
-      <h2 id="heading-podcasts" class="section-title">🎙️ Podcasts</h2>
-      {% if podcasts %}
+      <!-- Podcasts Section -->
+      <section id="section-podcasts" aria-labelledby="heading-podcasts">
+        <h2 id="heading-podcasts" class="section-title">🎙️ Podcasts</h2>
+        {% if podcasts %}
         <div class="shows-grid">
           {% for show in podcasts %}
-            <article class="show-card" id="show-{{ show.show_id }}" data-section="podcasts" data-title="{{ show.title|lower }}" data-author="" data-publisher="{{ (show.publisher or '')|lower }}" tabindex="-1">
-              <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
-                {% if show.cover_path %}
-                  <img src="/covers/{{ show.show_id }}{% if show.updated_at %}?v={{ show.updated_at|int }}{% endif %}" alt="Cover for {{ show.title }}" class="cover-image" loading="lazy">
-                {% else %}
-                  <div class="placeholder-cover">
-                    <span>🎙️</span>
-                    <span>{{ show.title }}</span>
-                  </div>
-                {% endif %}
-                <span class="section-badge">Podcast</span>
-              </a>
-              <div class="card-body">
-                <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
-                {% if show.publisher %}
-                  <div class="card-byline">
-                    <span class="publisher-label">{{ show.publisher }}</span>
-                  </div>
-                {% endif %}
+          <article
+            class="show-card"
+            id="show-{{ show.show_id }}"
+            data-section="podcasts"
+            data-title="{{ show.title|lower }}"
+            data-author=""
+            data-publisher="{{ (show.publisher or '')|lower }}"
+            tabindex="-1"
+          >
+            <a href="/show/{{ show.show_id }}" class="cover-wrapper" aria-label="View {{ show.title }}">
+              {% if show.cover_path %}
+              <img
+                src="/covers/{{ show.show_id }}{% if show.updated_at %}?v={{ show.updated_at|int }}{% endif %}"
+                alt="Cover for {{ show.title }}"
+                class="cover-image"
+                loading="lazy"
+              />
+              {% else %}
+              <div class="placeholder-cover">
+                <span>🎙️</span>
+                <span>{{ show.title }}</span>
               </div>
-            </article>
+              {% endif %}
+              <span class="section-badge">Podcast</span>
+            </a>
+            <div class="card-body">
+              <a href="/show/{{ show.show_id }}" class="show-title-link">{{ show.title }}</a>
+              {% if show.publisher %}
+              <div class="card-byline">
+                <span class="publisher-label">{{ show.publisher }}</span>
+              </div>
+              {% endif %}
+            </div>
+          </article>
           {% endfor %}
         </div>
-      {% else %}
+        {% else %}
         <p class="text-muted">No Podcasts found in library folder.</p>
-      {% endif %}
-    </section>
+        {% endif %}
+      </section>
 
-    <div id="no-search-results" class="no-search-results" style="display: none;">
-      <p class="text-muted" style="text-align: center; margin: 3rem 0; font-size: 1.05rem;">
-        🔍 No matching shows found for "<span id="search-query-text"></span>".
-      </p>
-    </div>
-  </main>
+      <div id="no-search-results" class="no-search-results" style="display: none">
+        <p class="text-muted" style="text-align: center; margin: 3rem 0; font-size: 1.05rem">
+          🔍 No matching shows found for "<span id="search-query-text"></span>".
+        </p>
+      </div>
+    </main>
 
-  <footer class="site-footer">
-    <p>lissn &bull; Personal Audiobook & Podcast Hub</p>
-  </footer>
+    <footer class="site-footer">
+      <p>lissn &bull; Personal Audiobook & Podcast Hub</p>
+    </footer>
 
-  {% if authenticated %}
+    {% if authenticated %}
     <!-- Floating Bottom Media Player -->
     <div id="bottom-player" class="bottom-player" aria-label="Audio player" role="region">
       <div class="bottom-player-container">
-        
         <!-- Track Metadata -->
         <div class="player-track-info">
-          <img id="player-cover" src="" alt="Cover thumbnail" class="player-cover-img" style="display: none;">
+          <img id="player-cover" src="" alt="Cover thumbnail" class="player-cover-img" style="display: none" />
           <div id="player-cover-placeholder" class="player-cover-placeholder">🎙️</div>
           <div class="player-text-details">
             <div id="player-track-title" class="player-track-title">Select a track</div>
@@ -182,33 +255,114 @@
         <!-- Center Controls & Scrub Bar -->
         <div class="player-center-controls">
           <div class="player-btn-group">
-            <button type="button" id="player-prev-btn" class="player-control-btn" aria-label="Previous track" title="Previous track (P)">
-              <svg class="player-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <button
+              type="button"
+              id="player-prev-btn"
+              class="player-control-btn"
+              aria-label="Previous track"
+              title="Previous track (P)"
+            >
+              <svg
+                class="player-icon"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <polygon points="19 20 9 12 19 4 19 20"></polygon>
                 <line x1="5" y1="19" x2="5" y2="5"></line>
               </svg>
             </button>
-            <button type="button" id="player-skip-back-btn" class="player-control-btn" aria-label="Rewind 10 seconds" title="Rewind 10s (←)">
-              <svg class="player-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <button
+              type="button"
+              id="player-skip-back-btn"
+              class="player-control-btn"
+              aria-label="Rewind 10 seconds"
+              title="Rewind 10s (←)"
+            >
+              <svg
+                class="player-icon"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                 <path d="M3 3v5h5"></path>
               </svg>
               <span class="btn-text">10s</span>
             </button>
-            <button type="button" id="player-play-btn" class="player-control-btn player-btn-primary" aria-label="Play audio" title="Play / Pause">
-              <svg class="player-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <button
+              type="button"
+              id="player-play-btn"
+              class="player-control-btn player-btn-primary"
+              aria-label="Play audio"
+              title="Play / Pause"
+            >
+              <svg
+                class="player-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
                 <polygon points="6 3 20 12 6 21 6 3"></polygon>
               </svg>
             </button>
-            <button type="button" id="player-skip-fwd-btn" class="player-control-btn" aria-label="Forward 10 seconds" title="Forward 10s (→)">
+            <button
+              type="button"
+              id="player-skip-fwd-btn"
+              class="player-control-btn"
+              aria-label="Forward 10 seconds"
+              title="Forward 10s (→)"
+            >
               <span class="btn-text">10s</span>
-              <svg class="player-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <svg
+                class="player-icon"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
                 <path d="M21 3v5h-5"></path>
               </svg>
             </button>
-            <button type="button" id="player-next-btn" class="player-control-btn" aria-label="Next track" title="Next track (N)">
-              <svg class="player-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <button
+              type="button"
+              id="player-next-btn"
+              class="player-control-btn"
+              aria-label="Next track"
+              title="Next track (N)"
+            >
+              <svg
+                class="player-icon"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <polygon points="5 4 15 12 5 20 5 4"></polygon>
                 <line x1="19" y1="5" x2="19" y2="19"></line>
               </svg>
@@ -217,15 +371,49 @@
 
           <div class="player-timeline-row">
             <span id="player-current-time" class="player-time-text">0:00</span>
-            <input type="range" id="player-seek-bar" class="player-seek-bar" min="0" max="100" value="0" step="0.1" aria-label="Seek track position">
-            <span id="player-total-time" class="player-time-text player-time-toggleable" tabindex="0" role="button" aria-label="Total duration. Click to toggle remaining time" title="Click to toggle remaining time">0:00</span>
+            <input
+              type="range"
+              id="player-seek-bar"
+              class="player-seek-bar"
+              min="0"
+              max="100"
+              value="0"
+              step="0.1"
+              aria-label="Seek track position"
+            />
+            <span
+              id="player-total-time"
+              class="player-time-text player-time-toggleable"
+              tabindex="0"
+              role="button"
+              aria-label="Total duration. Click to toggle remaining time"
+              title="Click to toggle remaining time"
+              >0:00</span
+            >
           </div>
         </div>
 
         <!-- Right Controls: Auto-Continue, Sleep Timer, Speed & Volume -->
         <div class="player-right-controls">
-          <button type="button" id="auto-continue-btn" class="player-control-btn auto-continue-btn active" aria-label="Toggle auto-continue playback" title="Auto-Next: Automatically play next track when episode finishes">
-            <svg class="player-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <button
+            type="button"
+            id="auto-continue-btn"
+            class="player-control-btn auto-continue-btn active"
+            aria-label="Toggle auto-continue playback"
+            title="Auto-Next: Automatically play next track when episode finishes"
+          >
+            <svg
+              class="player-icon"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
               <polygon points="5 4 15 12 5 20 5 4"></polygon>
               <line x1="19" y1="5" x2="19" y2="19"></line>
             </svg>
@@ -233,8 +421,25 @@
           </button>
 
           <div class="sleep-timer-wrapper">
-            <button type="button" id="sleep-timer-btn" class="player-control-btn sleep-timer-btn" aria-label="Sleep timer menu" title="Set Sleep Timer">
-              <svg class="player-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <button
+              type="button"
+              id="sleep-timer-btn"
+              class="player-control-btn sleep-timer-btn"
+              aria-label="Sleep timer menu"
+              title="Set Sleep Timer"
+            >
+              <svg
+                class="player-icon"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
               </svg>
               <span class="btn-text">Timer</span>
@@ -252,7 +457,12 @@
           </div>
 
           <div class="player-extra-controls">
-            <select id="player-speed-select" class="player-speed-select" aria-label="Playback speed" title="Playback speed">
+            <select
+              id="player-speed-select"
+              class="player-speed-select"
+              aria-label="Playback speed"
+              title="Playback speed"
+            >
               <option value="0.75">0.75x</option>
               <option value="1" selected>1.0x</option>
               <option value="1.25">1.25x</option>
@@ -260,163 +470,304 @@
               <option value="2">2.0x</option>
             </select>
 
-            <button type="button" id="player-mute-btn" class="player-control-btn player-btn-subtle" aria-label="Mute audio" title="Mute/Unmute">
-              <svg class="player-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <button
+              type="button"
+              id="player-mute-btn"
+              class="player-control-btn player-btn-subtle"
+              aria-label="Mute audio"
+              title="Mute/Unmute"
+            >
+              <svg
+                class="player-icon"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
               </svg>
             </button>
-            <input type="range" id="player-volume-slider" class="player-volume-slider" min="0" max="1" value="1" step="0.05" aria-label="Volume slider">
+            <input
+              type="range"
+              id="player-volume-slider"
+              class="player-volume-slider"
+              min="0"
+              max="1"
+              value="1"
+              step="0.05"
+              aria-label="Volume slider"
+            />
           </div>
 
-          <button type="button" id="player-close-btn" class="player-control-btn player-btn-subtle player-close-btn" aria-label="Close audio player" title="Close player (Esc)">
-            <svg class="player-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <button
+            type="button"
+            id="player-close-btn"
+            class="player-control-btn player-btn-subtle player-close-btn"
+            aria-label="Close audio player"
+            title="Close player (Esc)"
+          >
+            <svg
+              class="player-icon"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
-
       </div>
       <!-- Global HTML5 Audio Element -->
       <audio id="global-audio-element" preload="metadata"></audio>
     </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Password Authentication Modal -->
-  <div id="password-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-labelledby="password-modal-title">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2 id="password-modal-title" class="modal-title">🔒 Password Required</h2>
-        <button type="button" class="modal-close-btn js-close-modal" aria-label="Close modal">&times;</button>
+    <!-- Password Authentication Modal -->
+    <div
+      id="password-modal"
+      class="modal-backdrop"
+      hidden
+      aria-hidden="true"
+      role="dialog"
+      aria-labelledby="password-modal-title"
+    >
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="password-modal-title" class="modal-title">🔒 Password Required</h2>
+          <button type="button" class="modal-close-btn js-close-modal" aria-label="Close modal">&times;</button>
+        </div>
+        <form id="password-form" class="modal-body">
+          <p class="modal-text">Enter password to play audio, download, or edit show details.</p>
+          <div class="form-group">
+            <label for="password-input" class="form-label">Password</label>
+            <input
+              type="password"
+              id="password-input"
+              class="form-control"
+              placeholder="Enter password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary js-close-modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Unlock Session</button>
+          </div>
+          <div id="password-error" class="error-message" aria-live="assertive" style="margin-top: 1rem">
+            Sorry, the password is incorrect.
+          </div>
+        </form>
       </div>
-      <form id="password-form" class="modal-body">
-        <p class="modal-text">Enter password to play audio, download, or edit show details.</p>
-        <div class="form-group">
-          <label for="password-input" class="form-label">Password</label>
-          <input type="password" id="password-input" class="form-control" placeholder="Enter password" required autocomplete="current-password">
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary js-close-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Unlock Session</button>
-        </div>
-        <div id="password-error" class="error-message" aria-live="assertive" style="margin-top: 1rem;">Sorry, the password is incorrect.</div>
-      </form>
     </div>
-  </div>
 
-  <!-- Edit Metadata Modal -->
-  <div id="edit-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-labelledby="edit-modal-title">
-    <div class="modal-card modal-card-lg">
-      <div class="modal-header">
-        <h2 id="edit-modal-title" class="modal-title">✏️ Edit Show Details</h2>
-        <button type="button" class="modal-close-btn js-close-modal" aria-label="Close modal">&times;</button>
-      </div>
-      <form id="edit-show-form" class="modal-body">
-        <input type="hidden" id="edit-show-id" value="">
-        
-        <div class="form-group">
-          <label for="edit-title-input" class="form-label">Title</label>
-          <input type="text" id="edit-title-input" class="form-control" required placeholder="Show title" value="">
+    <!-- Edit Metadata Modal -->
+    <div
+      id="edit-modal"
+      class="modal-backdrop"
+      hidden
+      aria-hidden="true"
+      role="dialog"
+      aria-labelledby="edit-modal-title"
+    >
+      <div class="modal-card modal-card-lg">
+        <div class="modal-header">
+          <h2 id="edit-modal-title" class="modal-title">✏️ Edit Show Details</h2>
+          <button type="button" class="modal-close-btn js-close-modal" aria-label="Close modal">&times;</button>
         </div>
+        <form id="edit-show-form" class="modal-body">
+          <input type="hidden" id="edit-show-id" value="" />
 
-        <div class="form-group">
-          <label for="edit-author-input" class="form-label">Author / Host</label>
-          <input type="text" id="edit-author-input" class="form-control" placeholder="Author or host name" value="">
-        </div>
+          <div class="form-group">
+            <label for="edit-title-input" class="form-label">Title</label>
+            <input type="text" id="edit-title-input" class="form-control" required placeholder="Show title" value="" />
+          </div>
 
-        <!-- Cover Art Selection & Upload -->
-        <div class="form-group cover-edit-group">
-          <label class="form-label">Cover Art</label>
-          <div class="cover-edit-container">
-            <button type="button" class="cover-preview-wrapper" id="edit-cover-preview-wrapper" aria-label="Upload cover image" title="Click or drag & drop image to upload">
-              <img id="edit-cover-preview" src="" alt="Current cover preview" class="edit-cover-img" style="display: none;">
-              <div id="edit-cover-placeholder" class="edit-cover-placeholder">🖼️</div>
-              <div class="cover-drop-overlay">
-                <span class="cover-drop-icon">📷</span>
-                <span class="cover-drop-text">Click or drop</span>
-              </div>
-            </button>
-            <div class="cover-options-wrapper">
-              <div class="cover-option-row">
-                <label for="edit-cover-select" class="form-sublabel">Select image from show folder:</label>
-                <select id="edit-cover-select" class="form-control">
-                  <option value="">-- Keep current cover --</option>
-                </select>
-              </div>
-              <div class="cover-option-divider"><span>OR</span></div>
-              <div class="cover-option-row">
-                <label for="edit-cover-file" class="form-sublabel">Upload new image file (max 5MB):</label>
-                <input type="file" id="edit-cover-file" class="form-control" accept="image/webp,image/png,image/jpeg">
-                <small class="form-text-hint">Allowed formats: .webp, .png, .jpg, .jpeg (max 5MB)</small>
+          <div class="form-group">
+            <label for="edit-author-input" class="form-label">Author / Host</label>
+            <input type="text" id="edit-author-input" class="form-control" placeholder="Author or host name" value="" />
+          </div>
+
+          <!-- Cover Art Selection & Upload -->
+          <div class="form-group cover-edit-group">
+            <label class="form-label">Cover Art</label>
+            <div class="cover-edit-container">
+              <button
+                type="button"
+                class="cover-preview-wrapper"
+                id="edit-cover-preview-wrapper"
+                aria-label="Upload cover image"
+                title="Click or drag & drop image to upload"
+              >
+                <img
+                  id="edit-cover-preview"
+                  src=""
+                  alt="Current cover preview"
+                  class="edit-cover-img"
+                  style="display: none"
+                />
+                <div id="edit-cover-placeholder" class="edit-cover-placeholder">🖼️</div>
+                <div class="cover-drop-overlay">
+                  <span class="cover-drop-icon">📷</span>
+                  <span class="cover-drop-text">Click or drop</span>
+                </div>
+              </button>
+              <div class="cover-options-wrapper">
+                <div class="cover-option-row">
+                  <label for="edit-cover-select" class="form-sublabel">Select image from show folder:</label>
+                  <select id="edit-cover-select" class="form-control">
+                    <option value="">-- Keep current cover --</option>
+                  </select>
+                </div>
+                <div class="cover-option-divider"><span>OR</span></div>
+                <div class="cover-option-row">
+                  <label for="edit-cover-file" class="form-sublabel">Upload new image file (max 5MB):</label>
+                  <input
+                    type="file"
+                    id="edit-cover-file"
+                    class="form-control"
+                    accept="image/webp,image/png,image/jpeg"
+                  />
+                  <small class="form-text-hint">Allowed formats: .webp, .png, .jpg, .jpeg (max 5MB)</small>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="form-group">
-          <div class="label-toolbar-row">
-            <label for="edit-description-input" class="form-label">Description (Markdown)</label>
-            <div class="tab-toggle-group">
-              <button type="button" class="tab-btn active" id="tab-write-btn">Write</button>
-              <button type="button" class="tab-btn" id="tab-preview-btn">Preview</button>
+          <div class="form-group">
+            <div class="label-toolbar-row">
+              <label for="edit-description-input" class="form-label">Description (Markdown)</label>
+              <div class="tab-toggle-group">
+                <button type="button" class="tab-btn active" id="tab-write-btn">Write</button>
+                <button type="button" class="tab-btn" id="tab-preview-btn">Preview</button>
+              </div>
+            </div>
+
+            <!-- Markdown Formatting Toolbar -->
+            <div id="md-toolbar" class="md-toolbar" aria-label="Markdown formatting tools">
+              <button type="button" class="md-btn" data-md-action="bold" title="Bold (**text**)" aria-label="Bold">
+                <strong>B</strong>
+              </button>
+              <button type="button" class="md-btn" data-md-action="italic" title="Italic (*text*)" aria-label="Italic">
+                <em>I</em>
+              </button>
+              <button
+                type="button"
+                class="md-btn"
+                data-md-action="heading"
+                title="Heading (### Heading)"
+                aria-label="Heading"
+              >
+                H
+              </button>
+              <button
+                type="button"
+                class="md-btn"
+                data-md-action="list"
+                title="Bullet List (- item)"
+                aria-label="Bullet list"
+              >
+                • List
+              </button>
+              <button
+                type="button"
+                class="md-btn"
+                data-md-action="olist"
+                title="Numbered List (1. item)"
+                aria-label="Numbered list"
+              >
+                1. List
+              </button>
+              <button type="button" class="md-btn" data-md-action="code" title="Code (`code`)" aria-label="Code">
+                &lt;/&gt;
+              </button>
+              <button type="button" class="md-btn" data-md-action="quote" title="Quote (> text)" aria-label="Quote">
+                “”
+              </button>
+              <button type="button" class="md-btn" data-md-action="link" title="Link ([text](url))" aria-label="Link">
+                🔗
+              </button>
+            </div>
+
+            <div class="editor-container">
+              <textarea
+                id="edit-description-input"
+                class="form-control md-textarea"
+                rows="8"
+                placeholder="Add description in Markdown format..."
+              ></textarea>
+              <div id="edit-description-preview" class="md-preview-pane" hidden></div>
             </div>
           </div>
 
-          <!-- Markdown Formatting Toolbar -->
-          <div id="md-toolbar" class="md-toolbar" aria-label="Markdown formatting tools">
-            <button type="button" class="md-btn" data-md-action="bold" title="Bold (**text**)" aria-label="Bold"><strong>B</strong></button>
-            <button type="button" class="md-btn" data-md-action="italic" title="Italic (*text*)" aria-label="Italic"><em>I</em></button>
-            <button type="button" class="md-btn" data-md-action="heading" title="Heading (### Heading)" aria-label="Heading">H</button>
-            <button type="button" class="md-btn" data-md-action="list" title="Bullet List (- item)" aria-label="Bullet list">• List</button>
-            <button type="button" class="md-btn" data-md-action="olist" title="Numbered List (1. item)" aria-label="Numbered list">1. List</button>
-            <button type="button" class="md-btn" data-md-action="code" title="Code (`code`)" aria-label="Code">&lt;/&gt;</button>
-            <button type="button" class="md-btn" data-md-action="quote" title="Quote (> text)" aria-label="Quote">“”</button>
-            <button type="button" class="md-btn" data-md-action="link" title="Link ([text](url))" aria-label="Link">🔗</button>
+          <div id="edit-form-error" class="error-message" hidden aria-live="assertive"></div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary js-close-modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
           </div>
-
-          <div class="editor-container">
-            <textarea id="edit-description-input" class="form-control md-textarea" rows="8" placeholder="Add description in Markdown format..."></textarea>
-            <div id="edit-description-preview" class="md-preview-pane" hidden></div>
-          </div>
-        </div>
-
-        <div id="edit-form-error" class="error-message" hidden aria-live="assertive"></div>
-
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary js-close-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Download Warning Modal -->
-  <div id="download-warning-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-labelledby="download-warning-modal-title">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2 id="download-warning-modal-title" class="modal-title">📦 Large Download Warning</h2>
-        <button type="button" class="modal-close-btn js-close-modal" aria-label="Close modal">&times;</button>
+        </form>
       </div>
-      <div class="modal-body">
-        <p id="download-warning-modal-text" class="modal-text">
-          This show is over 100 MB. Audio files are already compressed, so the ZIP archive will be large with minimal additional compression.<br><br>Do you want to proceed with downloading?
-        </p>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary js-close-modal">Cancel</button>
-          <button type="button" id="confirm-download-btn" class="btn btn-primary">Download Archive</button>
+    </div>
+
+    <!-- Download Warning Modal -->
+    <div
+      id="download-warning-modal"
+      class="modal-backdrop"
+      hidden
+      aria-hidden="true"
+      role="dialog"
+      aria-labelledby="download-warning-modal-title"
+    >
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="download-warning-modal-title" class="modal-title">📦 Large Download Warning</h2>
+          <button type="button" class="modal-close-btn js-close-modal" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p id="download-warning-modal-text" class="modal-text">
+            This show is over 100 MB. Audio files are already compressed, so the ZIP archive will be large with minimal
+            additional compression.<br /><br />Do you want to proceed with downloading?
+          </p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary js-close-modal">Cancel</button>
+            <button type="button" id="confirm-download-btn" class="btn btn-primary">Download Archive</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Cover Image Zoom Modal -->
-  <div id="cover-modal" class="modal-backdrop cover-modal-backdrop" hidden aria-hidden="true" role="dialog" aria-label="Zoomed cover image">
-    <div class="cover-modal-content">
-      <button type="button" class="modal-close-btn cover-modal-close js-close-cover-modal" aria-label="Close zoom modal">&times;</button>
-      <img id="cover-modal-image" src="" alt="Zoomed cover image" class="cover-modal-img">
+    <!-- Cover Image Zoom Modal -->
+    <div
+      id="cover-modal"
+      class="modal-backdrop cover-modal-backdrop"
+      hidden
+      aria-hidden="true"
+      role="dialog"
+      aria-label="Zoomed cover image"
+    >
+      <div class="cover-modal-content">
+        <button
+          type="button"
+          class="modal-close-btn cover-modal-close js-close-cover-modal"
+          aria-label="Close zoom modal"
+        >
+          &times;
+        </button>
+        <img id="cover-modal-image" src="" alt="Zoomed cover image" class="cover-modal-img" />
+      </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>
-
