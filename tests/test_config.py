@@ -161,3 +161,26 @@ def test_config_pattern_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     cfg4 = Config()
     assert cfg4.pattern_opacity == 0.0
 
+
+def test_config_scan_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test scan_mode setting initialization, env variable overrides, and invalid fallback handling."""
+    # Default fallback
+    monkeypatch.delenv("LISSN_SCAN_MODE", raising=False)
+    cfg1 = Config()
+    assert cfg1.scan_mode == "incremental"
+
+    # Direct constructor arguments
+    cfg2 = Config(scan_mode="async")
+    assert cfg2.scan_mode == "async"
+
+    # Environment variable overrides
+    monkeypatch.setenv("LISSN_SCAN_MODE", "manual")
+    cfg3 = Config()
+    assert cfg3.scan_mode == "manual"
+
+    # Invalid scan mode fallback
+    monkeypatch.setenv("LISSN_SCAN_MODE", "invalid_mode")
+    cfg4 = Config()
+    assert cfg4.scan_mode == "incremental"
+
+

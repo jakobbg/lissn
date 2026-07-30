@@ -462,6 +462,25 @@ class ScannerCache:
             show["episodes"] = [dict(ep) for ep in ep_cursor.fetchall()]
             return show
 
+    def get_episodes_map(self, show_id: str) -> Dict[str, Dict[str, Any]]:
+        """Retrieve map of resolved file_path -> episode data dict for a given show_id."""
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM episodes WHERE show_id = ?", (show_id,)
+            )
+            return {row["file_path"]: dict(row) for row in cursor.fetchall()}
+
+    def prune_deleted_shows(self, active_show_ids: List[str]) -> None:
+        """Remove shows and episodes from database cache if no longer present on disk."""
+        with self._get_connection() as conn:
+            if not active_show_ids:
+                conn.execute("DELETE FROM episodes")
+                conn.execute("DELETE FROM shows")
+            else:
+                placeholders = ",".join(["?"] * len(active_show_ids))
+                conn.execute(f"DELETE FROM episodes WHERE show_id NOT IN ({placeholders})", active_show_ids)
+                conn.execute(f"DELETE FROM shows WHERE show_id NOT IN ({placeholders})", active_show_ids)
+
     def clear(self) -> None:
         """Clear all cached show and episode entries."""
         with self._get_connection() as conn:
@@ -486,7 +505,7 @@ class LibraryScanner:
         self.max_episodes_per_show = max_episodes_per_show
         self.cache = ScannerCache(db_path)
 
-    def scan_folder(self, section: str, root_dir: Path) -> List[Dict[str, Any]]:
+    def scan_folder(self, section: str, root_dir: Path, force: bool = False) -> List[Dict[str, Any]]:
         """Scan a top-level media directory (Books or Podcasts)."""
         scanned_shows = []
         if not root_dir.exists() or not root_dir.is_dir():
@@ -517,6 +536,9 @@ class LibraryScanner:
             # Limit number of episodes per show based on max_episodes_per_show setting
             audio_files = audio_files[: self.max_episodes_per_show]
 
+            # Fetch existing cached episode metadata for incremental scanning
+            cached_episodes_map = {} if force else self.cache.get_episodes_map(show_id)
+
             episodes = []
             total_duration = 0.0
             total_file_size = 0
@@ -525,15 +547,30 @@ class LibraryScanner:
             for idx, audio_path in enumerate(audio_files, 1):
                 stat = audio_path.stat()
                 mtime = stat.st_mtime
+                file_size = stat.st_size
                 if mtime < earliest_timestamp:
                     earliest_timestamp = mtime
 
-                duration = get_audio_duration(audio_path)
-                total_duration += duration
-                total_file_size += stat.st_size
+                resolved_path_str = str(audio_path.resolve())
+                cached_ep = cached_episodes_map.get(resolved_path_str)
 
-                bitrate_kbps = get_audio_bitrate(audio_path, stat.st_size, duration)
-                title = get_audio_title(audio_path)
+                # Incremental cache check: if file size and mtime match, reuse cached episode metadata
+                if (
+                    cached_ep
+                    and cached_ep.get("file_size") == file_size
+                    and abs(cached_ep.get("added_timestamp", 0) - mtime) < 0.001
+                ):
+                    duration = float(cached_ep.get("duration", 0.0))
+                    bitrate_kbps = int(cached_ep.get("bitrate", 0))
+                    title = str(cached_ep.get("title", ""))
+                else:
+                    duration = get_audio_duration(audio_path)
+                    bitrate_kbps = get_audio_bitrate(audio_path, file_size, duration)
+                    title = get_audio_title(audio_path)
+
+                total_duration += duration
+                total_file_size += file_size
+
                 ep_id = f"{show_id}_ep_{idx}"
                 rel_filename = str(audio_path.relative_to(show_dir))
                 episodes.append(
@@ -541,11 +578,11 @@ class LibraryScanner:
                         "episode_id": ep_id,
                         "title": title,
                         "filename": rel_filename,
-                        "file_path": str(audio_path.resolve()),
+                        "file_path": resolved_path_str,
                         "duration": duration,
                         "formatted_duration": format_duration(duration),
-                        "file_size": stat.st_size,
-                        "formatted_file_size": format_file_size(stat.st_size),
+                        "file_size": file_size,
+                        "formatted_file_size": format_file_size(file_size),
                         "bitrate": bitrate_kbps,
                         "formatted_bitrate": format_bitrate(bitrate_kbps),
                         "added_timestamp": mtime,
@@ -587,10 +624,12 @@ class LibraryScanner:
 
         return scanned_shows
 
-    def scan_all(self) -> Dict[str, Any]:
-        """Scan both Books and Podcasts sections."""
-        books = self.scan_folder("books", self.books_dir)
-        podcasts = self.scan_folder("podcasts", self.podcasts_dir)
+    def scan_all(self, force: bool = False) -> Dict[str, Any]:
+        """Scan both Books and Podcasts sections, optionally forcing full metadata re-parse."""
+        books = self.scan_folder("books", self.books_dir, force=force)
+        podcasts = self.scan_folder("podcasts", self.podcasts_dir, force=force)
+        active_ids = [s["show_id"] for s in books + podcasts]
+        self.cache.prune_deleted_shows(active_ids)
         return {"books": books, "podcasts": podcasts, "total": len(books) + len(podcasts)}
 
     def update_show_metadata(

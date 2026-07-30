@@ -26,6 +26,7 @@ class Config:
         password: Optional[str] = None,
         pattern_name: Optional[str] = None,
         pattern_opacity: Optional[float] = None,
+        scan_mode: Optional[str] = None,
     ) -> None:
         """Initialize configuration with file/env overrides and defaults."""
         base_dir = Path.cwd()
@@ -125,9 +126,23 @@ class Config:
             parsed_opacity = 0.15
         self.pattern_opacity: float = max(0.0, min(1.0, parsed_opacity))
 
+        # Resolve Startup Scan Mode ("incremental", "async", "manual", "full")
+        raw_scan_mode = (
+            scan_mode
+            if scan_mode is not None
+            else os.getenv("LISSN_SCAN_MODE") or json_config.get("scan_mode") or "incremental"
+        )
+        valid_scan_modes = {"incremental", "async", "manual", "full"}
+        clean_scan_mode = str(raw_scan_mode).lower().strip()
+        self.scan_mode: str = clean_scan_mode if clean_scan_mode in valid_scan_modes else "incremental"
+
     def ensure_directories(self) -> None:
         """Ensure media and cache directories exist on disk."""
         self.books_dir.mkdir(parents=True, exist_ok=True)
+        self.podcasts_dir.mkdir(parents=True, exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.cache_db_path.parent.mkdir(parents=True, exist_ok=True)
+
         self.podcasts_dir.mkdir(parents=True, exist_ok=True)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_db_path.parent.mkdir(parents=True, exist_ok=True)

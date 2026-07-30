@@ -1224,5 +1224,65 @@ def test_code_files_cannot_be_streamed_or_downloaded(client: TestClient, temp_li
     assert env_res.status_code == 403
 
 
+def test_api_scan_endpoint_force_param(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test /api/scan endpoint handles force query parameter."""
+    from lissn.app import scanner
+
+    called_force = None
+
+    def mock_scan_all(force: bool = False):
+        nonlocal called_force
+        called_force = force
+        return {"books": [], "podcasts": [], "total": 0}
+
+    monkeypatch.setattr(scanner, "scan_all", mock_scan_all)
+
+    # Test default (force=False)
+    res1 = client.post("/api/scan")
+    assert res1.status_code == 200
+    assert called_force is False
+
+    # Test force=true
+    res2 = client.post("/api/scan?force=true")
+    assert res2.status_code == 200
+    assert called_force is True
+
+
+@pytest.mark.anyio
+async def test_lifespan_scan_modes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test app lifespan context manager respects scan_mode configurations."""
+    from lissn.app import app, config, lifespan, scanner
+
+    scan_mode_passed = None
+
+    def mock_scan_all(force: bool = False):
+        nonlocal scan_mode_passed
+        scan_mode_passed = force
+        return {"books": [], "podcasts": [], "total": 0}
+
+    monkeypatch.setattr(scanner, "scan_all", mock_scan_all)
+
+    # Test incremental
+    monkeypatch.setattr(config, "scan_mode", "incremental")
+    async with lifespan(app):
+        pass
+    assert scan_mode_passed is False
+
+    # Test full
+    scan_mode_passed = None
+    monkeypatch.setattr(config, "scan_mode", "full")
+    async with lifespan(app):
+        pass
+    assert scan_mode_passed is True
+
+    # Test manual (should not call scan_all)
+    scan_mode_passed = None
+    monkeypatch.setattr(config, "scan_mode", "manual")
+    async with lifespan(app):
+        pass
+    assert scan_mode_passed is None
+
+
+
 
 

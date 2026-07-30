@@ -328,4 +328,58 @@ def test_update_show_metadata_and_cover_non_existent(tmp_path: Path) -> None:
     assert res_cover is None
 
 
+def test_incremental_scanning_and_pruning(temp_library, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that incremental scan reuses cached metadata for unchanged files and prunes deleted shows."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
+
+    # Initial scan
+    scanner.scan_all()
+
+    call_count = 0
+
+    def mock_get_audio_duration(file_path):
+        nonlocal call_count
+        call_count += 1
+        return 42.0
+
+    monkeypatch.setattr("lissn.scanner.get_audio_duration", mock_get_audio_duration)
+
+    # Second scan (incremental, force=False): no files modified
+    call_count = 0
+    res_incremental = scanner.scan_all(force=False)
+    assert res_incremental["total"] == 2
+    assert call_count == 0  # mutagen metadata extraction bypassed for all unchanged files!
+
+    # Modify one audio file
+    target_book_file = books_dir / "The Great Gatsby" / "01_chapter1.wav"
+    time.sleep(0.01)
+    target_book_file.write_bytes(b"modified audio data stream")
+
+    # Third scan: only the modified file should trigger get_audio_duration
+    call_count = 0
+    scanner.scan_all(force=False)
+    assert call_count == 1
+
+    # Force scan: all files re-parsed regardless of mtime
+    call_count = 0
+    scanner.scan_all(force=True)
+    assert call_count == 4  # 3 chapters in book + 1 in podcast
+
+    # Pruning test: remove podcast show directory
+    podcast_show_dir = podcasts_dir / "Tech Talk Podcast"
+    import shutil
+    shutil.rmtree(podcast_show_dir)
+
+    res_pruned = scanner.scan_all()
+    assert res_pruned["total"] == 1
+    shows_in_db = scanner.cache.get_all_shows()
+    assert len(shows_in_db) == 1
+    assert shows_in_db[0]["section"] == "books"
+
+
+
 

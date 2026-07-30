@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 import zipfile
 
-from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -201,9 +201,9 @@ class SelectCoverRequest(BaseModel):
 
 
 @app.middleware("http")
-async def add_protocol_security_headers(request: Request, call_next):
-    """Middleware attaching modern web protocol and security headers to HTTP responses."""
-    response: Response = await call_next(request)
+async def security_headers_middleware(request: Request, call_next):
+    """Add security and modern browser headers to all HTTP responses."""
+    response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -215,8 +215,16 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app_instance: FastAPI):
-    """Perform initial library scan on application startup."""
-    scanner.scan_all()
+    """Perform initial library scan on application startup based on configured scan_mode."""
+    mode = config.scan_mode
+    if mode == "incremental":
+        scanner.scan_all(force=False)
+    elif mode == "full":
+        scanner.scan_all(force=True)
+    elif mode == "async":
+        asyncio.create_task(asyncio.to_thread(scanner.scan_all, False))
+    elif mode == "manual":
+        pass  # Skip startup scan completely
     yield
 
 app.router.lifespan_context = lifespan
@@ -678,9 +686,9 @@ def api_auth_status(request: Request) -> Dict[str, Any]:
 
 
 @app.post("/api/scan")
-def api_rescan_library() -> Response:
-    """REST API endpoint to trigger full library rescan."""
-    result = scanner.scan_all()
+def api_rescan_library(force: bool = Query(False)) -> Response:
+    """REST API endpoint to trigger library rescan."""
+    result = scanner.scan_all(force=force)
     return {"status": "success", "scanned": result}
 
 

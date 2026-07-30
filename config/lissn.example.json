@@ -4,5 +4,6 @@
   "cache_dir": "./data/cache",
   "host": "0.0.0.0",
   "port": 8000,
-  "base_url": "http://localhost:8000"
+  "base_url": "http://localhost:8000",
+  "scan_mode": "incremental"
 }
