@@ -196,4 +196,7 @@ def test_generate_rss_feed_sorts_episodes_folder_first_naturally() -> None:
     ]
     assert item_titles == expected_titles
 
+    ep_numbers = [item.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}episode").text for item in items]
+    assert ep_numbers == ["1", "2", "3", "4", "5"]
+
 

@@ -271,6 +271,45 @@ def test_subfolder_scanning(tmp_path: Path) -> None:
     assert episodes[1]["filename"] == "Papaya.2026.1901-2101/Papaya.2026-01-20.mp3"
 
 
+def test_multi_disc_folder_sorting_and_titles(tmp_path: Path) -> None:
+    """Test multi-disc folder scanning sorts discs naturally and prefixes subfolder names to track titles."""
+    books_dir = tmp_path / "books"
+    podcasts_dir = tmp_path / "podcasts"
+    cache_dir = tmp_path / "cache"
+    db_path = cache_dir / "lissn.db"
+
+    show_folder = books_dir / "Syden"
+    disc1 = show_folder / "Syden Disc 1"
+    disc2 = show_folder / "Syden Disc 2"
+    disc1.mkdir(parents=True)
+    disc2.mkdir(parents=True)
+
+    (disc2 / "01 1.mp3").write_bytes(b"disc 2 track 1")
+    (disc2 / "02 2.mp3").write_bytes(b"disc 2 track 2")
+    (disc1 / "01 Spor 1.mp3").write_bytes(b"disc 1 track 1")
+    (disc1 / "02 Spor 2.mp3").write_bytes(b"disc 1 track 2")
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=db_path
+    )
+    scanner.scan_all()
+
+    shows = scanner.cache.get_all_shows()
+    show = scanner.cache.get_show(shows[0]["show_id"])
+    assert show is not None
+    episodes = show["episodes"]
+
+    assert len(episodes) == 4
+    assert episodes[0]["filename"] == "Syden Disc 1/01 Spor 1.mp3"
+    assert episodes[0]["title"] == "Syden Disc 1 - 01 Spor 1"
+    assert episodes[1]["filename"] == "Syden Disc 1/02 Spor 2.mp3"
+    assert episodes[1]["title"] == "Syden Disc 1 - 02 Spor 2"
+    assert episodes[2]["filename"] == "Syden Disc 2/01 1.mp3"
+    assert episodes[2]["title"] == "Syden Disc 2 - 01 1"
+    assert episodes[3]["filename"] == "Syden Disc 2/02 2.mp3"
+    assert episodes[3]["title"] == "Syden Disc 2 - 02 2"
+
+
 def test_update_show_metadata_and_cover_non_existent(tmp_path: Path) -> None:
     """Test scanner update_show_metadata and update_show_cover return None for invalid show IDs."""
     from lissn.scanner import LibraryScanner

@@ -160,7 +160,13 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
 
     episodes = list(show_data.get("episodes", []))
     episodes.sort(key=lambda ep: episode_sort_key(ep.get("filename") or ep.get("title") or ""))
-    for ep in episodes:
+
+    # Base timestamp for sequential pubDate ordering so podcast players sort episodes 1..N
+    base_timestamp = show_data.get("added_timestamp")
+    if not base_timestamp or base_timestamp <= 0:
+        base_timestamp = 1700000000.0
+
+    for idx, ep in enumerate(episodes, 1):
         item = ET.SubElement(channel, "item")
         ET.SubElement(item, "title").text = ep["title"]
 
@@ -169,8 +175,15 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
 
         ET.SubElement(item, "guid", {"isPermaLink": "false"}).text = ep["episode_id"]
 
-        pub_date = format_rfc822(ep["added_timestamp"])
+        # Sequential pubDate spaced by 60s per episode index to enforce strict 1..N order in iOS Apple Podcasts
+        ep_timestamp = base_timestamp + (idx * 60)
+        pub_date = format_rfc822(ep_timestamp)
         ET.SubElement(item, "pubDate").text = pub_date
+
+        ET.SubElement(
+            item,
+            "{http://www.itunes.com/dtds/podcast-1.0.dtd}episode",
+        ).text = str(idx)
 
         audio_url = f"{clean_base}/audio/{show_id}/{quote(ep['filename'], safe='/')}"
         mime_type = get_mime_type(ep["filename"])

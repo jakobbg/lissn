@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMarkdownEditor();
   initSectionFiltering();
   initCopyButtons();
+  initSubscribeButtons();
   initShareButtons();
   initPageShortcuts();
   initRescanButton();
@@ -207,6 +208,24 @@ function initCopyButtons() {
     }).catch(() => {
       showToast('❌ Failed to copy RSS feed link.');
     });
+  });
+}
+
+/**
+ * Subscribe button: copies HTTP/HTTPS RSS feed URL to clipboard automatically on click
+ * to ensure users can paste the link if podcast:// handler fails on private IPs / ports.
+ */
+function initSubscribeButtons() {
+  document.addEventListener('click', (e) => {
+    const subBtn = e.target.closest('.js-subscribe-btn, a[href^="podcast:"], a[href^="podcasts:"]');
+    if (!subBtn) return;
+
+    const rssUrl = subBtn.getAttribute('data-rss-url');
+    if (rssUrl && navigator.clipboard) {
+      navigator.clipboard.writeText(rssUrl).then(() => {
+        showToast('🎙️ Opening Podcast app (RSS URL copied to clipboard!)');
+      }).catch(() => {});
+    }
   });
 }
 

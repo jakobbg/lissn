@@ -611,6 +611,12 @@ class LibraryScanner:
 
                 ep_id = f"{show_id}_ep_{idx}"
                 rel_filename = str(audio_path.relative_to(show_dir))
+                folder_parts = PurePath(rel_filename).parts[:-1]
+                if folder_parts:
+                    subfolder_prefix = " / ".join(folder_parts)
+                    if subfolder_prefix.lower() not in title.lower():
+                        title = f"{subfolder_prefix} - {title}"
+
                 episodes.append(
                     {
                         "episode_id": ep_id,
