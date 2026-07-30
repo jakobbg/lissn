@@ -49,12 +49,15 @@ def test_generate_rss_feed() -> None:
     assert channel.find("title").text == "Daily Tech Podcast"
     assert channel.find("link").text == "http://localhost:8000/show/test_show_123"
 
-    # Test Atom link, category, and explicit elements
     atom_link = channel.find("{http://www.w3.org/2005/Atom}link")
     assert atom_link is not None
     assert atom_link.attrib["href"] == "http://localhost:8000/rss/test_show_123"
     assert atom_link.attrib["rel"] == "self"
     assert atom_link.attrib["type"] == "application/rss+xml"
+
+    podcast_locked = channel.find("{https://podcastindex.org/podcast-1.0}locked")
+    assert podcast_locked is not None
+    assert podcast_locked.text == "no"
 
     itunes_category = channel.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}category")
     assert itunes_category is not None

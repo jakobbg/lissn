@@ -131,6 +131,12 @@ def generate_rss_feed(show_data: Dict[str, Any], base_url: str) -> str:
     itunes_summary = ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}summary")
     itunes_summary.text = description
 
+    # Podcast 2.0 / PSP-1 namespace elements
+    ET.SubElement(
+        channel,
+        "{https://podcastindex.org/podcast-1.0}locked",
+    ).text = "no"
+
     if cover_url:
         image_elem = ET.SubElement(channel, "image")
         ET.SubElement(image_elem, "url").text = cover_url
