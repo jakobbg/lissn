@@ -557,9 +557,10 @@ async function navigateTo(urlStr, isPushState = true) {
     // Update document title
     document.title = doc.title || 'lissn';
 
-    // Update body inline styling (for show accent color variables)
+    // Update body inline styling and class name (for show accent color variables and page scoping)
     const newBodyStyle = doc.body.getAttribute('style') || '';
     document.body.setAttribute('style', newBodyStyle);
+    document.body.className = doc.body.className || '';
 
     // Replace main content
     currentMain.innerHTML = newMain.innerHTML;

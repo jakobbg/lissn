@@ -1442,12 +1442,13 @@ def test_cover_image_update_reflects_on_index_page(client: TestClient) -> None:
 
 
 def test_client_navigation_syncs_header_nav_actions(client: TestClient) -> None:
-    """Test that app.js synchronizes header .nav-actions during PJAX client navigation to render the Back to Library button."""
+    """Test that app.js synchronizes header .nav-actions and body.className during PJAX client navigation."""
     js_res = client.get("/static/app.js")
     assert js_res.status_code == 200
     js_text = js_res.text
     assert "newNavActions" in js_text
     assert "currentNavActions.innerHTML = newNavActions.innerHTML;" in js_text
+    assert "document.body.className = doc.body.className || '';" in js_text
     assert "updateAuthButtonUI();" in js_text
     assert "updateThemeButtonText" in js_text
 
