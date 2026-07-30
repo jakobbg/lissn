@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
 import sqlite3
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import markdown
 import mutagen
