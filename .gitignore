@@ -220,7 +220,6 @@ __marimo__/
 # Local configuration & cache directories
 lissn.json
 config/lissn.json
-cache/
 data/
 
 .DS_Store

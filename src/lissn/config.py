@@ -79,7 +79,7 @@ class Config:
             cache_db_path
             or os.getenv("LISSN_CACHE_DB")
             or json_config.get("cache_db_path")
-            or str(self.cache_dir / "lissn_cache.db")
+            or str(base_dir / "data" / "lissn_cache.db")
         )
         self.cache_db_path: Path = Path(raw_cache_db).resolve()
 
@@ -137,12 +137,7 @@ class Config:
         self.scan_mode: str = clean_scan_mode if clean_scan_mode in valid_scan_modes else "incremental"
 
     def ensure_directories(self) -> None:
-        """Ensure media and cache directories exist on disk."""
+        """Ensure media directories exist on disk."""
         self.books_dir.mkdir(parents=True, exist_ok=True)
         self.podcasts_dir.mkdir(parents=True, exist_ok=True)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.cache_db_path.parent.mkdir(parents=True, exist_ok=True)
-
-        self.podcasts_dir.mkdir(parents=True, exist_ok=True)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_db_path.parent.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,9 @@ and caches show data in SQLite.
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
+import os
 from pathlib import Path
+import shutil
 import sqlite3
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -221,40 +223,15 @@ def list_show_images(folder_path: Path) -> List[Dict[str, Any]]:
     return images
 
 
-def get_or_create_notes(cache_dir: Path, section: str, show_name: str) -> Dict[str, Any]:
-    """
-    Locate or create notes.md inside cache_dir / section / show_name / notes.md.
-    Parses frontmatter for author, title, podcast_name, and converts markdown description.
-    """
-    show_cache_dir = cache_dir / section / show_name
-    show_cache_dir.mkdir(parents=True, exist_ok=True)
-
-    notes_file = show_cache_dir / "notes.md"
-
+def parse_notes_file(notes_file: Path, section: str, show_name: str) -> Dict[str, Any]:
+    """Parse notes.md content (frontmatter and markdown body) without creating or preserving disk notes."""
     if not notes_file.exists():
-        if section == "books":
-            default_content = f"""---
-title: "{show_name}"
-author: "Unknown Author"
----
+        return {}
 
-# {show_name}
-
-Add book description in markdown format here.
-"""
-        else:
-            default_content = f"""---
-podcast_name: "{show_name}"
-publisher: "Podcast Publisher"
----
-
-# {show_name}
-
-Add podcast description in markdown format here.
-"""
-        notes_file.write_text(default_content, encoding="utf-8")
-
-    raw_text = notes_file.read_text(encoding="utf-8").strip()
+    try:
+        raw_text = notes_file.read_text(encoding="utf-8").strip()
+    except Exception:
+        return {}
 
     title = show_name
     author = ""
@@ -298,8 +275,101 @@ Add podcast description in markdown format here.
         "cover": cover,
         "description": body,
         "description_html": html_description,
-        "notes_path": str(notes_file.resolve()),
     }
+
+
+def migrate_and_cleanup_legacy_cache(cache_dir: Optional[Path], db_path: Path, cache: "ScannerCache") -> Dict[Tuple[str, str], Dict[str, Any]]:
+    """
+    Migrate legacy SQLite database and notes.md files into SQLite DB, then remove notes.md
+    files and empty cache directories so data resides exclusively in SQLite.
+    Returns a mapping of (section, show_name) -> notes_meta extracted from legacy notes.md files.
+    """
+    migrated_notes: Dict[Tuple[str, str], Dict[str, Any]] = {}
+
+    # 1. Move legacy database if it exists inside a cache folder (e.g. data/cache/lissn_cache.db)
+    if cache_dir and cache_dir.exists():
+        legacy_db = cache_dir / "lissn_cache.db"
+        if legacy_db.is_file():
+            if legacy_db.resolve() != db_path.resolve():
+                if not db_path.exists():
+                    db_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(legacy_db), str(db_path))
+                else:
+                    try:
+                        legacy_db.unlink()
+                    except Exception:
+                        pass
+
+    # 2. Gather candidates for legacy cache directories
+    dirs_to_check: List[Path] = []
+    if cache_dir:
+        dirs_to_check.append(cache_dir)
+    default_cache = Path.cwd() / "data" / "cache"
+    if default_cache not in dirs_to_check:
+        dirs_to_check.append(default_cache)
+
+    for target_dir in dirs_to_check:
+        if not target_dir.exists() or not target_dir.is_dir():
+            continue
+
+        for notes_file in list(target_dir.rglob("notes.md")):
+            if not notes_file.is_file():
+                continue
+
+            try:
+                rel = notes_file.relative_to(target_dir)
+                parts = rel.parts
+                if len(parts) >= 3:
+                    section = parts[0]
+                    show_name = parts[1]
+                    show_id = generate_show_id(section, show_name)
+                    notes_meta = parse_notes_file(notes_file, section, show_name)
+                    if notes_meta:
+                        migrated_notes[(section, show_name)] = notes_meta
+
+                    existing_show = cache.get_show(show_id, include_cover_data=True)
+                    if existing_show and notes_meta:
+                        changed = False
+                        if notes_meta.get("title") and (not existing_show.get("title") or existing_show.get("title") == show_name):
+                            existing_show["title"] = notes_meta["title"]
+                            changed = True
+                        if notes_meta.get("author") and not existing_show.get("author"):
+                            existing_show["author"] = notes_meta["author"]
+                            changed = True
+                        if notes_meta.get("publisher") and not existing_show.get("publisher"):
+                            existing_show["publisher"] = notes_meta["publisher"]
+                            changed = True
+                        if notes_meta.get("description") and not existing_show.get("description"):
+                            existing_show["description"] = notes_meta["description"]
+                            existing_show["description_html"] = notes_meta["description_html"]
+                            changed = True
+                        if changed:
+                            cache.save_show(existing_show, existing_show.get("episodes", []))
+            except Exception:
+                pass
+
+            try:
+                notes_file.unlink()
+            except Exception:
+                pass
+
+        # Recursively remove empty folders
+        for root, dirs, files in os.walk(target_dir, topdown=False):
+            for d in dirs:
+                dir_path = Path(root) / d
+                try:
+                    if dir_path.exists() and not any(dir_path.iterdir()):
+                        dir_path.rmdir()
+                except Exception:
+                    pass
+
+        try:
+            if target_dir.exists() and not any(target_dir.iterdir()):
+                target_dir.rmdir()
+        except Exception:
+            pass
+
+    return migrated_notes
 
 
 class ScannerCache:
@@ -396,9 +466,10 @@ class ScannerCache:
                 conn.execute("ALTER TABLE episodes ADD COLUMN formatted_bitrate TEXT DEFAULT ''")
 
             # Clean up section metadata so podcasts only use publisher and books only use author
-            conn.execute("UPDATE shows SET publisher = author WHERE section = 'podcasts' AND (publisher IS NULL OR publisher = '') AND author IS NOT NULL AND author != ''")
-            conn.execute("UPDATE shows SET author = '' WHERE section = 'podcasts'")
-            conn.execute("UPDATE shows SET publisher = '' WHERE section = 'books'")
+            if "author" in show_cols and "publisher" in show_cols:
+                conn.execute("UPDATE shows SET publisher = author WHERE section = 'podcasts' AND (publisher IS NULL OR publisher = '') AND author IS NOT NULL AND author != ''")
+                conn.execute("UPDATE shows SET author = '' WHERE section = 'podcasts'")
+                conn.execute("UPDATE shows SET publisher = '' WHERE section = 'books'")
 
     def save_show(self, show_data: Dict[str, Any], episodes: List[Dict[str, Any]]) -> None:
         """Save show and its associated episodes into the database cache."""
@@ -557,8 +628,8 @@ class LibraryScanner:
         self,
         books_dir: Path,
         podcasts_dir: Path,
-        cache_dir: Path,
         db_path: Path,
+        cache_dir: Optional[Path] = None,
         max_episodes_per_show: int = 2000,
     ) -> None:
         self.books_dir = books_dir
@@ -573,30 +644,18 @@ class LibraryScanner:
         if not root_dir.exists() or not root_dir.is_dir():
             return scanned_shows
 
+        # Automatically migrate legacy notes and remove cache folder on scan
+        migrated_notes_map = migrate_and_cleanup_legacy_cache(self.cache_dir, self.cache.db_path, self.cache)
+
         for show_dir in sorted(root_dir.iterdir()):
             if not show_dir.is_dir() or show_dir.name.startswith("."):
                 continue
 
             show_id = generate_show_id(section, show_dir.name)
 
-            # Load or create notes.md in cache directory
-            notes_info = get_or_create_notes(
-                cache_dir=self.cache_dir,
-                section=section,
-                show_name=show_dir.name,
-            )
-
-            # Determine cover image: check custom cover in notes.md first, then existing DB cache, then auto-locate
+            # Determine cover image: check existing DB cache, then auto-locate
             cover_path = None
-            custom_cover_setting = notes_info.get("cover")
-            if custom_cover_setting:
-                candidate = show_dir / custom_cover_setting
-                if candidate.is_file():
-                    cover_path = candidate
-                elif Path(custom_cover_setting).is_file():
-                    cover_path = Path(custom_cover_setting)
-
-            if not cover_path and not force:
+            if not force:
                 cached_show = self.cache.get_show(show_id)
                 if cached_show and cached_show.get("cover_path"):
                     cached_cover = Path(cached_show["cover_path"])
@@ -684,18 +743,24 @@ class LibraryScanner:
             cached_cover_mime = cached_show.get("cover_mime", "") if cached_show else ""
             cached_cover_filename = cached_show.get("cover_filename", "") if cached_show else ""
 
-            # Derive metadata: preference given to existing SQLite edits if force is False
-            display_title = (cached_show.get("title") if (cached_show and not force) else None) or notes_info["title"] or show_dir.name
-            description = (cached_show.get("description") if (cached_show and not force) else None) or notes_info.get("description", "")
-            description_html = (cached_show.get("description_html") if (cached_show and not force) else None) or notes_info.get("description_html", "")
+            notes_meta = migrated_notes_map.get((section, show_dir.name), {})
+
+            default_author = "Unknown Author" if section == "books" else ""
+            default_publisher = "Podcast Publisher" if section == "podcasts" else ""
+
+            display_title = (cached_show.get("title") if (cached_show and not force) else None) or notes_meta.get("title") or show_dir.name
+            author = (cached_show.get("author") if (cached_show and not force) else None) or notes_meta.get("author") or (default_author if section == "books" else "")
+            publisher = (cached_show.get("publisher") if (cached_show and not force) else None) or notes_meta.get("publisher") or (default_publisher if section == "podcasts" else "")
+            description = (cached_show.get("description") if (cached_show and not force) else None) or notes_meta.get("description") or ""
+            description_html = (cached_show.get("description_html") if (cached_show and not force) else None) or notes_meta.get("description_html") or (markdown.markdown(description, extensions=["extra"]) if description else "")
 
             show_data = {
                 "show_id": show_id,
                 "section": section,
                 "title": display_title,
-                "author": (cached_show.get("author") if (cached_show and not force) else None) or (notes_info.get("author", "") if section == "books" else ""),
-                "publisher": (cached_show.get("publisher") if (cached_show and not force) else None) or (notes_info.get("publisher", "") if section == "podcasts" else ""),
-                "podcast_name": (cached_show.get("podcast_name") if (cached_show and not force) else None) or notes_info.get("podcast_name", display_title),
+                "author": author,
+                "publisher": publisher,
+                "podcast_name": display_title if section == "podcasts" else "",
                 "folder_path": str(show_dir.resolve()),
                 "cover_path": str(cover_path.resolve()) if cover_path else None,
                 "cover_data": cached_cover_data,
@@ -709,7 +774,7 @@ class LibraryScanner:
                 "fuzzy_added_date": format_fuzzy_date(earliest_timestamp),
                 "description": description,
                 "description_html": description_html,
-                "notes_path": notes_info.get("notes_path", ""),
+                "notes_path": "",
             }
 
             self.cache.save_show(show_data, episodes)
@@ -758,21 +823,6 @@ class LibraryScanner:
             candidate_cover = show_dir / cover
             if candidate_cover.is_file():
                 show["cover_path"] = str(candidate_cover.resolve())
-
-        notes_path_str = show.get("notes_path")
-        if notes_path_str:
-            try:
-                notes_file = Path(notes_path_str)
-                notes_file.parent.mkdir(parents=True, exist_ok=True)
-                cover_val = cover or show.get("cover_filename") or ""
-                cover_line = f'\ncover: "{cover_val}"' if cover_val else ""
-                if section == "books":
-                    yaml_hdr = f'---\ntitle: "{title}"\nauthor: "{author}"{cover_line}\n---'
-                else:
-                    yaml_hdr = f'---\npodcast_name: "{title}"\npublisher: "{publisher}"{cover_line}\n---'
-                notes_file.write_text(f"{yaml_hdr}\n\n{description}\n", encoding="utf-8")
-            except Exception:
-                pass
 
         show["title"] = title
         show["author"] = author

@@ -31,7 +31,7 @@ def test_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     assert config.books_dir == (tmp_path / "data" / "Books").resolve()
     assert config.podcasts_dir == (tmp_path / "data" / "Podcasts").resolve()
     assert config.cache_dir == (tmp_path / "data" / "cache").resolve()
-    assert config.cache_db_path == (tmp_path / "data" / "cache" / "lissn_cache.db").resolve()
+    assert config.cache_db_path == (tmp_path / "data" / "lissn_cache.db").resolve()
     assert config.host == "0.0.0.0"
     assert config.port == 8000
     assert config.base_url == "http://localhost:8000"

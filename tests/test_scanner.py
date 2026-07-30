@@ -69,10 +69,9 @@ def test_library_scanner_and_cache(temp_library) -> None:
     assert book_show_data["total_duration"] == 18.0
     assert book_show_data["cover_path"] is not None
 
-    # Verify auto-created notes.md file in cache_dir
+    # Verify notes.md is deleted and data is only in SQLite
     notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
-    assert notes_file.exists()
-    assert "Unknown Author" in notes_file.read_text()
+    assert not notes_file.exists()
 
     # Query SQLite cache directly
     cached_shows = scanner.cache.get_all_shows()
@@ -380,11 +379,67 @@ def test_incremental_scanning_and_pruning(temp_library, monkeypatch: pytest.Monk
     shows_in_db = scanner.cache.get_all_shows()
     assert len(shows_in_db) == 1
     assert shows_in_db[0]["section"] == "books"
+    # Verify notes.md file is cleaned up and removed from cache_dir
+    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
+    assert not notes_file.exists()
+
+
+def test_notes_md_customization(temp_library) -> None:
+    """Test custom metadata and markdown rendering parsed from notes.md in cache_dir."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
+
+    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
+    notes_file.parent.mkdir(parents=True, exist_ok=True)
+    notes_file.write_text(
+        """---
+title: "The Great Gatsby (Annotated)"
+author: "F. Scott Fitzgerald"
+---
+
+# About this Audiobook
+
+This is a **classic** American novel.
+""",
+        encoding="utf-8",
+    )
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
+    result = scanner.scan_all()
+
+    book = result["books"][0]
+    assert book["title"] == "The Great Gatsby (Annotated)"
+    assert book["author"] == "F. Scott Fitzgerald"
+    assert "<strong>classic</strong>" in book["description_html"]
+    # Confirm notes.md was removed after migration
+    assert not notes_file.exists()
+
+
+def test_scanner_handles_empty_directories(tmp_path: Path) -> None:
+    """Test LibraryScanner scanning completely empty library folders without errors."""
+    books_dir = tmp_path / "empty_books"
+    podcasts_dir = tmp_path / "empty_podcasts"
+    cache_dir = tmp_path / "cache"
+    cache_db = cache_dir / "test.db"
+
+    books_dir.mkdir()
+    podcasts_dir.mkdir()
+    cache_dir.mkdir()
+
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+    )
+    result = scanner.scan_all()
+
+    assert result["total"] == 0
+    assert result["books"] == []
+    assert result["podcasts"] == []
 
 
 def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
     """Test parsing, cache migration, and metadata updating for publisher field in podcasts."""
-    from lissn.scanner import get_or_create_notes, ScannerCache, LibraryScanner
+    from lissn.scanner import parse_notes_file, ScannerCache, LibraryScanner
 
     notes_dir = tmp_path / "podcasts" / "Test Podcast"
     notes_dir.mkdir(parents=True, exist_ok=True)
@@ -394,7 +449,7 @@ def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
         encoding="utf-8"
     )
 
-    parsed = get_or_create_notes(tmp_path, "podcasts", "Test Podcast")
+    parsed = parse_notes_file(notes_file, "podcasts", "Test Podcast")
     assert parsed["title"] == "Test Podcast"
     assert parsed["publisher"] == "Penguin Random House"
     assert parsed["author"] == ""
@@ -420,7 +475,7 @@ def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
         "fuzzy_added_date": "Recently",
         "description": "Podcast description.",
         "description_html": "<p>Podcast description.</p>",
-        "notes_path": str(notes_file),
+        "notes_path": "",
     }
 
     cache.save_show(show_data, [])
@@ -440,13 +495,10 @@ def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
     assert updated is not None
     assert updated["publisher"] == "HarperCollins"
     assert updated["author"] == ""
-    
-    notes_content = notes_file.read_text(encoding="utf-8")
-    assert 'publisher: "HarperCollins"' in notes_content
 
 
 def test_custom_cover_persists_across_scanner_restart(temp_library) -> None:
-    """Test that setting a custom show cover persists in notes.md and is retained after a scanner restart."""
+    """Test that setting a custom show cover persists in SQLite database and is retained after a scanner restart."""
     books_dir, podcasts_dir, cache_dir, cache_db = temp_library
 
     show_folder = books_dir / "The Great Gatsby"
@@ -466,10 +518,6 @@ def test_custom_cover_persists_across_scanner_restart(temp_library) -> None:
     updated = scanner1.update_show_cover(show_id, custom_cover)
     assert updated is not None
     assert updated["cover_path"] == str(custom_cover.resolve())
-
-    # Verify notes.md updated with cover
-    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
-    assert 'cover: "alternate_cover.png"' in notes_file.read_text(encoding="utf-8")
 
     # Simulate app restart with a fresh LibraryScanner instance
     scanner2 = LibraryScanner(
