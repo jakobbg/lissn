@@ -757,7 +757,7 @@ def test_single_line_metadata_and_dark_subscribe_button(client: TestClient) -> N
     assert 'class="btn btn-secondary"' in html_show
     assert "🎙️ Subscribe" in html_show
     assert "📋 Copy RSS" in html_show
-    assert "🎵 Tracks (" in html_show
+    assert 'class="track-table"' in html_show
 
 
 def test_subfolder_streaming_download_and_rss(client: TestClient, temp_library) -> None:

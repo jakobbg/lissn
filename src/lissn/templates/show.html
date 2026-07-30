@@ -49,6 +49,7 @@
         <span>lissn</span>
       </a>
       <div class="nav-actions">
+        <a href="/#show-{{ show.show_id }}" class="nav-back-btn" aria-label="Back to Library" title="Return to Library">← Back to Library</a>
         <button id="auth-btn" class="auth-btn" aria-label="{% if authenticated %}Log out{% else %}Log in{% endif %}">
           {% if authenticated %}🚪 Log Out{% else %}🔑 Log In{% endif %}
         </button>
@@ -60,12 +61,6 @@
   </header>
 
   <main class="main-content">
-    <div style="margin-bottom: 1.5rem;">
-      <a href="/#show-{{ show.show_id }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
-        ← Back to Library
-      </a>
-    </div>
-
     <!-- Show Detail Banner Header -->
     <header class="show-detail-header">
       <div>
@@ -135,10 +130,7 @@
     </header>
 
     <!-- Track List -->
-    <section class="track-list-container" aria-labelledby="heading-tracks">
-      <h2 id="heading-tracks" class="section-title" style="margin-bottom: 1.2rem;">
-        🎵 Tracks ({{ show.episodes|length }})
-      </h2>
+    <section class="track-list-container" aria-label="Track listing">
 
       {% if show.episodes %}
         <div style="overflow-x: auto;">
