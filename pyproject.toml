@@ -31,7 +31,6 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "--cov=lissn --cov-report=term-missing"
 filterwarnings = [
     "ignore:.*httpx.*:Warning",
     "ignore:.*starlette.testclient.*:Warning",

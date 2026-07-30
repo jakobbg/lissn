@@ -77,9 +77,14 @@ Navigate to `http://localhost:8000` in your browser.
 
 **lissn** maintains a comprehensive automated test suite (`pytest` + `pytest-cov`) covering API endpoints, RSS feed generation, HTTP range streaming, authentication, and file security restrictions.
 
-### Run Test Suite & Generate Coverage Report
+### Run Test Suite
 ```bash
 python3 -m pytest
+```
+
+### Run Test Suite with Coverage Report (requires pytest-cov)
+```bash
+python3 -m pytest --cov=lissn --cov-report=term-missing
 ```
 
 ### Coverage Metrics
