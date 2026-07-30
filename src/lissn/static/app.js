@@ -941,16 +941,17 @@ function initMediaPlayer() {
   restoreSavedPlayerState();
 
   // Helper to check if a playlist track matches the currently loaded audio element src
-  function isCurrentlyLoadedTrack(track) {
-    if (!track || !track.src) return false;
+  function isCurrentlyLoadedTrack(track, altSrc = null) {
+    const srcToCheck = (track && track.src) ? track.src : altSrc;
+    if (!srcToCheck) return false;
     const currentSrc = audioElement.getAttribute('src') || audioElement.src;
-    if (!currentSrc) return false;
+    if (!currentSrc || currentSrc === window.location.href || currentSrc.endsWith('/')) return false;
     try {
       const normCurrent = new URL(currentSrc, window.location.origin).href;
-      const normTrack = new URL(track.src, window.location.origin).href;
+      const normTrack = new URL(srcToCheck, window.location.origin).href;
       return normCurrent === normTrack;
     } catch (e) {
-      return currentSrc.endsWith(track.src) || track.src.endsWith(currentSrc);
+      return currentSrc.endsWith(srcToCheck) || srcToCheck.endsWith(currentSrc);
     }
   }
 
@@ -961,17 +962,16 @@ function initMediaPlayer() {
       activePlaylist = trackRows.map((row, idx) => ({
         index: idx,
         src: row.getAttribute('data-audio-src'),
-        trackTitle: row.getAttribute('data-track-title'),
-        showTitle: row.getAttribute('data-show-title'),
+        trackTitle: row.getAttribute('data-track-title') || 'Track',
+        showTitle: row.getAttribute('data-show-title') || 'lissn',
         coverUrl: row.getAttribute('data-cover-url'),
         element: row
-      }));
+      })).filter(t => Boolean(t.src));
 
       // Check if current playing src matches any track on the current page
       const foundIdx = activePlaylist.findIndex(t => isCurrentlyLoadedTrack(t));
       currentTrackIndex = foundIdx;
-    } else {
-      activePlaylist = [];
+    } else if (activePlaylist.length === 0) {
       currentTrackIndex = -1;
     }
     highlightActiveTrackRow();
@@ -981,29 +981,70 @@ function initMediaPlayer() {
   window.syncPlayerWithPage = syncPlayerWithPage;
   syncPlayerWithPage();
 
+  function getTrackFromRow(trackRow) {
+    if (!trackRow) return null;
+    const src = trackRow.getAttribute('data-audio-src');
+    if (!src) return null;
+
+    let idx = parseInt(trackRow.getAttribute('data-track-index'), 10);
+    if (isNaN(idx)) idx = -1;
+
+    return {
+      index: idx,
+      src: src,
+      trackTitle: trackRow.getAttribute('data-track-title') || 'Track',
+      showTitle: trackRow.getAttribute('data-show-title') || 'lissn',
+      coverUrl: trackRow.getAttribute('data-cover-url'),
+      element: trackRow
+    };
+  }
+
+  function handleTrackActivation(trackRow) {
+    if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+      openPasswordModal();
+      return;
+    }
+
+    // Auto-resync DOM tracks if activePlaylist is empty or out of sync
+    if (activePlaylist.length === 0) {
+      syncPlayerWithPage();
+    }
+
+    const clickedTrack = getTrackFromRow(trackRow);
+    if (!clickedTrack) return;
+
+    if (isCurrentlyLoadedTrack(clickedTrack)) {
+      if (!audioElement.paused) {
+        audioElement.pause();
+      } else {
+        const playPromise = audioElement.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => updatePlayButtonUI(true)).catch(err => {
+            console.warn('Play error:', err);
+            updatePlayButtonUI(false);
+          });
+        }
+      }
+      return;
+    }
+
+    // Try finding matching index in activePlaylist
+    let foundIdx = activePlaylist.findIndex(t => isCurrentlyLoadedTrack(t, clickedTrack.src));
+    if (foundIdx !== -1) {
+      playTrack(foundIdx);
+    } else {
+      // Direct playback with extracted track object
+      playTrack(clickedTrack);
+    }
+  }
+
   // Handle click on track rows anywhere in the page (via delegation)
   document.addEventListener('click', (e) => {
     if (e.target.closest('audio') || e.target.closest('a') || e.target.closest('button.btn-secondary') || e.target.closest('.js-copy-rss')) return;
 
     const trackRow = e.target.closest('.track-row');
     if (trackRow) {
-      if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
-        openPasswordModal();
-        return;
-      }
-      const idx = parseInt(trackRow.getAttribute('data-track-index'), 10);
-      if (!isNaN(idx) && activePlaylist[idx]) {
-        const targetTrack = activePlaylist[idx];
-        if (isCurrentlyLoadedTrack(targetTrack)) {
-          if (!audioElement.paused) {
-            audioElement.pause();
-          } else {
-            audioElement.play();
-          }
-        } else {
-          playTrack(idx);
-        }
-      }
+      handleTrackActivation(trackRow);
     }
   });
 
@@ -1013,50 +1054,76 @@ function initMediaPlayer() {
     if (document.activeElement && document.activeElement.classList.contains('track-row')) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        const idx = parseInt(document.activeElement.getAttribute('data-track-index'), 10);
-        if (!isNaN(idx) && activePlaylist[idx]) {
-          const targetTrack = activePlaylist[idx];
-          if (isCurrentlyLoadedTrack(targetTrack)) {
-            if (!audioElement.paused) {
-              audioElement.pause();
-            } else {
-              audioElement.play();
-            }
-          } else {
-            playTrack(idx);
-          }
-        }
+        handleTrackActivation(document.activeElement);
       }
     }
   });
 
-  function playTrack(index) {
-    if (index < 0 || index >= activePlaylist.length) return;
+  function updateMediaSessionMetadata(track) {
+    if ('mediaSession' in navigator && track) {
+      try {
+        const artwork = track.coverUrl ? [{ src: track.coverUrl, sizes: '512x512', type: 'image/png' }] : [];
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.trackTitle || 'lissn',
+          artist: track.showTitle || 'lissn',
+          album: track.showTitle || 'lissn',
+          artwork: artwork
+        });
+      } catch (e) {}
+    }
+  }
 
+  function playTrack(target) {
     if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
-      openPasswordModal(() => playTrack(index));
+      openPasswordModal(() => playTrack(target));
       return;
     }
 
-    pendingRestoreTime = null;
-    currentTrackIndex = index;
-    const track = activePlaylist[index];
-
-    // Make bottom player visible
+    // Make bottom player visible immediately
     bottomPlayer.classList.add('visible');
     document.body.classList.add('has-active-player');
 
+    let track = null;
+    if (typeof target === 'number') {
+      if (activePlaylist.length === 0) syncPlayerWithPage();
+      if (target < 0 || target >= activePlaylist.length) return;
+      currentTrackIndex = target;
+      track = activePlaylist[target];
+    } else if (typeof target === 'object' && target !== null && target.src) {
+      track = target;
+      const existingIdx = activePlaylist.findIndex(t => isCurrentlyLoadedTrack(t, track.src));
+      if (existingIdx !== -1) {
+        currentTrackIndex = existingIdx;
+      } else {
+        syncPlayerWithPage();
+        const recheckIdx = activePlaylist.findIndex(t => isCurrentlyLoadedTrack(t, track.src));
+        if (recheckIdx !== -1) {
+          currentTrackIndex = recheckIdx;
+        } else {
+          activePlaylist.push(track);
+          currentTrackIndex = activePlaylist.length - 1;
+        }
+      }
+    }
+
+    if (!track || !track.src) return;
+
+    pendingRestoreTime = null;
     audioElement.src = track.src;
-    audioElement.playbackRate = parseFloat(speedSelect.value) || 1.0;
+    audioElement.playbackRate = parseFloat(speedSelect ? speedSelect.value : 1.0) || 1.0;
 
     const playPromise = audioElement.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
         updatePlayButtonUI(true);
         savePlayerState();
+        updateMediaSessionMetadata(track);
       }).catch(err => {
         console.warn('Playback play promise error:', err);
         updatePlayButtonUI(false);
+        if (err.name === 'NotAllowedError') {
+          showToast('▶ Click play button to start audio playback');
+        }
       });
     }
 
@@ -1074,6 +1141,7 @@ function initMediaPlayer() {
     }
 
     highlightActiveTrackRow();
+    updateMediaSessionMetadata(track);
   }
 
   const SVG_PLAY = '<svg class="player-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>';
@@ -1109,12 +1177,45 @@ function initMediaPlayer() {
     highlightActiveTrackRow();
   }
 
+  // Register Media Session action handlers for hardware media keys & OS controls
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler('play', () => {
+        audioElement.play();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        audioElement.pause();
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        if (prevBtn) prevBtn.click();
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        if (nextBtn) nextBtn.click();
+      });
+      navigator.mediaSession.setActionHandler('seekbackward', () => {
+        if (skipBackBtn) skipBackBtn.click();
+      });
+      navigator.mediaSession.setActionHandler('seekforward', () => {
+        if (skipFwdBtn) skipFwdBtn.click();
+      });
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (details.seekTime !== undefined && !isNaN(details.seekTime)) {
+          audioElement.currentTime = details.seekTime;
+        }
+      });
+    } catch (e) {}
+  }
+
   // Play / Pause toggle button
   if (playBtn) {
     playBtn.addEventListener('click', () => {
-      if (!audioElement.src && activePlaylist.length > 0) {
-        playTrack(0);
-        return;
+      const curSrc = audioElement.getAttribute('src') || audioElement.src;
+      if (!curSrc || curSrc === window.location.href) {
+        syncPlayerWithPage();
+        if (activePlaylist.length > 0) {
+          playTrack(0);
+          return;
+        }
       }
       if (audioElement.paused) {
         audioElement.play();
