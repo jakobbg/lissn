@@ -11,7 +11,7 @@ def test_get_mime_type() -> None:
     """Test MIME type resolution for audio file extensions."""
     assert get_mime_type("audio.mp3") == "audio/mpeg"
     assert get_mime_type("track.m4a") == "audio/mp4"
-    assert get_mime_type("book.m4b") == "audio/x-m4b"
+    assert get_mime_type("book.m4b") == "audio/mp4"
     assert get_mime_type("recording.wav") == "audio/wav"
     assert get_mime_type("unknown.xyz") == "audio/mpeg"
 

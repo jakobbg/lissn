@@ -14,7 +14,7 @@ from xml.etree import ElementTree as ET
 MIME_TYPES = {
     ".mp3": "audio/mpeg",
     ".m4a": "audio/mp4",
-    ".m4b": "audio/x-m4b",
+    ".m4b": "audio/mp4",
     ".aac": "audio/aac",
     ".flac": "audio/flac",
     ".ogg": "audio/ogg",
