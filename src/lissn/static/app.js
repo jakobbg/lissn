@@ -231,7 +231,114 @@ function initShareButtons() {
 }
 
 /**
- * Page-level single character keyboard shortcuts (s, r, e, d).
+ * Create or get the Keyboard Shortcuts Help Modal.
+ */
+function getOrCreateShortcutsModal() {
+  let modal = document.getElementById('shortcuts-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'shortcuts-modal';
+    modal.className = 'modal-backdrop shortcuts-modal-backdrop';
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-labelledby', 'shortcuts-modal-title');
+    modal.innerHTML = `
+      <div class="modal-card shortcuts-modal-card">
+        <div class="modal-header shortcuts-modal-header">
+          <h2 id="shortcuts-modal-title" class="modal-title">⌨️ Keyboard Shortcuts</h2>
+          <button type="button" class="modal-close-btn js-close-shortcuts-modal" aria-label="Close keyboard shortcuts modal">&times;</button>
+        </div>
+        <div class="modal-body shortcuts-modal-body">
+          <div class="shortcuts-group">
+            <h3 class="shortcuts-group-title">Show Actions</h3>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Share show link</span>
+              <span class="shortcut-keys"><kbd>s</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Copy RSS feed URL</span>
+              <span class="shortcut-keys"><kbd>r</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Edit show details</span>
+              <span class="shortcut-keys"><kbd>e</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Download show archive</span>
+              <span class="shortcut-keys"><kbd>d</kbd></span>
+            </div>
+          </div>
+
+          <div class="shortcuts-group">
+            <h3 class="shortcuts-group-title">Media Player</h3>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Play / Pause active track</span>
+              <span class="shortcut-keys"><kbd>Space</kbd> / <kbd>Enter</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Seek backward / forward 15s</span>
+              <span class="shortcut-keys"><kbd>←</kbd> / <kbd>→</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Next / Previous track</span>
+              <span class="shortcut-keys"><kbd>n</kbd> / <kbd>p</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Close player / Close modal</span>
+              <span class="shortcut-keys"><kbd>Esc</kbd></span>
+            </div>
+          </div>
+
+          <div class="shortcuts-group">
+            <h3 class="shortcuts-group-title">General</h3>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Toggle keyboard shortcuts help</span>
+              <span class="shortcut-keys"><kbd>?</kbd></span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);">
+          <button type="button" class="btn btn-secondary js-close-shortcuts-modal" style="width: 100%;">Close</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal || e.target.closest('.js-close-shortcuts-modal')) {
+        closeShortcutsModal();
+      }
+    });
+  }
+  return modal;
+}
+
+function openShortcutsModal() {
+  const modal = getOrCreateShortcutsModal();
+  modal.hidden = false;
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeShortcutsModal() {
+  const modal = document.getElementById('shortcuts-modal');
+  if (modal) {
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function toggleShortcutsModal() {
+  const modal = getOrCreateShortcutsModal();
+  if (modal.hidden) {
+    openShortcutsModal();
+  } else {
+    closeShortcutsModal();
+  }
+}
+
+/**
+ * Page-level single character keyboard shortcuts (s, r, e, d, ?).
  * Follows Web Accessibility & UX best practices:
  * - Active only when typing focus is not inside form fields / inputs / editable elements.
  * - Does not override browser system key combinations (Cmd/Ctrl + S/R/E/D).
@@ -246,12 +353,28 @@ function initPageShortcuts() {
       return;
     }
 
+    // Toggle shortcuts modal on '?' keypress
+    if (e.key === '?') {
+      e.preventDefault();
+      toggleShortcutsModal();
+      return;
+    }
+
+    const shortcutsModal = document.getElementById('shortcuts-modal');
+    if (e.key === 'Escape' || e.code === 'Escape') {
+      if (shortcutsModal && !shortcutsModal.hidden) {
+        closeShortcutsModal();
+        return;
+      }
+    }
+
     const passwordModal = document.getElementById('password-modal');
     const editModal = document.getElementById('edit-modal');
     const coverModal = document.getElementById('cover-modal');
     if ((passwordModal && !passwordModal.hidden) || 
         (editModal && !editModal.hidden) || 
-        (coverModal && !coverModal.hasAttribute('hidden'))) {
+        (coverModal && !coverModal.hasAttribute('hidden')) ||
+        (shortcutsModal && !shortcutsModal.hidden)) {
       return;
     }
 
@@ -1368,6 +1491,7 @@ function initAuthSystem() {
       closePasswordModal();
       closeEditModal();
       closeCoverModal();
+      closeShortcutsModal();
     }
   });
 }
