@@ -638,6 +638,53 @@ def test_authenticate_header_button_rendering_and_toggle(unauthenticated_client:
     assert "🔑 Log In" not in html_auth
 
 
+def test_all_authenticated_options_hidden_until_login(unauthenticated_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test all interactive options (play buttons, track download buttons, ZIP download, edit details, rescan, bottom player) are hidden until logged in."""
+    from lissn.app import config
+
+    client = unauthenticated_client
+    monkeypatch.setattr(config, "password", "auth_secret_999")
+
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    # 1. Unauthenticated page views: options must be hidden
+    unauth_index = client.get("/")
+    assert unauth_index.status_code == 200
+    assert 'id="rescan-btn"' not in unauth_index.text
+    assert 'id="bottom-player"' not in unauth_index.text
+
+    unauth_show = client.get(f"/show/{show_id}")
+    assert unauth_show.status_code == 200
+    assert "🎙️ Subscribe" not in unauth_show.text
+    assert "📋 Copy RSS" not in unauth_show.text
+    assert "Download Show (.zip)" not in unauth_show.text
+    assert "Edit Details" not in unauth_show.text
+    assert "js-play-track" not in unauth_show.text
+    assert "js-download-track" not in unauth_show.text
+    assert 'id="bottom-player"' not in unauth_show.text
+
+    # 2. Log in successfully
+    login_res = client.post("/api/login", json={"password": "auth_secret_999"})
+    assert login_res.status_code == 200
+
+    # 3. Authenticated page views: all options must now be present
+    auth_index = client.get("/")
+    assert auth_index.status_code == 200
+    assert 'id="rescan-btn"' in auth_index.text
+    assert 'id="bottom-player"' in auth_index.text
+
+    auth_show = client.get(f"/show/{show_id}")
+    assert auth_show.status_code == 200
+    assert "🎙️ Subscribe" in auth_show.text
+    assert "📋 Copy RSS" in auth_show.text
+    assert "Download Show (.zip)" in auth_show.text
+    assert "Edit Details" in auth_show.text
+    assert "js-play-track" in auth_show.text
+    assert "js-download-track" in auth_show.text
+    assert 'id="bottom-player"' in auth_show.text
+
+
 def test_edit_show_markdown_and_notes_file(client: TestClient) -> None:
     """Test editing show title, author, and markdown description updates notes.md and cache."""
     shows_res = client.get("/api/shows")

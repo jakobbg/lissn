@@ -606,6 +606,10 @@ function initMediaPlayer() {
 
     const trackRow = e.target.closest('.track-row');
     if (trackRow) {
+      if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+        openPasswordModal();
+        return;
+      }
       const idx = parseInt(trackRow.getAttribute('data-track-index'), 10);
       if (!isNaN(idx) && activePlaylist[idx]) {
         const targetTrack = activePlaylist[idx];
