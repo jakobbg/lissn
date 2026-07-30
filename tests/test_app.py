@@ -198,13 +198,18 @@ def test_sleep_timer_and_duration_remaining_toggle(client: TestClient) -> None:
 
     # Check edit-modal structure is rendered on index page as well
     assert 'id="edit-modal"' in html
+    assert 'id="edit-cover-preview-wrapper"' in html
+    assert 'title="Click or drag & drop image to upload"' in html
+    assert 'class="cover-drop-overlay"' in html
 
-    # Verify sr-only CSS class exists in style.css so screen reader announcements are visually hidden
+    # Verify sr-only CSS class and cover dropzone CSS exist in style.css
     css_res = client.get("/static/style.css")
     assert css_res.status_code == 200
     assert ".sr-only" in css_res.text
     assert "position: absolute;" in css_res.text
     assert "clip: rect(0, 0, 0, 0);" in css_res.text
+    assert ".cover-preview-wrapper.drag-over" in css_res.text
+    assert ".cover-drop-overlay" in css_res.text
 
 
 def test_show_detail_page_not_found(client: TestClient) -> None:

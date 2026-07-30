@@ -1761,6 +1761,82 @@ function initMarkdownEditor() {
       }
     }
   });
+
+  // Handle click and drag-and-drop file upload on cover preview wrapper button
+  let coverDragCounter = 0;
+
+  document.addEventListener('click', (e) => {
+    const wrapper = e.target.closest('.cover-preview-wrapper');
+    if (wrapper) {
+      const coverFileInput = document.getElementById('edit-cover-file');
+      if (coverFileInput) coverFileInput.click();
+    }
+  });
+
+  document.addEventListener('dragenter', (e) => {
+    const wrapper = e.target.closest('.cover-preview-wrapper');
+    if (wrapper) {
+      e.preventDefault();
+      coverDragCounter++;
+      wrapper.classList.add('drag-over');
+    }
+  });
+
+  document.addEventListener('dragover', (e) => {
+    const wrapper = e.target.closest('.cover-preview-wrapper');
+    if (wrapper) {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      wrapper.classList.add('drag-over');
+    } else {
+      const modal = e.target.closest('#edit-modal');
+      if (modal) {
+        e.preventDefault();
+      }
+    }
+  });
+
+  document.addEventListener('dragleave', (e) => {
+    const wrapper = e.target.closest('.cover-preview-wrapper');
+    if (wrapper) {
+      e.preventDefault();
+      coverDragCounter--;
+      if (coverDragCounter <= 0) {
+        coverDragCounter = 0;
+        wrapper.classList.remove('drag-over');
+      }
+    }
+  });
+
+  document.addEventListener('drop', (e) => {
+    const wrapper = e.target.closest('.cover-preview-wrapper');
+    if (wrapper) {
+      e.preventDefault();
+      coverDragCounter = 0;
+      wrapper.classList.remove('drag-over');
+
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files.length > 0) {
+        const file = files[0];
+        const coverFileInput = document.getElementById('edit-cover-file');
+        if (coverFileInput) {
+          try {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            coverFileInput.files = dt.files;
+          } catch (err) {
+            // Fallback for environment without DataTransfer constructor
+          }
+          coverFileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    } else {
+      const modal = e.target.closest('#edit-modal');
+      if (modal) {
+        e.preventDefault();
+      }
+    }
+  });
 }
 
 async function openEditModal(btn) {

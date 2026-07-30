@@ -333,10 +333,14 @@
         <div class="form-group cover-edit-group">
           <label class="form-label">Cover Art</label>
           <div class="cover-edit-container">
-            <div class="cover-preview-wrapper">
+            <button type="button" class="cover-preview-wrapper" id="edit-cover-preview-wrapper" aria-label="Upload cover image" title="Click or drag & drop image to upload">
               <img id="edit-cover-preview" src="" alt="Current cover preview" class="edit-cover-img" style="display: none;">
               <div id="edit-cover-placeholder" class="edit-cover-placeholder">🖼️</div>
-            </div>
+              <div class="cover-drop-overlay">
+                <span class="cover-drop-icon">📷</span>
+                <span class="cover-drop-text">Click or drop</span>
+              </div>
+            </button>
             <div class="cover-options-wrapper">
               <div class="cover-option-row">
                 <label for="edit-cover-select" class="form-sublabel">Select image from show folder:</label>
