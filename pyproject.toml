@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "lissn"
 version = "0.4.1"
 description = "Python audiobook and podcast indexer web application"
-authors = [{ name = "Jakob Grimstveit" }]
+authors = [{ name = "Jakob Breivik Grimstveit" }]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
