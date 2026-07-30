@@ -298,7 +298,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 }
 
 /* Back to library button is only visible on show detail pages */
-:not(.show-page) .nav-back-btn {
+body:not(.show-page) .nav-back-btn {
   display: none !important;
 }
 

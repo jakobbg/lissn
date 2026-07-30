@@ -1477,7 +1477,7 @@ def test_mobile_header_buttons_and_back_button_scoping(client: TestClient) -> No
     css_res = client.get("/static/style.css")
     assert css_res.status_code == 200
     css_text = css_res.text
-    assert ":not(.show-page) .nav-back-btn" in css_text
+    assert "body:not(.show-page) .nav-back-btn" in css_text
     assert ".github-link-btn" in css_text
     assert ".github-link-btn svg.btn-icon" in css_text
 
