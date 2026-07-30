@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from lissn.colors import get_show_colors
 from lissn.config import Config
 from lissn.rss import generate_rss_feed
-from lissn.scanner import LibraryScanner, IMAGE_EXTENSIONS, list_show_images
+from lissn.scanner import LibraryScanner, AUDIO_EXTENSIONS, IMAGE_EXTENSIONS, list_show_images
 
 # Register audio MIME types for audiobook and podcast formats
 mimetypes.add_type("audio/mp4", ".m4b")
@@ -390,9 +390,12 @@ def stream_audio(show_id: str, filename: str, request: Request = None) -> Respon
                     audio_file = cand
                     break
 
-    # Prevent directory traversal attacks
+    # Prevent directory traversal attacks and non-audio file access
     if not str(audio_file).startswith(str(folder.resolve())):
         raise HTTPException(status_code=403, detail="Forbidden file path")
+
+    if audio_file.suffix.lower() not in AUDIO_EXTENSIONS:
+        raise HTTPException(status_code=403, detail="Forbidden file type: non-audio files cannot be streamed")
 
     if not audio_file.exists() or not audio_file.is_file():
         raise HTTPException(status_code=404, detail="Audio file not found")
@@ -434,7 +437,7 @@ def download_show_zip(show_id: str, request: Request) -> Response:
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for ep in show["episodes"]:
             ep_path = Path(ep["file_path"])
-            if ep_path.is_file():
+            if ep_path.is_file() and ep_path.suffix.lower() in AUDIO_EXTENSIONS:
                 zf.write(ep_path, arcname=ep["filename"])
 
     buffer.seek(0)
@@ -478,9 +481,12 @@ def download_episode(show_id: str, filename: str, request: Request) -> Response:
                     audio_file = cand
                     break
 
-    # Prevent directory traversal attacks
+    # Prevent directory traversal attacks and non-audio file access
     if not str(audio_file).startswith(str(folder.resolve())):
         raise HTTPException(status_code=403, detail="Forbidden file path")
+
+    if audio_file.suffix.lower() not in AUDIO_EXTENSIONS:
+        raise HTTPException(status_code=403, detail="Forbidden file type: non-audio files cannot be downloaded")
 
     if not audio_file.exists() or not audio_file.is_file():
         raise HTTPException(status_code=404, detail="Audio file not found")

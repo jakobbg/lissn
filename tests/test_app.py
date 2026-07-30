@@ -1151,4 +1151,31 @@ def test_api_show_mutation_invalid_show_ids(client: TestClient) -> None:
     assert upload_res.status_code == 404
 
 
+def test_code_files_cannot_be_streamed_or_downloaded(client: TestClient, temp_library) -> None:
+    """Test that requesting code files (.py, .sh, .json, .env) via /audio/ or /download/ is blocked with HTTP 403."""
+    shows_res = client.get("/api/shows")
+    show = shows_res.json()["shows"][0]
+    show_id = show["show_id"]
+    show_folder = Path(show["folder_path"])
+
+    # Create dummy code files in the show directory
+    (show_folder / "script.py").write_text("print('hello world')", encoding="utf-8")
+    (show_folder / "config.env").write_text("SECRET=12345", encoding="utf-8")
+
+    # Attempt to stream code file -> 403 Forbidden
+    stream_res = client.get(f"/audio/{show_id}/script.py")
+    assert stream_res.status_code == 403
+    assert "Forbidden file type" in stream_res.json()["detail"]
+
+    # Attempt to download code file -> 403 Forbidden
+    download_res = client.get(f"/download/{show_id}/script.py")
+    assert download_res.status_code == 403
+    assert "Forbidden file type" in download_res.json()["detail"]
+
+    # Attempt to stream .env file -> 403 Forbidden
+    env_res = client.get(f"/audio/{show_id}/config.env")
+    assert env_res.status_code == 403
+
+
+
 
