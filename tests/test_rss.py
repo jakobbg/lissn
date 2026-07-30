@@ -199,4 +199,78 @@ def test_generate_rss_feed_sorts_episodes_folder_first_naturally() -> None:
     ep_numbers = [item.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}episode").text for item in items]
     assert ep_numbers == ["1", "2", "3", "4", "5"]
 
+    itunes_type = channel.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}type")
+    assert itunes_type is not None
+    assert itunes_type.text == "serial"
+
+    # For audiobooks, Chapter 1 (Intro) has the newest pubDate timestamp so podcast apps play Chapter 1 first
+    pub_dates = [item.find("pubDate").text for item in items]
+    from email.utils import parsedate_to_datetime
+    dts = [parsedate_to_datetime(pd) for pd in pub_dates]
+    assert dts[0] > dts[1] > dts[2] > dts[3] > dts[4]
+
+
+def test_generate_rss_feed_podcast_newest_first() -> None:
+    """Test that podcast section generates episodic feed with newest episode first and newest pubDate."""
+    show_data = {
+        "show_id": "tech_podcast",
+        "section": "podcasts",
+        "title": "Tech Podcast",
+        "description": "Weekly episodes.",
+        "episodes": [
+            {
+                "episode_id": "ep_1",
+                "title": "Episode 1: Pilot",
+                "filename": "ep01.mp3",
+                "file_size": 1000,
+                "duration": 100.0,
+                "added_timestamp": 1700000000.0,
+            },
+            {
+                "episode_id": "ep_2",
+                "title": "Episode 2: Updates",
+                "filename": "ep02.mp3",
+                "file_size": 1000,
+                "duration": 100.0,
+                "added_timestamp": 1700000000.0,
+            },
+            {
+                "episode_id": "ep_3",
+                "title": "Episode 3: Latest News",
+                "filename": "ep03.mp3",
+                "file_size": 1000,
+                "duration": 100.0,
+                "added_timestamp": 1700000000.0,
+            },
+        ],
+    }
+
+    xml_output = generate_rss_feed(show_data=show_data, base_url="http://localhost:8000")
+    root = ET.fromstring(xml_output.split("\n", 1)[1])
+    channel = root.find("channel")
+
+    itunes_type = channel.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}type")
+    assert itunes_type is not None
+    assert itunes_type.text == "episodic"
+
+    items = channel.findall("item")
+    assert len(items) == 3
+
+    # For podcasts, newest episode (Episode 3) is listed first in RSS feed
+    item_titles = [item.find("title").text for item in items]
+    assert item_titles == [
+        "Episode 3: Latest News",
+        "Episode 2: Updates",
+        "Episode 1: Pilot",
+    ]
+
+    ep_numbers = [item.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}episode").text for item in items]
+    assert ep_numbers == ["3", "2", "1"]
+
+    pub_dates = [item.find("pubDate").text for item in items]
+    from email.utils import parsedate_to_datetime
+    dts = [parsedate_to_datetime(pd) for pd in pub_dates]
+    assert dts[0] > dts[1] > dts[2]
+
+
 
