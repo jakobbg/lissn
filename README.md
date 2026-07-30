@@ -17,13 +17,15 @@
 
 ## 🌟 Key Features
 
-- **Folder Indexing**: Automatically scans directories for **Audio Books** (`.../Books`) and **Podcasts** (`.../Podcasts`).
-- **Podcast RSS 2.0 Feeds**: Generates valid, iTunes-compatible podcast XML feeds for 1-click subscription in podcast apps (`podcast://` protocol).
-- **HTTP Byte-Range Audio Streaming**: Supports progressive seeking (`HTTP 206 Partial Content`) across `.mp3`, `.m4a`, `.m4b`, `.aac`, `.flac`, `.ogg`, `.opus`, and `.wav` formats.
-- **Strict File Security**: Audio streaming and download endpoints enforce strict extension allowlists to ensure non-audio files (such as code or configuration files) can never be accessed.
-- **Per-Show Metadata**: Easily edit custom `title`, `author`, `publisher`, and rich Markdown descriptions stored directly in SQLite.
-- **Social Preview Share Cards**: Show pages (`/show/{show_id}`) render high-resolution OpenGraph (`og:image`) preview cards for iMessage, Twitter, and social media.
-- **Responsive & Accessible UI**: Lean, framework-free client interface with auto-detecting Light/Dark mode and player state persistence.
+- **Folder Indexing & Fast Startup**: Indexes `Books` and `Podcasts` media directories with fast incremental caching. Supports configurable scan modes (`incremental`, `async`, `manual`, `full`).
+- **Unauthenticated Podcast RSS 2.0 Feeds**: Generates valid, iTunes-compatible podcast XML feeds for 1-click subscription in podcast apps (`podcast://` protocol, Apple Podcasts, Pocket Casts, Overcast) without requiring session authentication.
+- **HTTP Byte-Range Audio Streaming & Conditional Caching**: Progressive seeking (`HTTP 206 Partial Content`) and HTTP conditional headers (`ETag`, `304 Not Modified`) across `.mp3`, `.m4a`, `.m4b`, `.aac`, `.flac`, `.ogg`, `.opus`, and `.wav` formats.
+- **On-the-Fly ZIP Archives**: Streams complete show downloads as custom-named ZIP files (`title - author/publisher.zip`) via `zipstream-ng`, featuring a warning modal for archives over 100MB.
+- **SQLite Database Persistence**: All show metadata (title, author, publisher, description, HTML rendering) and custom cover artwork BLOBs persist cleanly inside SQLite (`data/lissn_cache.db`).
+- **Real-Time Library Search**: Instant client-side search filter on the main index page for matching show title, author, or publisher.
+- **Custom Cover Artwork Management**: Upload custom cover images (WebP/PNG/JPEG up to 5MB), pick from images in the show directory, or preview artwork in a zoom modal. Dynamic background gradient adapts to active cover art colors.
+- **Responsive & Accessible Interface**: Framework-free vanilla JS UI with auto-detecting Light/Dark mode, bottom player state persistence across page navigation, keyboard shortcuts (`s`, `c`, `r`, `e`, `d`, `?`), backdrop click modal dismissal, and OpenGraph social preview cards (`/show/{show_id}`).
+- **Strict Security**: Streaming and download endpoints enforce strict file extension allowlists to prevent access to non-audio files. Administrative management endpoints are protected by session password authentication.
 
 ---
 
@@ -74,7 +76,7 @@ Navigate to `http://localhost:8000` in your browser.
 
 ## 🧪 Testing & Code Coverage
 
-**lissn** maintains a comprehensive automated test suite (`pytest` + `pytest-cov`) covering API endpoints, RSS feed generation, HTTP range streaming, authentication, and file security restrictions.
+**lissn** maintains a comprehensive automated test suite (`pytest` + `pytest-cov`) covering API endpoints, RSS feed generation, HTTP range streaming, authentication, conditional ETag caching, and file security restrictions.
 
 ### Run Test Suite
 ```bash
@@ -91,13 +93,13 @@ python3 -m pytest --cov=lissn --cov-report=term-missing
 Name                    Stmts   Miss  Cover   Missing Lines
 -----------------------------------------------------------
 src/lissn/__init__.py       1      0   100%
-src/lissn/app.py          355     34    90%   (error & fallback paths)
-src/lissn/colors.py        83      5    94%   (invalid image fallbacks)
-src/lissn/config.py        47      4    91%   (dir creation fallbacks)
-src/lissn/rss.py           60      0   100%
-src/lissn/scanner.py      324     31    90%   (corrupt tag fallbacks)
+src/lissn/app.py          431     62    86%   (error & fallback paths)
+src/lissn/colors.py        89      6    93%   (invalid image fallbacks)
+src/lissn/config.py        49      4    92%   (dir creation fallbacks)
+src/lissn/rss.py           78      1    99%   (fallback generator)
+src/lissn/scanner.py      402     35    91%   (corrupt tag fallbacks)
 -----------------------------------------------------------
-TOTAL                     870     74    91%
+TOTAL                    1050    108    90%
 ```
 
 ---
