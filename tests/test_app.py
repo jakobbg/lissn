@@ -509,6 +509,29 @@ def test_show_zip_download_endpoint(client: TestClient) -> None:
         assert len(namelist) > 0
 
 
+def test_show_zip_filename_formatting(client: TestClient) -> None:
+    """Test that ZIP download filenames are formatted as 'title - publisher/author'."""
+    shows = scanner.cache.get_all_shows()
+    show = shows[0]
+    show_id = show["show_id"]
+
+    # Edit show to set specific title and publisher
+    client.post(
+        f"/api/shows/{show_id}/edit",
+        json={
+            "title": "Sample Podcast Title",
+            "publisher": "Acme Publishing",
+            "author": "",
+            "description": "Test description",
+        },
+    )
+
+    response = client.get(f"/download/show/{show_id}")
+    assert response.status_code == 200
+    content_disp = response.headers.get("content-disposition", "")
+    assert 'filename="Sample Podcast Title - Acme Publishing.zip"' in content_disp
+
+
 def test_show_page_displays_filesize_and_bitrate(client: TestClient) -> None:
     """Test show detail page renders total filesize, episode filesize, bitrate, and download buttons."""
     shows_res = client.get("/api/shows")

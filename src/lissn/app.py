@@ -492,15 +492,27 @@ def download_show_zip(show_id: str, request: Request) -> Response:
     if not file_added:
         raise HTTPException(status_code=404, detail="No downloadable audio tracks found")
 
-    # Sanitize title for filename while preserving Unicode letters
-    safe_title = "".join(c for c in show["title"] if c.isalnum() or c in (" ", "_", "-")).strip() or "show"
-    zip_filename = f"{safe_title}.zip"
+    section = show.get("section", "podcasts")
+    if section == "podcasts":
+        creator = (show.get("publisher") or show.get("author") or "").strip()
+    else:
+        creator = (show.get("author") or show.get("publisher") or "").strip()
+
+    title = show.get("title", "").strip() or "show"
+    if creator:
+        raw_name = f"{title} - {creator}"
+    else:
+        raw_name = title
+
+    # Sanitize filename while preserving Unicode letters, spaces, underscores, and dashes
+    safe_name = "".join(c for c in raw_name if c.isalnum() or c in (" ", "_", "-")).strip() or "show"
+    zip_filename = f"{safe_name}.zip"
     encoded_filename = quote(zip_filename)
 
     return StreamingResponse(
         zs,
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{safe_title}.zip"; filename*=UTF-8\'\'{encoded_filename}'},
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}.zip"; filename*=UTF-8\'\'{encoded_filename}'},
     )
 
 
