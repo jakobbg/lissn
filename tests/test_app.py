@@ -505,7 +505,7 @@ def test_show_page_displays_filesize_and_bitrate(client: TestClient) -> None:
     assert "Total Size" in html
     assert "Size" in html
     assert "Bitrate" in html
-    assert "Download Show (.zip)" in html
+    assert "📦 Download Show" in html
     assert "js-download-track" in html
     assert f"/download/show/{show_id}" in html
     assert f"/download/{show_id}/" in html
@@ -667,7 +667,7 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
     assert unauth_show.status_code == 200
     assert "🎙️ Subscribe" not in unauth_show.text
     assert "📋 Copy RSS" not in unauth_show.text
-    assert "Download Show (.zip)" not in unauth_show.text
+    assert "📦 Download Show" not in unauth_show.text
     assert "Edit Details" not in unauth_show.text
     assert "js-play-track" not in unauth_show.text
     assert "js-download-track" not in unauth_show.text
@@ -687,7 +687,7 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
     assert auth_show.status_code == 200
     assert "🎙️ Subscribe" in auth_show.text
     assert "📋 Copy RSS" in auth_show.text
-    assert "Download Show (.zip)" in auth_show.text
+    assert "📦 Download Show" in auth_show.text
     assert "Edit Details" in auth_show.text
     assert "js-play-track" in auth_show.text
     assert "js-download-track" in auth_show.text

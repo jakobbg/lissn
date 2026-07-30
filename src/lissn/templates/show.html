@@ -118,7 +118,7 @@
             <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Copy RSS Feed link">📋 Copy RSS</button>
             {% if show.episodes %}
               <a href="/download/show/{{ show.show_id }}" class="btn btn-secondary js-download-show" title="Download all tracks as a ZIP archive">
-                📦 Download Show (.zip)
+                📦 Download Show
               </a>
             {% endif %}
             <button type="button" class="btn btn-secondary js-edit-show" data-show-id="{{ show.show_id }}" data-section="{{ show.section }}" data-title="{{ show.title }}" data-author="{{ show.author or '' }}" data-publisher="{{ show.publisher or '' }}" data-description="{{ show.description }}" title="Edit Show Details">

@@ -661,7 +661,18 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   font-size: 0.8rem;
 }
 
-.btn-icon {
+span.btn-icon {
+  display: inline;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  line-height: 1;
+}
+
+button.btn-icon,
+a.btn-icon,
+.btn-icon-only {
   padding: 0;
   width: 32px;
   height: 32px;
@@ -707,6 +718,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   margin-right: 2rem;
   margin-bottom: 1rem;
   position: relative;
+  z-index: 10;
 }
 
 button.detail-cover-link {
@@ -1429,6 +1441,8 @@ tr.track-row.active-track {
     width: 125px;
     margin-right: 1rem;
     margin-bottom: 0.6rem;
+    position: relative;
+    z-index: 10;
   }
 
   .detail-cover {
