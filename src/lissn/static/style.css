@@ -941,7 +941,8 @@ button.detail-cover-link {
 .subscribe-popover {
   position: absolute;
   z-index: 900;
-  width: min(380px, calc(100vw - 24px));
+  width: max-content;
+  max-width: calc(100vw - 24px);
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg, 12px);
@@ -1028,8 +1029,17 @@ button.detail-cover-link {
   color: var(--text-secondary);
   line-height: 1.7;
 }
+.subscribe-popover-steps li {
+  white-space: nowrap;
+}
 .subscribe-popover-steps strong {
   color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .subscribe-popover-steps li {
+    white-space: normal;
+  }
 }
 
 /* Toast Notifications */
