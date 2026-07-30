@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
 import time
+import pytest
 
 from lissn.scanner import (
     LibraryScanner,
