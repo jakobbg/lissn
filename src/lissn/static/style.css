@@ -1432,7 +1432,7 @@ tr.track-row.active-track {
 /* Responsive adjustments for mobile viewports */
 @media (max-width: 768px) {
   .main-content {
-    padding: 1rem 0.85rem calc(6.5rem + env(safe-area-inset-bottom, 0px));
+    padding: 1rem 0.85rem 1.25rem;
   }
 
   /* Show Detail Banner: Cover floated upper left so text flows right and under */
@@ -1491,7 +1491,7 @@ tr.track-row.active-track {
   .shows-grid {
     grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
     gap: 0.75rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
   }
 
   .show-card .card-body {
@@ -1528,7 +1528,12 @@ tr.track-row.active-track {
   }
 
   .site-footer {
-    margin-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+    padding: 1rem 0.85rem;
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  body.has-active-player .site-footer {
+    margin-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
   }
 }
 
