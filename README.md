@@ -45,7 +45,7 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-> **FreeBSD Note**: Install dependencies via `sudo pkg install py312-fastapi py312-pydantic py312-uvicorn py312-pillow py312-Jinja2 py312-markdown py312-mutagen py312-pyyaml py312-h2 py312-pytest py312-httpx py312-pytest-cov`, then initialize venv with `--system-site-packages`.
+> **FreeBSD Note**: Install system dependencies via `sudo pkg install py312-fastapi py312-pydantic py312-uvicorn py312-pillow py312-Jinja2 py312-markdown py312-mutagen py312-pyyaml py312-h2 py312-python-multipart py312-pytest py312-httpx py312-pytest-cov`, then initialize venv with `--system-site-packages`. (`python-multipart` is required for cover art upload support).
 
 ### 3. Configure
 Copy example config to `config/lissn.json`:
