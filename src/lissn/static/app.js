@@ -1059,6 +1059,25 @@ function getInitialAuthState() {
 let globalAuthState = getInitialAuthState();
 let pendingAuthAction = null;
 
+function updateAuthButtonUI() {
+  const authBtn = document.getElementById('auth-btn');
+  if (!authBtn) return;
+
+  if (!globalAuthState.passwordRequired) {
+    authBtn.hidden = true;
+    return;
+  }
+
+  authBtn.hidden = false;
+  if (globalAuthState.authenticated) {
+    authBtn.textContent = '🚪 Log Out';
+    authBtn.setAttribute('aria-label', 'Log out of session');
+  } else {
+    authBtn.textContent = '🔑 Authenticate';
+    authBtn.setAttribute('aria-label', 'Authenticate session');
+  }
+}
+
 async function checkAuthStatus() {
   try {
     const res = await fetch('/api/auth/status');
@@ -1066,6 +1085,7 @@ async function checkAuthStatus() {
       const data = await res.json();
       globalAuthState.authenticated = data.authenticated;
       globalAuthState.passwordRequired = data.password_required;
+      updateAuthButtonUI();
     }
   } catch (e) {
     console.warn('Failed to check auth status:', e);
@@ -1087,7 +1107,7 @@ function openPasswordModal(pendingAction) {
   const errorEl = document.getElementById('password-error');
   const inputEl = document.getElementById('password-input');
 
-  if (errorEl) errorEl.hidden = false;
+  if (errorEl) errorEl.hidden = true;
   if (inputEl) inputEl.value = '';
   if (modal) {
     modal.removeAttribute('hidden');
@@ -1106,7 +1126,34 @@ function closePasswordModal() {
 }
 
 function initAuthSystem() {
+  updateAuthButtonUI();
   checkAuthStatus();
+
+  const authBtn = document.getElementById('auth-btn');
+  if (authBtn) {
+    authBtn.addEventListener('click', async () => {
+      if (globalAuthState.authenticated) {
+        try {
+          const res = await fetch('/api/logout', { method: 'POST' });
+          if (res.ok) {
+            globalAuthState.authenticated = false;
+            updateAuthButtonUI();
+            showToast('🔒 Logged out successfully');
+            setTimeout(() => window.location.reload(), 400);
+          } else {
+            showToast('❌ Logout failed');
+          }
+        } catch (err) {
+          showToast('❌ Error connecting to server');
+        }
+      } else {
+        openPasswordModal(() => {
+          updateAuthButtonUI();
+          setTimeout(() => window.location.reload(), 400);
+        });
+      }
+    });
+  }
 
   const passwordForm = document.getElementById('password-form');
   const passwordError = document.getElementById('password-error');
@@ -1129,15 +1176,19 @@ function initAuthSystem() {
           globalAuthState.authenticated = true;
           if (passwordError) passwordError.hidden = true;
           closePasswordModal();
+          updateAuthButtonUI();
           showToast('🔓 Session authenticated');
           if (pendingAuthAction) {
             const act = pendingAuthAction;
             pendingAuthAction = null;
             act();
+          } else {
+            setTimeout(() => window.location.reload(), 400);
           }
         } else {
           const errData = await res.json().catch(() => ({}));
           globalAuthState.authenticated = false;
+          updateAuthButtonUI();
           if (passwordError) {
             passwordError.textContent = errData.detail || 'Sorry, the password is incorrect.';
             passwordError.hidden = false;

@@ -49,6 +49,11 @@
         <span>lissn</span>
       </a>
       <div class="nav-actions">
+        {% if password_required %}
+          <button id="auth-btn" class="auth-btn" aria-label="{% if authenticated %}Log out{% else %}Authenticate{% endif %}">
+            {% if authenticated %}🚪 Log Out{% else %}🔑 Authenticate{% endif %}
+          </button>
+        {% endif %}
         <button id="theme-toggle" class="theme-toggle-btn" aria-label="Switch light/dark theme">
           🌙 Dark
         </button>

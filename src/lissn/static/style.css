@@ -269,7 +269,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   gap: 1rem;
 }
 
-.theme-toggle-btn {
+.theme-toggle-btn,
+.auth-btn {
   background: var(--bg-surface-elevated);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
@@ -284,7 +285,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   transition: background-color var(--transition-fast);
 }
 
-.theme-toggle-btn:hover {
+.theme-toggle-btn:hover,
+.auth-btn:hover {
   background-color: var(--border-color);
 }
 

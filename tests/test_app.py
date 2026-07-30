@@ -601,33 +601,41 @@ def test_protected_endpoints_require_auth(unauthenticated_client: TestClient, mo
     assert res_edit_auth.json()["show"]["title"] == "Updated Title"
 
 
-def test_rss_feed_url_buttons_require_auth(unauthenticated_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that Subscribe and Copy RSS buttons containing the RSS feed URL are hidden when unauthenticated and shown when logged in."""
+def test_authenticate_header_button_rendering_and_toggle(unauthenticated_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test header renders #auth-btn before #theme-toggle, showing Authenticate when unauthenticated and Log Out when logged in."""
     from lissn.app import config
 
     client = unauthenticated_client
-    monkeypatch.setattr(config, "password", "protect_rss_link")
+    monkeypatch.setattr(config, "password", "my_secret_pass")
 
-    shows_res = client.get("/api/shows")
-    show_id = shows_res.json()["shows"][0]["show_id"]
+    # Unauthenticated index & show detail pages
+    res_index_unauth = client.get("/")
+    assert res_index_unauth.status_code == 200
+    html_unauth = res_index_unauth.text
 
-    # 1. Unauthenticated page view should NOT render RSS buttons or feed URLs
-    res_unauth = client.get(f"/show/{show_id}")
-    assert res_unauth.status_code == 200
-    assert "🎙️ Subscribe" not in res_unauth.text
-    assert "📋 Copy RSS" not in res_unauth.text
-    assert f"/rss/{show_id}" not in res_unauth.text
+    assert 'id="auth-btn"' in html_unauth
+    assert 'class="auth-btn"' in html_unauth
+    assert "🔑 Authenticate" in html_unauth
+    assert "🚪 Log Out" not in html_unauth
 
-    # 2. Log in
-    login_res = client.post("/api/login", json={"password": "protect_rss_link"})
+    # Verify #auth-btn appears before #theme-toggle in nav-actions
+    auth_pos = html_unauth.find('id="auth-btn"')
+    theme_pos = html_unauth.find('id="theme-toggle"')
+    assert auth_pos != -1 and theme_pos != -1
+    assert auth_pos < theme_pos
+
+    # Log in
+    login_res = client.post("/api/login", json={"password": "my_secret_pass"})
     assert login_res.status_code == 200
 
-    # 3. Authenticated page view SHOULD render RSS Subscribe and Copy RSS buttons
-    res_auth = client.get(f"/show/{show_id}")
-    assert res_auth.status_code == 200
-    assert "🎙️ Subscribe" in res_auth.text
-    assert "📋 Copy RSS" in res_auth.text
-    assert f"/rss/{show_id}" in res_auth.text
+    # Authenticated index page view
+    res_index_auth = client.get("/")
+    assert res_index_auth.status_code == 200
+    html_auth = res_index_auth.text
+
+    assert 'id="auth-btn"' in html_auth
+    assert "🚪 Log Out" in html_auth
+    assert "🔑 Authenticate" not in html_auth
 
 
 def test_edit_show_markdown_and_notes_file(client: TestClient) -> None:
