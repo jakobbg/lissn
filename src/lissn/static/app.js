@@ -212,38 +212,95 @@ function initCopyButtons() {
 }
 
 /**
- * Subscribe button: attempts to open Apple Podcasts via the podcast:// URL scheme.
- * Simultaneously copies the HTTPS RSS URL to clipboard so users can paste it manually
- * if the podcast app does not launch (e.g., on Chrome where no handler is registered).
+ * Subscribe button: copies the RSS URL to clipboard and shows a popover with the URL and
+ * step-by-step instructions for adding it in Apple Podcasts, Overcast, and other apps.
+ * No custom URL scheme tricks — those are unreliable across iOS/macOS versions and apps.
  */
 function initSubscribeButtons() {
+  let activePopover = null;
+
+  function closeSubscribePopover() {
+    if (activePopover) {
+      activePopover.remove();
+      activePopover = null;
+    }
+  }
+
+  function showSubscribePopover(btn, rssUrl) {
+    closeSubscribePopover();
+
+    const popover = document.createElement('div');
+    popover.className = 'subscribe-popover';
+    popover.setAttribute('role', 'dialog');
+    popover.setAttribute('aria-label', 'Subscribe to podcast');
+    popover.innerHTML = `
+      <div class="subscribe-popover-header">
+        <span class="subscribe-popover-title">🎙️ Subscribe</span>
+        <button class="subscribe-popover-close" aria-label="Close">✕</button>
+      </div>
+      <p class="subscribe-popover-lead">RSS URL copied to clipboard ✓</p>
+      <div class="subscribe-popover-url-row">
+        <span class="subscribe-popover-url" title="${rssUrl}">${rssUrl}</span>
+        <button class="subscribe-popover-copy" aria-label="Copy RSS URL">📋</button>
+      </div>
+      <ol class="subscribe-popover-steps">
+        <li><strong>Apple Podcasts (Mac):</strong> File → Follow a Show by URL → paste</li>
+        <li><strong>Apple Podcasts (iPhone/iPad):</strong> Library → ⋯ → Add a Show by URL → paste</li>
+        <li><strong>Overcast / Pocket Casts / Castro:</strong> Add Podcast → paste URL</li>
+      </ol>
+    `;
+
+    // Position below the button
+    document.body.appendChild(popover);
+    const rect = btn.getBoundingClientRect();
+    const scrollY = window.scrollY;
+    popover.style.top = (rect.bottom + scrollY + 8) + 'px';
+    const left = Math.min(rect.left, window.innerWidth - popover.offsetWidth - 12);
+    popover.style.left = Math.max(8, left) + 'px';
+
+    activePopover = popover;
+
+    // Copy button inside popover
+    popover.querySelector('.subscribe-popover-copy').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(rssUrl).then(() => showToast('📋 RSS URL copied!'));
+      }
+    });
+
+    // Close button
+    popover.querySelector('.subscribe-popover-close').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      closeSubscribePopover();
+    });
+  }
+
+  // Open popover on Subscribe button click
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.js-subscribe-btn');
-    if (!btn) return;
+    if (btn) {
+      e.stopPropagation();
+      const rssUrl = btn.getAttribute('data-rss-url');
+      if (!rssUrl) return;
 
-    const rssUrl = btn.getAttribute('data-rss-url');
-    if (!rssUrl) return;
+      // Copy to clipboard immediately
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(rssUrl).catch(() => {});
+      }
 
-    // Construct podcast:// URL by replacing the http(s):// scheme.
-    // Apple Podcasts on iOS and macOS registers podcast:// as its URL scheme handler.
-    const podcastUrl = 'podcast://' + rssUrl.replace(/^https?:\/\//, '');
-
-    // Always copy the https:// RSS URL to clipboard — this is the universal fallback
-    // that works for every podcast app (Overcast, Pocket Casts, Castro, etc.).
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(rssUrl).catch(() => {});
+      showSubscribePopover(btn, rssUrl);
+      return;
     }
 
-    // Attempt to launch Apple Podcasts via podcast:// scheme.
-    // On iOS Safari and macOS Safari this opens Apple Podcasts directly.
-    // On Chrome and Firefox there is no OS handler registered so nothing happens.
-    window.location.href = podcastUrl;
+    // Dismiss popover on outside click
+    if (activePopover && !activePopover.contains(e.target)) {
+      closeSubscribePopover();
+    }
+  });
 
-    // After a short delay: if still on the page (podcast:// didn't navigate away or
-    // the browser has no handler), show a toast explaining the clipboard fallback.
-    setTimeout(() => {
-      showToast('🎙️ RSS URL copied — paste into your podcast app (e.g. Apple Podcasts → Library → ⋯ → Add a Show by URL)');
-    }, 700);
+  // Dismiss on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSubscribePopover();
   });
 }
 
