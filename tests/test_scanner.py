@@ -50,11 +50,11 @@ def test_format_fuzzy_date() -> None:
 
 
 def test_library_scanner_and_cache(temp_library) -> None:
-    """Test full directory scanning, notes.md auto-generation, and SQLite cache operations."""
+    """Test full directory scanning and SQLite cache operations."""
     books_dir, podcasts_dir, cache_dir, cache_db = temp_library
 
     scanner = LibraryScanner(
-        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+        books_dir=books_dir, podcasts_dir=podcasts_dir, db_path=cache_db
     )
     result = scanner.scan_all()
 
@@ -69,10 +69,6 @@ def test_library_scanner_and_cache(temp_library) -> None:
     assert book_show_data["total_duration"] == 18.0
     assert book_show_data["cover_path"] is not None
 
-    # Verify notes.md is deleted and data is only in SQLite
-    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
-    assert not notes_file.exists()
-
     # Query SQLite cache directly
     cached_shows = scanner.cache.get_all_shows()
     assert len(cached_shows) == 2
@@ -83,36 +79,6 @@ def test_library_scanner_and_cache(temp_library) -> None:
     assert cached_show is not None
     assert len(cached_show["episodes"]) == 3
     assert cached_show["episodes"][0]["filename"] == "01_chapter1.wav"
-
-
-def test_notes_md_customization(temp_library) -> None:
-    """Test custom metadata and markdown rendering parsed from notes.md in cache_dir."""
-    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
-
-    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
-    notes_file.parent.mkdir(parents=True, exist_ok=True)
-    notes_file.write_text(
-        """---
-title: "The Great Gatsby (Annotated)"
-author: "F. Scott Fitzgerald"
----
-
-# About this Audiobook
-
-This is a **classic** American novel.
-""",
-        encoding="utf-8",
-    )
-
-    scanner = LibraryScanner(
-        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
-    )
-    result = scanner.scan_all()
-
-    book = result["books"][0]
-    assert book["title"] == "The Great Gatsby (Annotated)"
-    assert book["author"] == "F. Scott Fitzgerald"
-    assert "<strong>classic</strong>" in book["description_html"]
 
 
 def test_scanner_handles_empty_directories(tmp_path: Path) -> None:
@@ -379,56 +345,19 @@ def test_incremental_scanning_and_pruning(temp_library, monkeypatch: pytest.Monk
     shows_in_db = scanner.cache.get_all_shows()
     assert len(shows_in_db) == 1
     assert shows_in_db[0]["section"] == "books"
-    # Verify notes.md file is cleaned up and removed from cache_dir
-    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
-    assert not notes_file.exists()
-
-
-def test_notes_md_customization(temp_library) -> None:
-    """Test custom metadata and markdown rendering parsed from notes.md in cache_dir."""
-    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
-
-    notes_file = cache_dir / "books" / "The Great Gatsby" / "notes.md"
-    notes_file.parent.mkdir(parents=True, exist_ok=True)
-    notes_file.write_text(
-        """---
-title: "The Great Gatsby (Annotated)"
-author: "F. Scott Fitzgerald"
----
-
-# About this Audiobook
-
-This is a **classic** American novel.
-""",
-        encoding="utf-8",
-    )
-
-    scanner = LibraryScanner(
-        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
-    )
-    result = scanner.scan_all()
-
-    book = result["books"][0]
-    assert book["title"] == "The Great Gatsby (Annotated)"
-    assert book["author"] == "F. Scott Fitzgerald"
-    assert "<strong>classic</strong>" in book["description_html"]
-    # Confirm notes.md was removed after migration
-    assert not notes_file.exists()
 
 
 def test_scanner_handles_empty_directories(tmp_path: Path) -> None:
     """Test LibraryScanner scanning completely empty library folders without errors."""
     books_dir = tmp_path / "empty_books"
     podcasts_dir = tmp_path / "empty_podcasts"
-    cache_dir = tmp_path / "cache"
-    cache_db = cache_dir / "test.db"
+    cache_db = tmp_path / "test.db"
 
     books_dir.mkdir()
     podcasts_dir.mkdir()
-    cache_dir.mkdir()
 
     scanner = LibraryScanner(
-        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+        books_dir=books_dir, podcasts_dir=podcasts_dir, db_path=cache_db
     )
     result = scanner.scan_all()
 
@@ -438,21 +367,8 @@ def test_scanner_handles_empty_directories(tmp_path: Path) -> None:
 
 
 def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
-    """Test parsing, cache migration, and metadata updating for publisher field in podcasts."""
-    from lissn.scanner import parse_notes_file, ScannerCache, LibraryScanner
-
-    notes_dir = tmp_path / "podcasts" / "Test Podcast"
-    notes_dir.mkdir(parents=True, exist_ok=True)
-    notes_file = notes_dir / "notes.md"
-    notes_file.write_text(
-        '---\npodcast_name: "Test Podcast"\npublisher: "Penguin Random House"\n---\n\nPodcast description.',
-        encoding="utf-8"
-    )
-
-    parsed = parse_notes_file(notes_file, "podcasts", "Test Podcast")
-    assert parsed["title"] == "Test Podcast"
-    assert parsed["publisher"] == "Penguin Random House"
-    assert parsed["author"] == ""
+    """Test metadata updating for publisher field in podcasts."""
+    from lissn.scanner import ScannerCache, LibraryScanner
 
     db_path = tmp_path / "cache.db"
     cache = ScannerCache(db_path)
@@ -483,7 +399,7 @@ def test_publisher_metadata_parsing_and_update(tmp_path: Path) -> None:
     assert fetched is not None
     assert fetched["publisher"] == "Penguin Random House"
 
-    scanner = LibraryScanner(books_dir=tmp_path, podcasts_dir=tmp_path, cache_dir=tmp_path, db_path=db_path)
+    scanner = LibraryScanner(books_dir=tmp_path, podcasts_dir=tmp_path, db_path=db_path)
     scanner.cache = cache
 
     updated = scanner.update_show_metadata(
@@ -509,7 +425,7 @@ def test_custom_cover_persists_across_scanner_restart(temp_library) -> None:
     custom_cover.write_bytes(b"custom cover png content")
 
     scanner1 = LibraryScanner(
-        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+        books_dir=books_dir, podcasts_dir=podcasts_dir, db_path=cache_db
     )
     res1 = scanner1.scan_all()
     show_id = res1["books"][0]["show_id"]
@@ -521,7 +437,7 @@ def test_custom_cover_persists_across_scanner_restart(temp_library) -> None:
 
     # Simulate app restart with a fresh LibraryScanner instance
     scanner2 = LibraryScanner(
-        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+        books_dir=books_dir, podcasts_dir=podcasts_dir, db_path=cache_db
     )
     res2 = scanner2.scan_all()
 
@@ -535,7 +451,7 @@ def test_sqlite_blob_cover_storage(temp_library) -> None:
     books_dir, podcasts_dir, cache_dir, cache_db = temp_library
 
     scanner = LibraryScanner(
-        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=cache_db
+        books_dir=books_dir, podcasts_dir=podcasts_dir, db_path=cache_db
     )
     res = scanner.scan_all()
     show_id = res["books"][0]["show_id"]
@@ -555,55 +471,6 @@ def test_sqlite_blob_cover_storage(temp_library) -> None:
     retained_blob = scanner.cache.get_show_cover_data(show_id)
     assert retained_blob is not None
     assert retained_blob[0] == raw_blob_bytes
-
-
-def test_legacy_sqlite_db_file_migration(tmp_path: Path) -> None:
-    """Test that a legacy lissn_cache.db inside cache_dir is moved intact to target db_path before DB connection."""
-    cache_dir = tmp_path / "cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    legacy_db = cache_dir / "lissn_cache.db"
-    target_db = tmp_path / "data" / "lissn_cache.db"
-
-    # Populate legacy_db with test show
-    from lissn.scanner import ScannerCache
-    legacy_cache = ScannerCache(legacy_db)
-    legacy_cache.save_show(
-        {
-            "show_id": "legacy_123",
-            "section": "books",
-            "title": "Legacy Book Title",
-            "author": "Legacy Author",
-            "publisher": "",
-            "podcast_name": "",
-            "folder_path": str(tmp_path),
-            "cover_path": "",
-            "total_duration": 50.0,
-            "formatted_duration": "50s",
-            "total_file_size": 512,
-            "formatted_total_file_size": "512 B",
-            "added_timestamp": 1000.0,
-            "fuzzy_added_date": "Long ago",
-            "description": "Legacy description",
-            "description_html": "<p>Legacy description</p>",
-            "notes_path": "",
-        },
-        [],
-    )
-
-    assert legacy_db.exists()
-    assert not target_db.exists()
-
-    # Launch LibraryScanner pointing to target_db
-    scanner = LibraryScanner(books_dir=tmp_path, podcasts_dir=tmp_path, cache_dir=cache_dir, db_path=target_db)
-
-    # Verify target_db exists and legacy_db was moved to target_db
-    assert target_db.exists()
-    assert not legacy_db.exists()
-
-    show = scanner.cache.get_show("legacy_123")
-    assert show is not None
-    assert show["title"] == "Legacy Book Title"
-    assert show["author"] == "Legacy Author"
 
 
 

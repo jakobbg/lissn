@@ -21,7 +21,7 @@
 - **Podcast RSS 2.0 Feeds**: Generates valid, iTunes-compatible podcast XML feeds for 1-click subscription in podcast apps (`podcast://` protocol).
 - **HTTP Byte-Range Audio Streaming**: Supports progressive seeking (`HTTP 206 Partial Content`) across `.mp3`, `.m4a`, `.m4b`, `.aac`, `.flac`, `.ogg`, `.opus`, and `.wav` formats.
 - **Strict File Security**: Audio streaming and download endpoints enforce strict extension allowlists to ensure non-audio files (such as code or configuration files) can never be accessed.
-- **Per-Show Metadata (`notes.md`)**: Auto-generates `notes.md` allowing custom `title`, `author`, `podcast_name`, and rich Markdown descriptions.
+- **Per-Show Metadata**: Easily edit custom `title`, `author`, `publisher`, and rich Markdown descriptions stored directly in SQLite.
 - **Social Preview Share Cards**: Show pages (`/show/{show_id}`) render high-resolution OpenGraph (`og:image`) preview cards for iMessage, Twitter, and social media.
 - **Responsive & Accessible UI**: Lean, framework-free client interface with auto-detecting Light/Dark mode and player state persistence.
 
@@ -58,7 +58,6 @@ Edit `config/lissn.json` to point to your media directories:
 {
   "books_dir": "/path/to/your/Books",
   "podcasts_dir": "/path/to/your/Podcasts",
-  "cache_dir": "./data/cache",
   "host": "0.0.0.0",
   "port": 8000,
   "base_url": "http://localhost:8000"

@@ -65,15 +65,6 @@ class Config:
         )
         self.podcasts_dir: Path = Path(raw_podcasts).resolve()
 
-        # Resolve Cache Directory path
-        raw_cache_dir = (
-            cache_dir
-            or os.getenv("LISSN_CACHE_DIR")
-            or json_config.get("cache_dir")
-            or str(base_dir / "data" / "cache")
-        )
-        self.cache_dir: Path = Path(raw_cache_dir).resolve()
-
         # Resolve Cache DB path
         raw_cache_db = (
             cache_db_path
@@ -82,6 +73,7 @@ class Config:
             or str(base_dir / "data" / "lissn_cache.db")
         )
         self.cache_db_path: Path = Path(raw_cache_db).resolve()
+        self.cache_dir: Path = self.cache_db_path.parent
 
         self.host: str = host or os.getenv("LISSN_HOST") or json_config.get("host") or "0.0.0.0"
         self.port: int = int(port or os.getenv("LISSN_PORT") or json_config.get("port") or 8000)

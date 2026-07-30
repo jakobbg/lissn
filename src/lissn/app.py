@@ -144,7 +144,6 @@ scanner = LibraryScanner(
     books_dir=config.books_dir,
     podcasts_dir=config.podcasts_dir,
     db_path=config.cache_db_path,
-    cache_dir=config.cache_dir,
     max_episodes_per_show=config.max_episodes_per_show,
 )
 
