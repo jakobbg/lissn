@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSectionFiltering();
   initCopyButtons();
   initShareButtons();
+  initPageShortcuts();
   initRescanButton();
   initMediaPlayer();
   initCoverModal();
@@ -225,6 +226,60 @@ function initShareButtons() {
       navigator.clipboard.writeText(url).then(() => {
         showToast('🔗 Show link copied to clipboard!');
       });
+    }
+  });
+}
+
+/**
+ * Page-level single character keyboard shortcuts (c, r, e, d).
+ * Follows Web Accessibility & UX best practices:
+ * - Active only when typing focus is not inside form fields / inputs / editable elements.
+ * - Does not override browser system key combinations (Cmd/Ctrl + C/R/E/D).
+ */
+function initPageShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) || activeEl.isContentEditable)) {
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) {
+      return;
+    }
+
+    const passwordModal = document.getElementById('password-modal');
+    const editModal = document.getElementById('edit-modal');
+    const coverModal = document.getElementById('cover-modal');
+    if ((passwordModal && !passwordModal.hidden) || 
+        (editModal && !editModal.hidden) || 
+        (coverModal && !coverModal.hasAttribute('hidden'))) {
+      return;
+    }
+
+    const key = e.key.toLowerCase();
+    if (key === 'c') {
+      const shareBtn = document.querySelector('.js-share-show');
+      if (shareBtn) {
+        e.preventDefault();
+        shareBtn.click();
+      }
+    } else if (key === 'r') {
+      const copyRssBtn = document.querySelector('.js-copy-rss');
+      if (copyRssBtn) {
+        e.preventDefault();
+        copyRssBtn.click();
+      }
+    } else if (key === 'e') {
+      const editBtn = document.querySelector('.js-edit-show');
+      if (editBtn) {
+        e.preventDefault();
+        editBtn.click();
+      }
+    } else if (key === 'd') {
+      const downloadBtn = document.querySelector('.js-download-show');
+      if (downloadBtn) {
+        e.preventDefault();
+        downloadBtn.click();
+      }
     }
   });
 }

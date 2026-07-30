@@ -112,18 +112,18 @@
         <div class="detail-actions">
           {% if authenticated %}
             <a href="podcast://{{ host_header }}/rss/{{ show.show_id }}" class="btn btn-secondary" title="Subscribe in podcast app">🎙️ Subscribe</a>
-            <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Copy RSS Feed link">📋 Copy RSS</button>
+            <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Copy RSS Feed link (press 'r')">📋 Copy RSS <kbd class="key-hint">r</kbd></button>
             {% if show.episodes %}
-              <a href="/download/show/{{ show.show_id }}" class="btn btn-secondary js-download-show" title="Download all tracks as a ZIP archive">
-                📦 Download Show (.zip)
+              <a href="/download/show/{{ show.show_id }}" class="btn btn-secondary js-download-show" title="Download all tracks as a ZIP archive (press 'd')">
+                📦 Download Show (.zip) <kbd class="key-hint">d</kbd>
               </a>
             {% endif %}
-            <button type="button" class="btn btn-secondary js-edit-show" data-show-id="{{ show.show_id }}" data-section="{{ show.section }}" data-title="{{ show.title }}" data-author="{{ show.author or '' }}" data-publisher="{{ show.publisher or '' }}" data-description="{{ show.description }}">
-              ✏️ Edit Details
+            <button type="button" class="btn btn-secondary js-edit-show" data-show-id="{{ show.show_id }}" data-section="{{ show.section }}" data-title="{{ show.title }}" data-author="{{ show.author or '' }}" data-publisher="{{ show.publisher or '' }}" data-description="{{ show.description }}" title="Edit Show Details (press 'e')">
+              ✏️ Edit Details <kbd class="key-hint">e</kbd>
             </button>
           {% endif %}
-          <button type="button" class="btn btn-secondary js-share-show" data-title="{{ show.title }}" data-url="{{ base_url }}/show/{{ show.show_id }}">
-            📲 Share Show
+          <button type="button" class="btn btn-secondary js-share-show" data-title="{{ show.title }}" data-url="{{ base_url }}/show/{{ show.show_id }}" title="Share Show (press 'c')">
+            📲 Share Show <kbd class="key-hint">c</kbd>
           </button>
         </div>
       </div>
