@@ -100,13 +100,6 @@
                     by {{ show.author }}
                   </div>
                 {% endif %}
-                <div class="meta-row">
-                  <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
-                  <span>•</span>
-                  <span>{{ show.episode_count }} track{% if show.episode_count != 1 %}s{% endif %}</span>
-                  <span>•</span>
-                  <span>📅 {{ show.fuzzy_added_date }}</span>
-                </div>
               </div>
             </article>
           {% endfor %}
@@ -141,13 +134,6 @@
                     <span class="publisher-label">{{ show.publisher }}</span>
                   </div>
                 {% endif %}
-                <div class="meta-row">
-                  <span class="duration-badge">⏱️ {{ show.formatted_duration }}</span>
-                  <span>•</span>
-                  <span>{{ show.episode_count }} track{% if show.episode_count != 1 %}s{% endif %}</span>
-                  <span>•</span>
-                  <span>📅 {{ show.fuzzy_added_date }}</span>
-                </div>
               </div>
             </article>
           {% endfor %}

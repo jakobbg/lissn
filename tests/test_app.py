@@ -739,15 +739,12 @@ def test_static_app_js_track_match_logic(client: TestClient) -> None:
 
 
 def test_single_line_metadata_and_dark_subscribe_button(client: TestClient) -> None:
-    """Test index and show detail pages render duration, track count, and added date on a single line, and Subscribe uses btn-secondary on show page."""
+    """Test index card listings omit meta-row and show detail pages render duration, track count, and added date on a single line."""
     res_index = client.get("/")
     assert res_index.status_code == 200
     html_index = res_index.text
 
-    assert 'class="meta-row"' in html_index
-    assert "duration-badge" in html_index
-    assert "track" in html_index
-    assert "📅" in html_index
+    assert 'class="meta-row"' not in html_index
     assert "🎙️ Subscribe" not in html_index
     assert "📋 Copy RSS" not in html_index
 
