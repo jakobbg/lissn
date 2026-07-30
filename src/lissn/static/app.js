@@ -466,7 +466,7 @@ function initClientNavigation() {
     // Handle Alt-click (Option key on macOS) on podcast show cards or show elements to open show in new window
     if (e.altKey) {
       const showCard = e.target.closest('.show-card');
-      if (showCard && !e.target.closest('.card-actions, .js-copy-rss, a[href^="podcast:"]')) {
+      if (showCard && !e.target.closest('.card-actions, .js-copy-rss, a[href^="podcast:"], a[href^="podcasts:"]')) {
         const showLink = showCard.querySelector('a[href^="/show/"]');
         if (showLink) {
           const href = showLink.getAttribute('href');
@@ -491,6 +491,7 @@ function initClientNavigation() {
       href.startsWith('#') ||
       href.startsWith('javascript:') ||
       href.startsWith('podcast:') ||
+      href.startsWith('podcasts:') ||
       href.startsWith('mailto:') ||
       anchor.getAttribute('target') === '_blank' ||
       anchor.hasAttribute('download') ||

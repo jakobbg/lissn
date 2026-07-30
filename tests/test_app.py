@@ -1091,6 +1091,31 @@ def test_subscribe_and_copy_rss_only_on_show_page(client: TestClient) -> None:
     assert show_res.status_code == 200
     assert "js-copy-rss" in show_res.text
     assert 'title="Subscribe in podcast app"' in show_res.text
+    assert f'href="podcast://testserver/rss/{show_id}"' in show_res.text or f'href="http' not in show_res.text
+
+
+def test_get_subscribe_url_logic() -> None:
+    """Test get_subscribe_url constructs podcast:// for http and podcasts:// for https with ports and paths."""
+    from lissn.app import get_subscribe_url
+
+    assert get_subscribe_url("http://192.168.1.50:8000", "show_123") == "podcast://192.168.1.50:8000/rss/show_123"
+    assert get_subscribe_url("https://lissn.example.com", "show_123") == "podcasts://lissn.example.com/rss/show_123"
+    assert get_subscribe_url("https://lissn.example.com/subpath", "show_123") == "podcasts://lissn.example.com/subpath/rss/show_123"
+    assert get_subscribe_url("http://localhost:8000/", "show_123") == "podcast://localhost:8000/rss/show_123"
+
+
+def test_subscribe_url_rendering_with_custom_base_url(client: TestClient, monkeypatch) -> None:
+    """Test that show page renders podcasts:// scheme when base_url is configured with https://."""
+    from lissn.app import config
+    monkeypatch.setattr(config, "base_url", "https://my-lissn.example.com:8443/custom")
+
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_res = client.get(f"/show/{show_id}")
+
+    assert show_res.status_code == 200
+    assert f'href="podcasts://my-lissn.example.com:8443/custom/rss/{show_id}"' in show_res.text
+    assert f'data-rss-url="https://my-lissn.example.com:8443/custom/rss/{show_id}"' in show_res.text
 
 
 def test_spacebar_not_hijacked_in_app_js(client: TestClient) -> None:

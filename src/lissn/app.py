@@ -311,6 +311,21 @@ def get_host_header(request: Request) -> str:
     return request.headers.get("host") or f"{config.host}:{config.port}"
 
 
+def get_subscribe_url(base_url: str, show_id: str) -> str:
+    """
+    Construct podcast subscription URL using podcast:// (HTTP) or podcasts:// (HTTPS).
+
+    Replaces http:// with podcast:// and https:// with podcasts:// to ensure podcast app link
+    clicks preserve the full scheme (HTTP vs HTTPS), host, port, and any path prefix.
+    """
+    rss_url = f"{base_url.rstrip('/')}/rss/{show_id}"
+    if rss_url.startswith("https://"):
+        return "podcasts://" + rss_url[8:]
+    elif rss_url.startswith("http://"):
+        return "podcast://" + rss_url[7:]
+    return f"podcast://{rss_url}"
+
+
 @app.get("/", response_class=HTMLResponse)
 @app.head("/", response_class=HTMLResponse)
 def index_page(request: Request) -> Response:
@@ -358,6 +373,7 @@ def show_detail_page(show_id: str, request: Request) -> Response:
     cover_info = scanner.cache.get_show_cover_data(show["show_id"])
     cover_source = cover_info[0] if cover_info else (Path(show["cover_path"]) if show.get("cover_path") else None)
     colors = get_show_colors(cover_source, show["show_id"])
+    base_url = get_base_url(request)
 
     response = templates.TemplateResponse(
         request,
@@ -367,7 +383,8 @@ def show_detail_page(show_id: str, request: Request) -> Response:
             "show_colors": colors,
             "all_authors": scanner.cache.get_all_authors(),
             "all_publishers": scanner.cache.get_all_publishers(),
-            "base_url": get_base_url(request),
+            "base_url": base_url,
+            "subscribe_url": get_subscribe_url(base_url, show["show_id"]),
             "host_header": get_host_header(request),
             "authenticated": is_authenticated(request),
             "password_required": bool(config.password),
