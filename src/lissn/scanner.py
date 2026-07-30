@@ -5,6 +5,7 @@ locates cover art, computes fuzzy added dates, reads notes.md from cache_dir,
 and caches show data in SQLite.
 """
 
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
@@ -298,10 +299,18 @@ class ScannerCache:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
-    def _get_connection(self) -> sqlite3.Connection:
+    @contextmanager
+    def _get_connection(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def _init_db(self) -> None:
         with self._get_connection() as conn:
