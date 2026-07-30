@@ -601,6 +601,35 @@ def test_protected_endpoints_require_auth(unauthenticated_client: TestClient, mo
     assert res_edit_auth.json()["show"]["title"] == "Updated Title"
 
 
+def test_rss_feed_url_buttons_require_auth(unauthenticated_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that Subscribe and Copy RSS buttons containing the RSS feed URL are hidden when unauthenticated and shown when logged in."""
+    from lissn.app import config
+
+    client = unauthenticated_client
+    monkeypatch.setattr(config, "password", "protect_rss_link")
+
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    # 1. Unauthenticated page view should NOT render RSS buttons or feed URLs
+    res_unauth = client.get(f"/show/{show_id}")
+    assert res_unauth.status_code == 200
+    assert "🎙️ Subscribe" not in res_unauth.text
+    assert "📋 Copy RSS" not in res_unauth.text
+    assert f"/rss/{show_id}" not in res_unauth.text
+
+    # 2. Log in
+    login_res = client.post("/api/login", json={"password": "protect_rss_link"})
+    assert login_res.status_code == 200
+
+    # 3. Authenticated page view SHOULD render RSS Subscribe and Copy RSS buttons
+    res_auth = client.get(f"/show/{show_id}")
+    assert res_auth.status_code == 200
+    assert "🎙️ Subscribe" in res_auth.text
+    assert "📋 Copy RSS" in res_auth.text
+    assert f"/rss/{show_id}" in res_auth.text
+
+
 def test_edit_show_markdown_and_notes_file(client: TestClient) -> None:
     """Test editing show title, author, and markdown description updates notes.md and cache."""
     shows_res = client.get("/api/shows")

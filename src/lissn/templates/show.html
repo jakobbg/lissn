@@ -108,8 +108,10 @@
         {% endif %}
 
         <div class="detail-actions">
-          <a href="podcast://{{ host_header }}/rss/{{ show.show_id }}" class="btn btn-secondary" title="Subscribe in podcast app">🎙️ Subscribe</a>
-          <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Copy RSS Feed link">📋 Copy RSS</button>
+          {% if not password_required or authenticated %}
+            <a href="podcast://{{ host_header }}/rss/{{ show.show_id }}" class="btn btn-secondary" title="Subscribe in podcast app">🎙️ Subscribe</a>
+            <button type="button" class="btn btn-secondary js-copy-rss" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Copy RSS Feed link">📋 Copy RSS</button>
+          {% endif %}
           {% if show.episodes %}
             <a href="/download/show/{{ show.show_id }}" class="btn btn-secondary js-download-show" title="Download all tracks as a ZIP archive">
               📦 Download Show (.zip)
