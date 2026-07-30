@@ -1312,6 +1312,20 @@ def test_api_edit_show_with_publisher(client: TestClient) -> None:
     assert data["show"]["title"] == "New Title"
 
 
+def test_modal_backdrop_click_and_escape_js_handlers(client: TestClient) -> None:
+    """Test that app.js includes backdrop click listeners and Escape key logic to close password and edit modals."""
+    response = client.get("/static/app.js")
+    assert response.status_code == 200
+    js_content = response.text
+
+    assert "isAnyModalOpen()" in js_content
+    assert "target.id === 'password-modal'" in js_content
+    assert "target.id === 'edit-modal'" in js_content
+    assert "isBackdropClick" in js_content
+    assert "!isAnyModalOpen() && bottomPlayer.classList.contains('visible')" in js_content
+
+
+
 
 
 

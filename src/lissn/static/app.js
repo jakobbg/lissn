@@ -369,13 +369,7 @@ function initPageShortcuts() {
       }
     }
 
-    const passwordModal = document.getElementById('password-modal');
-    const editModal = document.getElementById('edit-modal');
-    const coverModal = document.getElementById('cover-modal');
-    if ((passwordModal && !passwordModal.hidden) || 
-        (editModal && !editModal.hidden) || 
-        (coverModal && !coverModal.hasAttribute('hidden')) ||
-        (shortcutsModal && !shortcutsModal.hidden)) {
+    if (isAnyModalOpen()) {
       return;
     }
 
@@ -1284,7 +1278,7 @@ function initMediaPlayer() {
     } else if (e.key === 'p' || e.key === 'P') {
       prevBtn?.click();
     } else if (e.key === 'Escape' || e.code === 'Escape') {
-      if (bottomPlayer.classList.contains('visible')) {
+      if (!isAnyModalOpen() && bottomPlayer.classList.contains('visible')) {
         closePlayer();
       }
     }
@@ -1358,6 +1352,17 @@ function requireAuthOr(action) {
   }
   if (typeof action === 'function') action();
   return true;
+}
+
+function isAnyModalOpen() {
+  const passwordModal = document.getElementById('password-modal');
+  const editModal = document.getElementById('edit-modal');
+  const coverModal = document.getElementById('cover-modal');
+  const shortcutsModal = document.getElementById('shortcuts-modal');
+  return (passwordModal && !passwordModal.hidden) ||
+         (editModal && !editModal.hidden) ||
+         (coverModal && !coverModal.hasAttribute('hidden')) ||
+         (shortcutsModal && !shortcutsModal.hidden);
 }
 
 function openPasswordModal(pendingAction) {
@@ -1479,20 +1484,38 @@ function initAuthSystem() {
     });
   }
 
-  // Modal close button delegation and keyboard Escape listener
+  // Track mousedown target to ensure backdrop clicks originated on the backdrop (not text selection drags)
+  let mouseDownTarget = null;
+  document.addEventListener('mousedown', (e) => {
+    mouseDownTarget = e.target;
+  });
+
+  // Modal close button delegation and backdrop click listener for login and edit modals
   document.addEventListener('click', (e) => {
-    if (e.target.matches('.js-close-modal') || e.target.closest('.js-close-modal')) {
+    const isCloseBtn = e.target.matches('.js-close-modal') || e.target.closest('.js-close-modal');
+    const target = e.target;
+    const isBackdropClick = target.classList && target.classList.contains('modal-backdrop') && mouseDownTarget === target;
+
+    if (isCloseBtn) {
       closePasswordModal();
       closeEditModal();
+    } else if (isBackdropClick) {
+      if (target.id === 'password-modal') {
+        closePasswordModal();
+      } else if (target.id === 'edit-modal') {
+        closeEditModal();
+      }
     }
   });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' || e.code === 'Escape') {
-      closePasswordModal();
-      closeEditModal();
-      closeCoverModal();
-      closeShortcutsModal();
+      if (isAnyModalOpen()) {
+        closePasswordModal();
+        closeEditModal();
+        closeCoverModal();
+        closeShortcutsModal();
+      }
     }
   });
 }
@@ -1952,6 +1975,16 @@ function closeEditModal() {
   }
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function updateShowPageDOM(show) {
   if (!show) return;
   const detailTitle = document.querySelector('.detail-title');
@@ -1974,7 +2007,7 @@ function updateShowPageDOM(show) {
         if (isBook) {
           bylineEl.textContent = labelText;
         } else {
-          bylineEl.innerHTML = `<span class="publisher-label">${labelText}</span>`;
+          bylineEl.innerHTML = `<span class="publisher-label">${escapeHtml(labelText)}</span>`;
         }
       } else if (bylineEl) {
         bylineEl.remove();
@@ -1988,10 +2021,134 @@ function updateShowPageDOM(show) {
   }
 
   if (show.show_id) {
-    const coverImgs = document.querySelectorAll(`.cover-image, #show-${show.show_id} .cover-image, .detail-cover-img`);
+    const timestamp = Date.now();
+    const coverUrl = `/covers/${show.show_id}?t=${timestamp}`;
+
+    // 1. Update show page detail cover container (show.html)
+    const detailCoverContainer = document.querySelector('.detail-cover-container');
+    if (detailCoverContainer) {
+      if (show.cover_path) {
+        const existingImg = detailCoverContainer.querySelector('img.detail-cover');
+        const existingLink = detailCoverContainer.querySelector('.detail-cover-link, .js-zoom-cover');
+        if (existingImg) {
+          existingImg.src = coverUrl;
+          existingImg.alt = `Cover for ${show.title}`;
+          if (existingLink) {
+            existingLink.setAttribute('data-cover-url', coverUrl);
+            existingLink.setAttribute('data-show-title', show.title);
+            existingLink.setAttribute('aria-label', `Zoom cover image for ${show.title}`);
+          }
+        } else {
+          const placeholder = detailCoverContainer.querySelector('.placeholder-cover');
+          if (placeholder) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'detail-cover-link js-zoom-cover';
+            btn.setAttribute('data-cover-url', coverUrl);
+            btn.setAttribute('data-show-title', show.title);
+            btn.setAttribute('aria-label', `Zoom cover image for ${show.title}`);
+            btn.setAttribute('title', 'Click to zoom cover image');
+            btn.innerHTML = `<img src="${coverUrl}" alt="Cover for ${escapeHtml(show.title)}" class="detail-cover"><span class="cover-zoom-hint" aria-hidden="true">🔍 Zoom</span>`;
+            placeholder.replaceWith(btn);
+          }
+        }
+      } else {
+        const existingLink = detailCoverContainer.querySelector('.detail-cover-link');
+        if (existingLink) {
+          const placeholder = document.createElement('div');
+          placeholder.className = 'placeholder-cover detail-cover';
+          placeholder.innerHTML = '<span>🎙️</span>';
+          existingLink.replaceWith(placeholder);
+        }
+      }
+    }
+
+    // 2. Update index listing card (index.html)
+    const showCard = document.getElementById(`show-${show.show_id}`);
+    if (showCard) {
+      showCard.setAttribute('data-title', (show.title || '').toLowerCase());
+      showCard.setAttribute('data-author', (show.author || '').toLowerCase());
+      showCard.setAttribute('data-publisher', (show.publisher || '').toLowerCase());
+
+      const cardTitleLink = showCard.querySelector('.show-title-link');
+      if (cardTitleLink) cardTitleLink.textContent = show.title;
+
+      const coverWrapper = showCard.querySelector('.cover-wrapper');
+      if (coverWrapper) {
+        coverWrapper.setAttribute('aria-label', `View ${show.title}`);
+        if (show.cover_path) {
+          const cardImg = coverWrapper.querySelector('.cover-image');
+          if (cardImg) {
+            cardImg.src = coverUrl;
+            cardImg.alt = `Cover for ${show.title}`;
+          } else {
+            const cardPlaceholder = coverWrapper.querySelector('.placeholder-cover');
+            if (cardPlaceholder) {
+              const newImg = document.createElement('img');
+              newImg.src = coverUrl;
+              newImg.alt = `Cover for ${show.title}`;
+              newImg.className = 'cover-image';
+              newImg.loading = 'lazy';
+              cardPlaceholder.replaceWith(newImg);
+            }
+          }
+        } else {
+          const cardImg = coverWrapper.querySelector('.cover-image');
+          if (cardImg) {
+            const isBook = show.section === 'books';
+            const icon = isBook ? '📚' : '🎙️';
+            const placeholder = document.createElement('div');
+            placeholder.className = 'placeholder-cover';
+            placeholder.innerHTML = `<span>${icon}</span><span>${escapeHtml(show.title)}</span>`;
+            cardImg.replaceWith(placeholder);
+          }
+        }
+      }
+
+      // Update card byline on index
+      const isBook = show.section === 'books';
+      let cardByline = showCard.querySelector('.card-body .card-byline');
+      const labelText = isBook ? (show.author ? `by ${show.author}` : '') : (show.publisher ? show.publisher : '');
+      if (labelText) {
+        if (!cardByline) {
+          cardByline = document.createElement('div');
+          cardByline.className = 'card-byline';
+          const cardBody = showCard.querySelector('.card-body');
+          if (cardBody) cardBody.appendChild(cardByline);
+        }
+        if (isBook) {
+          cardByline.textContent = labelText;
+        } else {
+          cardByline.innerHTML = `<span class="publisher-label">${escapeHtml(labelText)}</span>`;
+        }
+      } else if (cardByline) {
+        cardByline.remove();
+      }
+    }
+
+    // 3. Update any other matching cover images on page
+    const coverImgs = document.querySelectorAll(`.cover-image, #show-${show.show_id} .cover-image, img.detail-cover`);
     coverImgs.forEach(img => {
-      img.src = `/covers/${show.show_id}?t=${Date.now()}`;
+      img.src = coverUrl;
     });
+
+    // 4. Update data-cover-url on episode table/list rows
+    if (show.cover_path) {
+      document.querySelectorAll(`[data-audio-src*="/audio/${show.show_id}/"]`).forEach(el => {
+        el.setAttribute('data-cover-url', coverUrl);
+      });
+    }
+
+    // 5. Update audio player cover image if currently playing this show
+    const playerCover = document.getElementById('player-cover');
+    const playerPlaceholder = document.getElementById('player-cover-placeholder');
+    if (playerCover && playerCover.src && playerCover.src.includes(`/covers/${show.show_id}`)) {
+      if (show.cover_path) {
+        playerCover.src = coverUrl;
+        playerCover.style.display = 'block';
+        if (playerPlaceholder) playerPlaceholder.style.display = 'none';
+      }
+    }
   }
 
   const editBtn = document.querySelector('.js-edit-show');
