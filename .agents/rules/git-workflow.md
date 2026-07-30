@@ -9,4 +9,4 @@ trigger: always_on
   - **Why** the changes were made (motivation and context).
   - **Technical rationale** and implementation details.
   - Clear emojis for visual organization and clarity.
-* **Versioning & Releases**: Begin project versioning at `v0.1`. Create GitHub releases via the installed `gh` CLI whenever requested, with verbose and detailed release notes.
+* **Versioning & Releases**: Begin project versioning at `v0.1`. Create GitHub releases via the installed `gh` CLI whenever requested. Release notes must be verbose and detailed, created by inspecting all commits and associated commit comments/details since the previous release.
