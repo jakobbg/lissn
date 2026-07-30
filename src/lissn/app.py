@@ -501,7 +501,6 @@ def download_episode(show_id: str, filename: str, request: Request) -> Response:
 @app.head("/rss/{show_id}")
 def get_podcast_rss(show_id: str, request: Request) -> Response:
     """Generate and return RSS 2.0 Podcast XML feed for a show with ETag and 304 Not Modified caching."""
-    require_auth(request)
     show = scanner.cache.get_show(show_id)
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
