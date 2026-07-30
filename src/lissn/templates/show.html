@@ -451,6 +451,26 @@
       </form>
     </div>
   </div>
+
+  <!-- Download Warning Modal -->
+  <div id="download-warning-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-labelledby="download-warning-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="download-warning-modal-title" class="modal-title">📦 Large Download Warning</h2>
+        <button type="button" class="modal-close-btn js-close-modal" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="download-warning-modal-text" class="modal-text">
+          This show is over 100 MB. Audio files are already compressed, so the ZIP archive will be large with minimal additional compression.<br><br>Do you want to proceed with downloading?
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary js-close-modal">Cancel</button>
+          <button type="button" id="confirm-download-btn" class="btn btn-primary">Download Archive</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Cover Image Zoom Modal -->
   <div id="cover-modal" class="modal-backdrop cover-modal-backdrop" hidden aria-hidden="true" role="dialog" aria-label="Zoomed cover image">
     <div class="cover-modal-content">
@@ -460,3 +480,4 @@
   </div>
 </body>
 </html>
+

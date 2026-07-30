@@ -1354,15 +1354,45 @@ function requireAuthOr(action) {
   return true;
 }
 
+let pendingDownloadAction = null;
+
 function isAnyModalOpen() {
   const passwordModal = document.getElementById('password-modal');
   const editModal = document.getElementById('edit-modal');
+  const downloadWarningModal = document.getElementById('download-warning-modal');
   const coverModal = document.getElementById('cover-modal');
   const shortcutsModal = document.getElementById('shortcuts-modal');
   return (passwordModal && !passwordModal.hidden) ||
          (editModal && !editModal.hidden) ||
+         (downloadWarningModal && !downloadWarningModal.hidden) ||
          (coverModal && !coverModal.hasAttribute('hidden')) ||
          (shortcutsModal && !shortcutsModal.hidden);
+}
+
+function openDownloadWarningModal(pendingAction, formattedSize) {
+  pendingDownloadAction = pendingAction || null;
+  const modal = document.getElementById('download-warning-modal');
+  const textEl = document.getElementById('download-warning-modal-text');
+  const confirmBtn = document.getElementById('confirm-download-btn');
+
+  if (textEl) {
+    const sizeStr = formattedSize ? ` (${formattedSize})` : '';
+    textEl.innerHTML = `This show is over 100 MB${sizeStr}.<br><br>Audio files are already compressed, so the ZIP archive will be large with minimal additional compression.<br><br>Do you want to proceed with downloading?`;
+  }
+  if (modal) {
+    modal.removeAttribute('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    if (confirmBtn) confirmBtn.focus();
+  }
+}
+
+function closeDownloadWarningModal() {
+  const modal = document.getElementById('download-warning-modal');
+  if (modal) {
+    modal.setAttribute('hidden', '');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  pendingDownloadAction = null;
 }
 
 function openPasswordModal(pendingAction) {
@@ -1490,7 +1520,7 @@ function initAuthSystem() {
     mouseDownTarget = e.target;
   });
 
-  // Modal close button delegation and backdrop click listener for login and edit modals
+  // Modal close button delegation and backdrop click listener for login, edit, and download warning modals
   document.addEventListener('click', (e) => {
     const isCloseBtn = e.target.matches('.js-close-modal') || e.target.closest('.js-close-modal');
     const target = e.target;
@@ -1499,20 +1529,38 @@ function initAuthSystem() {
     if (isCloseBtn) {
       closePasswordModal();
       closeEditModal();
+      closeDownloadWarningModal();
     } else if (isBackdropClick) {
       if (target.id === 'password-modal') {
         closePasswordModal();
       } else if (target.id === 'edit-modal') {
         closeEditModal();
+      } else if (target.id === 'download-warning-modal') {
+        closeDownloadWarningModal();
       }
     }
   });
+
+  const confirmDownloadBtn = document.getElementById('confirm-download-btn');
+  if (confirmDownloadBtn) {
+    confirmDownloadBtn.addEventListener('click', () => {
+      if (pendingDownloadAction) {
+        const act = pendingDownloadAction;
+        pendingDownloadAction = null;
+        closeDownloadWarningModal();
+        act();
+      } else {
+        closeDownloadWarningModal();
+      }
+    });
+  }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' || e.code === 'Escape') {
       if (isAnyModalOpen()) {
         closePasswordModal();
         closeEditModal();
+        closeDownloadWarningModal();
         closeCoverModal();
         closeShortcutsModal();
       }
@@ -1591,24 +1639,34 @@ function initMarkdownEditor() {
   document.addEventListener('click', (e) => {
     const downloadBtn = e.target.closest('.js-download-track, .js-download-show');
     if (downloadBtn) {
+      const href = downloadBtn.getAttribute('href');
+
+      const triggerDownload = () => {
+        if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+          openPasswordModal(() => {
+            if (href) window.location.href = href;
+          });
+        } else {
+          if (href) window.location.href = href;
+        }
+      };
+
       if (downloadBtn.classList.contains('js-download-show')) {
         const totalBytes = parseInt(downloadBtn.getAttribute('data-total-bytes') || '0', 10);
         const formattedSize = downloadBtn.getAttribute('data-formatted-size') || '';
-        const sizeInfo = formattedSize ? ` (${formattedSize})` : '';
         const hundredMB = 100 * 1024 * 1024;
         if (totalBytes >= hundredMB) {
-          const confirmMsg = `This show is over 100 MB${sizeInfo}.\n\nAudio files are already compressed, so the ZIP archive will be large with minimal additional compression.\n\nDo you want to proceed with downloading?`;
-          if (!window.confirm(confirmMsg)) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            return;
-          }
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          openDownloadWarningModal(() => {
+            triggerDownload();
+          }, formattedSize);
+          return;
         }
       }
 
       if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
         e.preventDefault();
-        const href = downloadBtn.getAttribute('href');
         openPasswordModal(() => {
           if (href) window.location.href = href;
         });

@@ -1355,7 +1355,7 @@ def test_api_edit_show_with_publisher(client: TestClient) -> None:
 
 
 def test_modal_backdrop_click_and_escape_js_handlers(client: TestClient) -> None:
-    """Test that app.js includes backdrop click listeners and Escape key logic to close password and edit modals."""
+    """Test that app.js includes backdrop click listeners and Escape key logic to close password, edit, and download warning modals."""
     response = client.get("/static/app.js")
     assert response.status_code == 200
     js_content = response.text
@@ -1363,8 +1363,33 @@ def test_modal_backdrop_click_and_escape_js_handlers(client: TestClient) -> None
     assert "isAnyModalOpen()" in js_content
     assert "target.id === 'password-modal'" in js_content
     assert "target.id === 'edit-modal'" in js_content
+    assert "target.id === 'download-warning-modal'" in js_content
     assert "isBackdropClick" in js_content
     assert "!isAnyModalOpen() && bottomPlayer.classList.contains('visible')" in js_content
+
+
+def test_download_warning_modal_markup_and_js(client: TestClient) -> None:
+    """Test that index and show pages render the download warning modal markup and app.js uses custom modal instead of window.confirm."""
+    res_index = client.get("/")
+    assert 'id="download-warning-modal"' in res_index.text
+    assert 'id="confirm-download-btn"' in res_index.text
+
+    shows_res = client.get("/api/shows")
+    shows = shows_res.json()["shows"]
+    assert len(shows) > 0
+    show_id = shows[0]["show_id"]
+
+    res_show = client.get(f"/show/{show_id}")
+    assert 'id="download-warning-modal"' in res_show.text
+    assert 'id="download-warning-modal-title"' in res_show.text
+    assert 'id="download-warning-modal-text"' in res_show.text
+    assert 'id="confirm-download-btn"' in res_show.text
+
+    js_res = client.get("/static/app.js")
+    assert "openDownloadWarningModal" in js_res.text
+    assert "closeDownloadWarningModal" in js_res.text
+    assert "window.confirm" not in js_res.text
+
 
 
 def test_cover_image_update_reflects_on_index_page(client: TestClient) -> None:
