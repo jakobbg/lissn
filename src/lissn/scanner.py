@@ -198,11 +198,56 @@ def decode_metadata_text(val: Any) -> str:
     return s
 
 
+def clean_track_title(title: str) -> str:
+    """
+    Clean track titles automatically by normalizing delimiter artifacts (such as 'x' separated titles).
+    For example:
+      '01xMennxsomxhaterxkvinner' -> '01 Menn som hater kvinner'
+      '04xPROLOGxxFredagx1xxnovember' -> '04 PROLOG Fredag 1 november'
+      '08xKapittelx3xxFredagx20xxdesemberxxxlxrdagx21xxdesember' -> '08 Kapittel 3 Fredag 20 desember lxrdag 21 desember'
+    """
+    if not title:
+        return ""
+
+    s = title.strip()
+    if not s:
+        return ""
+
+    # Check if string uses 'x' or 'X' as a space/word delimiter.
+    is_x_delimited = False
+    if re.match(r"^\d+[xX]+", s):
+        is_x_delimited = True
+    elif " " not in s:
+        if re.search(r"[xX]{2,}", s):
+            is_x_delimited = True
+        elif s.lower().count("x") >= 2 and re.search(r"[a-zA-Z0-9][xX][a-zA-Z0-9]", s):
+            is_x_delimited = True
+
+    if not is_x_delimited:
+        return s
+
+    # 1. Replace multiple consecutive x's (xx, xxx, etc.) with a single space
+    res = re.sub(r"[xX]{2,}", " ", s)
+
+    # 2. Replace x adjacent to digits (e.g. 01x, x1, 20x) with space
+    res = re.sub(r"(\d)[xX]", r"\1 ", res)
+    res = re.sub(r"[xX](\d)", r" \1", res)
+
+    # 3. Replace single x between two words of length >= 2 with space (e.g. Mennxsom -> Menn som)
+    #    This preserves single-letter prefix occurrences like 'lxrdag'.
+    res = re.sub(r"(?<=[a-zA-Z]{2})[xX](?=[a-zA-Z]{2})", " ", res)
+
+    cleaned = re.sub(r"\s+", " ", res).strip()
+    return cleaned if cleaned else s
+
+
 def get_audio_title(file_path: Path) -> str:
     """
     Extract audio track title from ID3 / metadata tags with safe UTF-8 decoding.
     Falls back to unquoted filename stem if metadata tag is missing or empty.
+    Automatically normalizes track titles formatted with 'x' delimiters.
     """
+    raw_title = ""
     try:
         audio = mutagen.File(file_path)
         if audio is not None and hasattr(audio, "tags") and audio.tags:
@@ -212,12 +257,16 @@ def get_audio_title(file_path: Path) -> str:
                 if val:
                     title_str = decode_metadata_text(val)
                     if title_str:
-                        return title_str
+                        raw_title = title_str
+                        break
     except Exception:
         pass
 
-    from urllib.parse import unquote
-    return unquote(file_path.stem)
+    if not raw_title:
+        from urllib.parse import unquote
+        raw_title = unquote(file_path.stem)
+
+    return clean_track_title(raw_title)
 
 
 
@@ -600,7 +649,7 @@ class LibraryScanner:
                 ):
                     duration = float(cached_ep.get("duration", 0.0))
                     bitrate_kbps = int(cached_ep.get("bitrate", 0))
-                    title = str(cached_ep.get("title", ""))
+                    title = clean_track_title(str(cached_ep.get("title", "")))
                 else:
                     duration = get_audio_duration(audio_path)
                     bitrate_kbps = get_audio_bitrate(audio_path, file_size, duration)

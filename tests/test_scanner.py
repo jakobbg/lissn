@@ -194,8 +194,37 @@ def test_decode_metadata_text() -> None:
     assert decode_metadata_text(double_encoded) == "Blodsbrødre"
 
 
+def test_clean_track_title() -> None:
+    """Test clean_track_title automatically cleans x-delimited track titles while preserving standard titles."""
+    from lissn.scanner import clean_track_title
+
+    # User provided examples
+    assert clean_track_title("01xMennxsomxhaterxkvinner") == "01 Menn som hater kvinner"
+    assert clean_track_title("02xBokinformasjon") == "02 Bokinformasjon"
+    assert clean_track_title("03xBokomtalexogxforfatteromtale") == "03 Bokomtale og forfatteromtale"
+    assert clean_track_title("04xPROLOGxxFredagx1xxnovember") == "04 PROLOG Fredag 1 november"
+    assert clean_track_title("05xDELx1xxINCITAMENTxx20xxdesemberxtilx3xxjanuar") == "05 DEL 1 INCITAMENT 20 desember til 3 januar"
+    assert clean_track_title("06xKapittelx1xFredagx20xxdesember") == "06 Kapittel 1 Fredag 20 desember"
+    assert clean_track_title("07xKapittelx2xxFredagx20xxdesember") == "07 Kapittel 2 Fredag 20 desember"
+    assert (
+        clean_track_title("08xKapittelx3xxFredagx20xxdesemberxxxlxrdagx21xxdesember")
+        == "08 Kapittel 3 Fredag 20 desember lxrdag 21 desember"
+    )
+    assert (
+        clean_track_title("09xKapittelx4xxMandagx23xxdesemberxxxtorsdagx26xxdesember")
+        == "09 Kapittel 4 Mandag 23 desember torsdag 26 desember"
+    )
+
+    # Standard titles should remain unchanged
+    assert clean_track_title("01 - Prologue") == "01 - Prologue"
+    assert clean_track_title("Track 01") == "Track 01"
+    assert clean_track_title("Index") == "Index"
+    assert clean_track_title("Taxi Driver") == "Taxi Driver"
+    assert clean_track_title("") == ""
+
+
 def test_get_audio_title_and_norwegian_characters(tmp_path: Path) -> None:
-    """Test get_audio_title preserves Norwegian characters in titles and filenames."""
+    """Test get_audio_title preserves Norwegian characters in titles and filenames and cleans x-delimited titles."""
     from lissn.scanner import get_audio_title
 
     # Test filename stem fallback with Norwegian characters
@@ -204,6 +233,13 @@ def test_get_audio_title_and_norwegian_characters(tmp_path: Path) -> None:
 
     title = get_audio_title(audio_file)
     assert title == "Blodsbrødre"
+
+    # Test x-delimited track title
+    x_file = tmp_path / "01xMennxsomxhaterxkvinner.mp3"
+    x_file.write_bytes(b"dummy mp3 data")
+
+    title_x = get_audio_title(x_file)
+    assert title_x == "01 Menn som hater kvinner"
 
 
 def test_identical_track_titles_renamed_to_track_n(tmp_path: Path) -> None:
