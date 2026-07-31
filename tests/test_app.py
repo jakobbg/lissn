@@ -749,31 +749,30 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
     shows_res = client.get("/api/shows")
     show_id = shows_res.json()["shows"][0]["show_id"]
 
-    # 1. Unauthenticated page views: options must be hidden
+    # 1. Unauthenticated page views: admin management options must be hidden
     unauth_index = client.get("/")
     assert unauth_index.status_code == 200
     assert 'id="rescan-btn"' not in unauth_index.text
-    assert 'id="bottom-player"' not in unauth_index.text
+    assert 'id="bottom-player"' in unauth_index.text
+    assert 'id="global-audio-element"' in unauth_index.text
 
     unauth_show = client.get(f"/show/{show_id}")
     assert unauth_show.status_code == 200
     assert "🎙️ Subscribe" not in unauth_show.text
-    assert "📋 Copy RSS" not in unauth_show.text
     assert "📦 Download Show" not in unauth_show.text
     assert "Edit Details" not in unauth_show.text
-    assert "js-play-track" not in unauth_show.text
     assert "js-download-track" not in unauth_show.text
     assert "js-edit-track-btn" not in unauth_show.text
-    assert "js-track-title-wrapper" not in unauth_show.text
-    assert 'id="bottom-player"' not in unauth_show.text
-    assert 'data-audio-src="' not in unauth_show.text
-    assert 'id="global-audio-element"' not in unauth_show.text
+    assert 'id="bottom-player"' in unauth_show.text
+    assert 'data-audio-src="' in unauth_show.text
+    assert 'js-play-track' in unauth_show.text
+    assert 'id="global-audio-element"' in unauth_show.text
 
     # 2. Log in successfully
     login_res = client.post("/api/login", json={"password": "auth_secret_999"})
     assert login_res.status_code == 200
 
-    # 3. Authenticated page views: all options must now be present
+    # 3. Authenticated page views: all admin options must now be present
     auth_index = client.get("/")
     assert auth_index.status_code == 200
     assert 'id="rescan-btn"' in auth_index.text
@@ -1642,6 +1641,24 @@ def test_show_page_and_api_episodes_folder_first_naturally_sorted(tmp_path: Path
         assert pos_intro < pos_cd1_2 < pos_cd1_10 < pos_cd2_1 < pos_cd10_1
     finally:
         app_mod.scanner = old_scanner
+
+
+def test_show_page_player_and_track_play_buttons_available(client: TestClient) -> None:
+    """Test show page renders audio player structure and track play data for seamless playback."""
+    shows_res = client.get("/api/shows")
+    assert shows_res.status_code == 200
+    shows = shows_res.json()["shows"]
+    assert len(shows) > 0
+    show_id = shows[0]["show_id"]
+
+    res = client.get(f"/show/{show_id}")
+    assert res.status_code == 200
+    assert 'id="bottom-player"' in res.text
+    assert 'id="global-audio-element"' in res.text
+    assert 'class="track-row"' in res.text
+    assert 'data-audio-src="/audio/' in res.text
+    assert 'class="btn btn-sm btn-icon btn-play js-play-track"' in res.text
+
 
 
 

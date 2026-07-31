@@ -1024,8 +1024,12 @@ function initMediaPlayer() {
     )
       return false;
     try {
-      const normCurrent = new URL(currentSrc, window.location.origin).href;
-      const normTrack = new URL(srcToCheck, window.location.origin).href;
+      const normCurrent = decodeURIComponent(
+        new URL(currentSrc, window.location.origin).pathname,
+      );
+      const normTrack = decodeURIComponent(
+        new URL(srcToCheck, window.location.origin).pathname,
+      );
       return normCurrent === normTrack;
     } catch (e) {
       return currentSrc.endsWith(srcToCheck) || srcToCheck.endsWith(currentSrc);
@@ -1036,7 +1040,7 @@ function initMediaPlayer() {
   function syncPlayerWithPage() {
     const trackRows = Array.from(document.querySelectorAll('.track-row'));
     if (trackRows.length > 0) {
-      activePlaylist = trackRows
+      const pagePlaylist = trackRows
         .map((row, idx) => ({
           index: idx,
           src: row.getAttribute('data-audio-src'),
@@ -1047,11 +1051,17 @@ function initMediaPlayer() {
         }))
         .filter((t) => Boolean(t.src));
 
-      // Check if current playing src matches any track on the current page
-      const foundIdx = activePlaylist.findIndex((t) =>
+      const foundIdx = pagePlaylist.findIndex((t) =>
         isCurrentlyLoadedTrack(t),
       );
-      currentTrackIndex = foundIdx;
+
+      if (foundIdx !== -1) {
+        activePlaylist = pagePlaylist;
+        currentTrackIndex = foundIdx;
+      } else if (activePlaylist.length === 0) {
+        activePlaylist = pagePlaylist;
+        currentTrackIndex = -1;
+      }
     } else if (activePlaylist.length === 0) {
       currentTrackIndex = -1;
     }
@@ -1125,7 +1135,7 @@ function initMediaPlayer() {
       e.target.closest('a') ||
       e.target.closest('button.btn-secondary') ||
       e.target.closest('.js-copy-rss') ||
-      e.target.closest('.js-track-title-wrapper') ||
+      e.target.closest('.js-edit-track-btn') ||
       e.target.closest('.inline-track-title-input')
     )
       return;
@@ -2212,9 +2222,7 @@ function activateInlineTrackEdit(wrapper) {
  */
 function initInlineTrackTitleEditing() {
   document.addEventListener('click', (e) => {
-    const editTrigger = e.target.closest(
-      '.js-track-title-wrapper .track-title-text, .js-edit-track-btn',
-    );
+    const editTrigger = e.target.closest('.js-edit-track-btn');
     if (!editTrigger) return;
 
     const wrapper = editTrigger.closest('.js-track-title-wrapper');
