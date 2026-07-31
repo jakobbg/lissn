@@ -1012,6 +1012,21 @@ function initMediaPlayer() {
   // Restore saved player state from sessionStorage if available
   restoreSavedPlayerState();
 
+  function isSameTrackSrc(src1, src2) {
+    if (!src1 || !src2) return false;
+    try {
+      const normCurrent = decodeURIComponent(
+        new URL(src1, window.location.origin).pathname,
+      );
+      const normTrack = decodeURIComponent(
+        new URL(src2, window.location.origin).pathname,
+      );
+      return normCurrent === normTrack;
+    } catch (e) {
+      return src1 === src2 || src1.endsWith(src2) || src2.endsWith(src1);
+    }
+  }
+
   // Helper to check if a playlist track matches the currently loaded audio element src
   function isCurrentlyLoadedTrack(track, altSrc = null) {
     const srcToCheck = track && track.src ? track.src : altSrc;
@@ -1023,17 +1038,7 @@ function initMediaPlayer() {
       currentSrc.endsWith('/')
     )
       return false;
-    try {
-      const normCurrent = decodeURIComponent(
-        new URL(currentSrc, window.location.origin).pathname,
-      );
-      const normTrack = decodeURIComponent(
-        new URL(srcToCheck, window.location.origin).pathname,
-      );
-      return normCurrent === normTrack;
-    } catch (e) {
-      return currentSrc.endsWith(srcToCheck) || srcToCheck.endsWith(currentSrc);
-    }
+    return isSameTrackSrc(currentSrc, srcToCheck);
   }
 
   function loadTrackIntoPlayerUI(track) {
@@ -1074,17 +1079,7 @@ function initMediaPlayer() {
         currentTrackIndex = foundIdx;
       } else if (activePlaylist.length === 0) {
         activePlaylist = pagePlaylist;
-        currentTrackIndex = 0;
-        const curSrc = audioElement.getAttribute('src') || audioElement.src;
-        if (!curSrc || curSrc === window.location.href || curSrc.endsWith('/')) {
-          const firstTrack = activePlaylist[0];
-          if (firstTrack && firstTrack.src) {
-            audioElement.src = firstTrack.src;
-            loadTrackIntoPlayerUI(firstTrack);
-          }
-        }
-        bottomPlayer.classList.add('visible');
-        document.body.classList.add('has-active-player');
+        currentTrackIndex = -1;
       }
     } else if (activePlaylist.length === 0) {
       currentTrackIndex = -1;
@@ -1140,14 +1135,23 @@ function initMediaPlayer() {
       return;
     }
 
-    // Try finding matching index in activePlaylist
-    let foundIdx = activePlaylist.findIndex((t) =>
-      isCurrentlyLoadedTrack(t, clickedTrack.src),
-    );
+    // Resolve matching index for clicked track in activePlaylist
+    let foundIdx = -1;
+    if (
+      clickedTrack.index >= 0 &&
+      clickedTrack.index < activePlaylist.length &&
+      isSameTrackSrc(activePlaylist[clickedTrack.index].src, clickedTrack.src)
+    ) {
+      foundIdx = clickedTrack.index;
+    } else {
+      foundIdx = activePlaylist.findIndex((t) =>
+        isSameTrackSrc(t.src, clickedTrack.src),
+      );
+    }
+
     if (foundIdx !== -1) {
       playTrack(foundIdx);
     } else {
-      // Direct playback with extracted track object
       playTrack(clickedTrack);
     }
   }
