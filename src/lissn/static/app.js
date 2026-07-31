@@ -1036,6 +1036,20 @@ function initMediaPlayer() {
     }
   }
 
+  function loadTrackIntoPlayerUI(track) {
+    if (!track) return;
+    if (trackTitleEl) trackTitleEl.textContent = track.trackTitle;
+    if (showTitleEl) showTitleEl.textContent = track.showTitle;
+    if (track.coverUrl) {
+      coverImg.src = track.coverUrl;
+      coverImg.style.display = 'block';
+      if (coverPlaceholder) coverPlaceholder.style.display = 'none';
+    } else {
+      coverImg.style.display = 'none';
+      if (coverPlaceholder) coverPlaceholder.style.display = 'flex';
+    }
+  }
+
   // Function to scan current DOM for track rows and update playlist reference
   function syncPlayerWithPage() {
     const trackRows = Array.from(document.querySelectorAll('.track-row'));
@@ -1060,7 +1074,17 @@ function initMediaPlayer() {
         currentTrackIndex = foundIdx;
       } else if (activePlaylist.length === 0) {
         activePlaylist = pagePlaylist;
-        currentTrackIndex = -1;
+        currentTrackIndex = 0;
+        const curSrc = audioElement.getAttribute('src') || audioElement.src;
+        if (!curSrc || curSrc === window.location.href || curSrc.endsWith('/')) {
+          const firstTrack = activePlaylist[0];
+          if (firstTrack && firstTrack.src) {
+            audioElement.src = firstTrack.src;
+            loadTrackIntoPlayerUI(firstTrack);
+          }
+        }
+        bottomPlayer.classList.add('visible');
+        document.body.classList.add('has-active-player');
       }
     } else if (activePlaylist.length === 0) {
       currentTrackIndex = -1;
@@ -1180,14 +1204,14 @@ function initMediaPlayer() {
   }
 
   function playTrack(target) {
+    // Make bottom player visible immediately
+    bottomPlayer.classList.add('visible');
+    document.body.classList.add('has-active-player');
+
     if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
       openPasswordModal(() => playTrack(target));
       return;
     }
-
-    // Make bottom player visible immediately
-    bottomPlayer.classList.add('visible');
-    document.body.classList.add('has-active-player');
 
     let track = null;
     if (typeof target === 'number') {
