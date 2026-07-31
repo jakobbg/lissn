@@ -158,6 +158,47 @@ async def add_version_headers(request: Request, call_next):
     return response
 
 
+def extract_client_ips(request: Request) -> tuple[str, str]:
+    """
+    Extract the real client IP and direct proxy IP from HTTP headers and request client.
+
+    Args:
+        request: The incoming HTTP Request object.
+
+    Returns:
+        tuple[str, str]: A tuple of (real_ip, proxy_ip).
+    """
+    proxy_ip = request.client.host if request.client and request.client.host else "unknown"
+
+    x_forwarded_for = request.headers.get("x-forwarded-for")
+    if x_forwarded_for:
+        real_ip = x_forwarded_for.split(",")[0].strip()
+    else:
+        x_real_ip = request.headers.get("x-real-ip")
+        if x_real_ip:
+            real_ip = x_real_ip.strip()
+        else:
+            real_ip = proxy_ip
+
+    return real_ip, proxy_ip
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log incoming HTTP requests with real client IP, proxy IP, method, path, and status code."""
+    real_ip, proxy_ip = extract_client_ips(request)
+    ip_info = f"{real_ip} (via proxy {proxy_ip})" if (real_ip and proxy_ip and real_ip != proxy_ip) else real_ip
+
+    try:
+        response = await call_next(request)
+        logger.info(f'{ip_info} - "{request.method} {request.url.path}" {response.status_code}')
+        return response
+    except Exception as exc:
+        logger.error(f'{ip_info} - "{request.method} {request.url.path}" 500 Internal Server Error - {exc}')
+        raise exc
+
+
+
 def check_conditional_headers(
     request: Optional[Request],
     etag: Optional[str] = None,
