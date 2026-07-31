@@ -19,13 +19,27 @@ logger = logging.getLogger("lissn.rss")
 
 MIME_TYPES = {
     ".mp3": "audio/mpeg",
+    ".mp2": "audio/mpeg",
     ".m4a": "audio/mp4",
     ".m4b": "audio/mp4",
+    ".mp4": "audio/mp4",
+    ".m4v": "audio/mp4",
+    ".m4r": "audio/mp4",
+    ".m4p": "audio/mp4",
+    ".alac": "audio/mp4",
     ".aac": "audio/aac",
     ".flac": "audio/flac",
     ".ogg": "audio/ogg",
+    ".oga": "audio/ogg",
     ".opus": "audio/opus",
     ".wav": "audio/wav",
+    ".wma": "audio/x-ms-wma",
+    ".aiff": "audio/aiff",
+    ".aif": "audio/aiff",
+    ".webm": "audio/webm",
+    ".caf": "audio/x-caf",
+    ".wv": "audio/x-wavpack",
+    ".ape": "audio/x-ape",
 }
 
 
@@ -38,7 +52,20 @@ ET.register_namespace("atom", "http://www.w3.org/2005/Atom")
 def get_mime_type(filename: str) -> str:
     """Return appropriate audio MIME type for an audio filename."""
     ext = Path(filename).suffix.lower()
-    return MIME_TYPES.get(ext, "audio/mpeg")
+    if ext in MIME_TYPES:
+        return MIME_TYPES[ext]
+    import mimetypes
+    guessed, _ = mimetypes.guess_type(filename)
+    if guessed:
+        if guessed.startswith("video/"):
+            if guessed == "video/mp4":
+                return "audio/mp4"
+            elif guessed == "video/webm":
+                return "audio/webm"
+            return "audio/mpeg"
+        elif guessed.startswith("audio/"):
+            return guessed
+    return "audio/mpeg"
 
 
 def format_rfc822(timestamp: float) -> str:

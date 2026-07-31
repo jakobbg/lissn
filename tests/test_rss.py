@@ -12,6 +12,11 @@ def test_get_mime_type() -> None:
     assert get_mime_type("audio.mp3") == "audio/mpeg"
     assert get_mime_type("track.m4a") == "audio/mp4"
     assert get_mime_type("book.m4b") == "audio/mp4"
+    assert get_mime_type("episode.mp4") == "audio/mp4"
+    assert get_mime_type("music.flac") == "audio/flac"
+    assert get_mime_type("audio.wma") == "audio/x-ms-wma"
+    assert get_mime_type("track.aiff") == "audio/aiff"
+    assert get_mime_type("stream.webm") == "audio/webm"
     assert get_mime_type("recording.wav") == "audio/wav"
     assert get_mime_type("unknown.xyz") == "audio/mpeg"
 

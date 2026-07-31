@@ -42,12 +42,42 @@ except ImportError:
 # Register audio MIME types for audiobook and podcast formats
 mimetypes.add_type("audio/mp4", ".m4b")
 mimetypes.add_type("audio/mp4", ".m4a")
+mimetypes.add_type("audio/mp4", ".mp4")
+mimetypes.add_type("audio/mp4", ".m4v")
+mimetypes.add_type("audio/mp4", ".m4r")
+mimetypes.add_type("audio/mp4", ".m4p")
+mimetypes.add_type("audio/mp4", ".alac")
 mimetypes.add_type("audio/mpeg", ".mp3")
+mimetypes.add_type("audio/mpeg", ".mp2")
 mimetypes.add_type("audio/ogg", ".ogg")
+mimetypes.add_type("audio/ogg", ".oga")
 mimetypes.add_type("audio/opus", ".opus")
 mimetypes.add_type("audio/flac", ".flac")
 mimetypes.add_type("audio/wav", ".wav")
 mimetypes.add_type("audio/aac", ".aac")
+mimetypes.add_type("audio/x-ms-wma", ".wma")
+mimetypes.add_type("audio/aiff", ".aiff")
+mimetypes.add_type("audio/aiff", ".aif")
+mimetypes.add_type("audio/webm", ".webm")
+mimetypes.add_type("audio/x-caf", ".caf")
+mimetypes.add_type("audio/x-wavpack", ".wv")
+mimetypes.add_type("audio/x-ape", ".ape")
+
+
+def resolve_audio_media_type(filename: str) -> str:
+    """Return appropriate audio MIME type for an audio filename, remapping video containers to audio MIME types."""
+    guessed_type, _ = mimetypes.guess_type(filename)
+    media_type = guessed_type or "audio/mpeg"
+    if media_type.startswith("video/"):
+        if media_type == "video/mp4":
+            return "audio/mp4"
+        elif media_type == "video/webm":
+            return "audio/webm"
+        return "audio/mpeg"
+    elif media_type.startswith("audio/"):
+        return media_type
+    return "audio/mpeg"
+
 
 
 def configure_logging(cfg: Config) -> logging.Logger:
@@ -553,8 +583,7 @@ def stream_audio(show_id: str, filename: str, request: Request = None) -> Respon
     if request and "range" not in request.headers and check_conditional_headers(request, etag=etag, last_modified=mtime):
         return Response(status_code=304, headers=headers)
 
-    guessed_type, _ = mimetypes.guess_type(audio_file.name)
-    media_type = guessed_type or "audio/mpeg"
+    media_type = resolve_audio_media_type(audio_file.name)
 
     return FileResponse(
         path=audio_file,
@@ -644,8 +673,7 @@ def download_episode(show_id: str, filename: str, request: Request) -> Response:
     if not audio_file.exists() or not audio_file.is_file():
         raise HTTPException(status_code=404, detail="Audio file not found")
 
-    guessed_type, _ = mimetypes.guess_type(audio_file.name)
-    media_type = guessed_type or "audio/mpeg"
+    media_type = resolve_audio_media_type(audio_file.name)
     safe_ascii_name = "".join(c for c in audio_file.name if c.isascii() and c not in '"\\').strip() or "audio"
     encoded_filename = quote(audio_file.name)
 

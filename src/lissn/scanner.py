@@ -20,7 +20,30 @@ import mutagen
 
 logger = logging.getLogger("lissn.scanner")
 
-AUDIO_EXTENSIONS = {".mp3", ".m4a", ".m4b", ".aac", ".flac", ".ogg", ".opus", ".wav"}
+AUDIO_EXTENSIONS = {
+    ".mp3",
+    ".m4a",
+    ".m4b",
+    ".mp4",
+    ".m4v",
+    ".m4r",
+    ".m4p",
+    ".aac",
+    ".flac",
+    ".ogg",
+    ".oga",
+    ".opus",
+    ".wav",
+    ".wma",
+    ".aiff",
+    ".aif",
+    ".alac",
+    ".webm",
+    ".mp2",
+    ".caf",
+    ".wv",
+    ".ape",
+}
 COVER_NAMES = ["cover.jpg", "cover.jpeg", "cover.png", "folder.jpg", "folder.png", "poster.jpg"]
 
 

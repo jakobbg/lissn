@@ -508,10 +508,22 @@ def test_security_and_protocol_headers(client: TestClient) -> None:
 
 
 def test_audiobook_m4b_m4a_mime_types(client: TestClient) -> None:
-    """Test custom audio MIME types for .m4b and .m4a audiobooks."""
+    """Test custom audio MIME types for .m4b, .m4a, .mp4, .flac, .wma, .aiff, and .webm files."""
     import mimetypes
+    from lissn.app import resolve_audio_media_type
+
     assert mimetypes.guess_type("audiobook.m4b")[0] == "audio/mp4"
     assert mimetypes.guess_type("podcast.m4a")[0] == "audio/mp4"
+    assert mimetypes.guess_type("track.mp4")[0] == "audio/mp4"
+    assert mimetypes.guess_type("track.flac")[0] == "audio/flac"
+    assert mimetypes.guess_type("track.wma")[0] == "audio/x-ms-wma"
+    assert mimetypes.guess_type("track.aiff")[0] == "audio/aiff"
+
+    # Verify video containers resolve to audio MIME types for browser <audio> playback
+    assert resolve_audio_media_type("track.mp4") == "audio/mp4"
+    assert resolve_audio_media_type("track.webm") == "audio/webm"
+    assert resolve_audio_media_type("episode.flac") == "audio/flac"
+    assert resolve_audio_media_type("unknown.xyz") == "audio/mpeg"
 
 
 def test_client_navigation_and_accessibility_announcer(client: TestClient) -> None:

@@ -11,12 +11,19 @@ import time
 import pytest
 
 from lissn.scanner import (
+    AUDIO_EXTENSIONS,
     LibraryScanner,
     ScannerCache,
     format_duration,
     format_fuzzy_date,
     generate_show_id,
 )
+
+
+def test_expanded_audio_extensions_in_scanner() -> None:
+    """Verify scanner supports expanded set of audio file extensions."""
+    expected = {".mp3", ".m4a", ".m4b", ".mp4", ".m4v", ".m4r", ".m4p", ".aac", ".flac", ".ogg", ".oga", ".opus", ".wav", ".wma", ".aiff", ".aif", ".alac", ".webm", ".mp2", ".caf", ".wv", ".ape"}
+    assert expected.issubset(AUDIO_EXTENSIONS)
 
 
 def test_generate_show_id() -> None:
