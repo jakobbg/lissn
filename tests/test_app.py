@@ -1668,6 +1668,8 @@ def test_show_page_player_and_track_play_buttons_available(client: TestClient) -
     assert 'class="track-row"' in res.text
     assert 'data-audio-src="/audio/' in res.text
     assert 'class="btn btn-sm btn-icon btn-play js-play-track"' in res.text
+    assert 'js-play-show' in res.text
+    assert "Play Show" in res.text
 
 
 

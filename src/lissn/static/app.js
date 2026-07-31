@@ -1122,6 +1122,8 @@ function initMediaPlayer() {
       if (!audioElement.paused) {
         audioElement.pause();
       } else {
+        bottomPlayer.classList.add('visible');
+        document.body.classList.add('has-active-player');
         const playPromise = audioElement.play();
         if (playPromise !== undefined) {
           playPromise
@@ -1156,8 +1158,30 @@ function initMediaPlayer() {
     }
   }
 
-  // Handle click on track rows anywhere in the page (via delegation)
+  // Handle click on track rows and play buttons anywhere in the page (via delegation)
   document.addEventListener('click', (e) => {
+    // Check for direct click on track play button
+    const playTrackBtn = e.target.closest('.js-play-track');
+    if (playTrackBtn) {
+      const trackRow = playTrackBtn.closest('.track-row');
+      if (trackRow) {
+        e.stopPropagation();
+        handleTrackActivation(trackRow);
+        return;
+      }
+    }
+
+    // Check for click on show detail header play button
+    const playShowBtn = e.target.closest('.js-play-show');
+    if (playShowBtn) {
+      const firstTrackRow = document.querySelector('.track-row');
+      if (firstTrackRow) {
+        e.stopPropagation();
+        handleTrackActivation(firstTrackRow);
+        return;
+      }
+    }
+
     if (
       e.target.closest('audio') ||
       e.target.closest('a') ||

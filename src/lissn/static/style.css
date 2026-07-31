@@ -1998,6 +1998,24 @@ tr.track-row.active-track {
   .track-title-text {
     max-width: 100%;
   }
+
+  .bottom-player-container {
+    padding: 0.35rem 0.5rem;
+    gap: 0.3rem;
+  }
+
+  .player-track-info {
+    max-width: 55%;
+    min-width: 110px;
+  }
+
+  .player-track-title {
+    font-size: 0.84rem;
+  }
+
+  .player-show-title {
+    font-size: 0.72rem;
+  }
 }
 
 /* Modal Overlay & Card Components */

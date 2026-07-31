@@ -123,6 +123,9 @@
         {% endif %}
 
         <div class="detail-actions">
+          {% if show.episodes %}
+            <button type="button" class="btn btn-primary js-play-show" data-show-id="{{ show.show_id }}" title="Play {{ show.title }}">▶ Play Show</button>
+          {% endif %}
           {% if authenticated %}
             <!-- JS handler copies RSS feed URL to clipboard and presents subscription guide popover -->
             <button type="button" class="btn btn-secondary js-subscribe-btn" data-rss-url="{{ base_url }}/rss/{{ show.show_id }}" title="Subscribe via RSS">🎙️ Subscribe</button>
