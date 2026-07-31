@@ -3,6 +3,25 @@
 All notable changes to Lissn are documented here.
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [v0.7.1] – 2026-07-31
+
+### 📱 Mobile Audio Player & Play Button Enhancements
+
+- **Bottom Player Auto-Reveal**: Fixed bottom player state tracking in `handleTrackActivation` when resuming loaded/paused tracks so the floating media player always opens when audio playback starts.
+- **Direct Play Button Event Delegation**: Intercepted `.js-play-track` and `.js-play-show` tap events prior to secondary control filtering to ensure reliable play button activation across all mobile viewports.
+- **Show Header Action Button**: Added a primary `▶ Play Show` button to the show detail header box (`show.html`) to give mobile users a direct top-level action button to start show playback immediately.
+- **Mobile Responsive Layout**: Optimized spacing and typography for `.bottom-player-container` and `.player-track-info` on mobile screens under 480px.
+
+### 🌐 Reverse Proxy Real IP & Client IP Request Logging
+
+- **Client IP Extraction Middleware**: Added `extract_client_ips` and HTTP request logging middleware to `lissn.app` to log originating real client IPs alongside proxy IP addresses when operating behind reverse proxies like Apache `mod_proxy`.
+- **Header Parsing**: Inspects standard proxy headers (`X-Forwarded-For`, falling back to `X-Real-IP`) to format request logs as `<real_ip> (via proxy <proxy_ip>) - "<method> <path>" <status_code>`.
+
+### 🎵 Expanded Audio Filetype Support & MIME Type Streaming Compatibility
+
+- **Extended Media Extensions**: Expanded `AUDIO_EXTENSIONS` to support `.mp4`, `.m4v`, `.m4r`, `.m4p`, `.alac`, `.wma`, `.aiff`, `.aif`, `.webm`, `.oga`, `.mp2`, `.caf`, `.wv`, and `.ape` audio formats.
+- **HTML5 Player MIME Type Alignment**: Mapped video container audio files (such as `.mp4` and `.webm`) to `audio/*` MIME types (`audio/mp4`, `audio/webm`) for proper decoding in Safari/iOS and desktop web browsers.
+
 ---
 
 ## [v0.7.0] – 2026-07-31
