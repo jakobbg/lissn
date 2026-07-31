@@ -4,6 +4,7 @@ Recursively indexes audiobooks and podcasts, calculates audio duration,
 locates cover art, computes fuzzy added dates, and caches show data in SQLite.
 """
 
+from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
@@ -223,6 +224,64 @@ def get_audio_title(file_path: Path) -> str:
         raw_title = unquote(file_path.stem)
 
     return raw_title.strip()
+
+
+def resolve_unique_track_titles(episodes_info: List[Dict[str, Any]]) -> List[str]:
+    """
+    Resolve unique track titles for a list of episode info dicts in a show.
+    Each episode_info dict has:
+      - 'tag_title': title from tags (or stem if no tag)
+      - 'stem': filename stem (filename without extension)
+      - 'subfolder': subfolder relative string (or empty string)
+
+    If 2 or more tracks share the same primary title (<subfolder>/<tag_title>),
+    they fall back to using <subfolder>/<stem>.
+    Final pass ensures zero duplicate track titles within the show.
+    """
+    primary_titles = []
+    fallback_titles = []
+    for item in episodes_info:
+        subfolder = item.get("subfolder", "").strip()
+        tag_title = item.get("tag_title", "").strip()
+        stem = item.get("stem", "").strip()
+
+        p_title = f"{subfolder}/{tag_title}" if subfolder else tag_title
+        f_title = f"{subfolder}/{stem}" if subfolder else stem
+
+        primary_titles.append(p_title)
+        fallback_titles.append(f_title)
+
+    p_counts = Counter(primary_titles)
+
+    chosen_titles = []
+    for i in range(len(episodes_info)):
+        if p_counts[primary_titles[i]] > 1:
+            chosen_titles.append(fallback_titles[i])
+        else:
+            chosen_titles.append(primary_titles[i])
+
+    # Check if chosen_titles still contain any duplicates
+    c_counts = Counter(chosen_titles)
+    for i in range(len(episodes_info)):
+        if c_counts[chosen_titles[i]] > 1 and chosen_titles[i] != fallback_titles[i]:
+            chosen_titles[i] = fallback_titles[i]
+
+    # Final safety pass: guarantee absolute uniqueness across the show
+    final_titles = []
+    final_counts = Counter(chosen_titles)
+    seen_so_far = Counter()
+    for title in chosen_titles:
+        seen_so_far[title] += 1
+        if final_counts[title] > 1:
+            count = seen_so_far[title]
+            if count == 1:
+                final_titles.append(title)
+            else:
+                final_titles.append(f"{title} ({count})")
+        else:
+            final_titles.append(title)
+
+    return final_titles
 
 
 
@@ -493,6 +552,13 @@ class ScannerCache:
         if not new_title:
             return None
         with self._get_connection() as conn:
+            dup_cursor = conn.execute(
+                "SELECT episode_id FROM episodes WHERE show_id = ? AND LOWER(title) = LOWER(?) AND episode_id != ?",
+                (show_id, new_title, episode_id),
+            )
+            if dup_cursor.fetchone():
+                raise ValueError(f"Track title '{new_title}' already exists in this show")
+
             cursor = conn.execute(
                 "UPDATE episodes SET title = ? WHERE show_id = ? AND episode_id = ?",
                 (new_title, show_id, episode_id),
@@ -616,7 +682,8 @@ class LibraryScanner:
             # Fetch existing cached episode metadata for incremental scanning
             cached_episodes_map = {} if force else self.cache.get_episodes_map(show_id)
 
-            episodes = []
+            episodes_info = []
+            episodes_data = []
             total_duration = 0.0
             total_file_size = 0
             earliest_timestamp = float("inf")
@@ -649,17 +716,19 @@ class LibraryScanner:
                 ep_id = f"{show_id}_ep_{idx}"
                 rel_filename = str(audio_path.relative_to(show_dir))
                 folder_parts = PurePath(rel_filename).parts[:-1]
+                subfolder = "/".join(folder_parts) if folder_parts else ""
                 track_name = get_audio_title(audio_path)
-                if folder_parts:
-                    subfolder = "/".join(folder_parts)
-                    title = f"{subfolder}/{track_name}"
-                else:
-                    title = track_name
+                stem = audio_path.stem
 
-                episodes.append(
+                episodes_info.append({
+                    "tag_title": track_name,
+                    "stem": stem,
+                    "subfolder": subfolder,
+                })
+
+                episodes_data.append(
                     {
                         "episode_id": ep_id,
-                        "title": title,
                         "filename": rel_filename,
                         "file_path": resolved_path_str,
                         "duration": duration,
@@ -671,6 +740,12 @@ class LibraryScanner:
                         "added_timestamp": mtime,
                     }
                 )
+
+            unique_titles = resolve_unique_track_titles(episodes_info)
+            episodes = []
+            for ep_data, unique_title in zip(episodes_data, unique_titles):
+                ep_data["title"] = unique_title
+                episodes.append(ep_data)
 
             if earliest_timestamp == float("inf"):
                 earliest_timestamp = show_dir.stat().st_mtime
@@ -845,13 +920,16 @@ class LibraryScanner:
         """
         Reset all track titles for a show back to '<potential subfolder>/track title'
         where track title first tries media info tags or falls back to filename stem.
+        If duplicates exist, falls back to filename stem for duplicate tracks.
         """
         show = self.cache.get_show(show_id)
         if not show:
             return None
 
         show_dir = Path(show["folder_path"])
-        title_updates = []
+        episodes_info = []
+        ep_ids = []
+
         for ep in show.get("episodes", []):
             audio_path = Path(ep["file_path"])
             if not audio_path.is_file():
@@ -863,18 +941,24 @@ class LibraryScanner:
                     rel_filename = str(audio_path.relative_to(show_dir))
                 except ValueError:
                     pass
-                track_name = get_audio_title(audio_path)
+                tag_title = get_audio_title(audio_path)
+                stem = audio_path.stem
             else:
-                track_name = Path(rel_filename).stem
+                stem = Path(rel_filename).stem
+                tag_title = stem
 
             folder_parts = PurePath(rel_filename).parts[:-1]
-            if folder_parts:
-                subfolder = "/".join(folder_parts)
-                new_title = f"{subfolder}/{track_name}"
-            else:
-                new_title = track_name
+            subfolder = "/".join(folder_parts) if folder_parts else ""
 
-            title_updates.append((ep["episode_id"], new_title))
+            episodes_info.append({
+                "tag_title": tag_title,
+                "stem": stem,
+                "subfolder": subfolder,
+            })
+            ep_ids.append(ep["episode_id"])
+
+        unique_titles = resolve_unique_track_titles(episodes_info)
+        title_updates = list(zip(ep_ids, unique_titles))
 
         if title_updates:
             self.cache.reset_track_titles_for_show(show_id, title_updates)

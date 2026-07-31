@@ -730,9 +730,13 @@ def api_edit_episode(
     if not title:
         raise HTTPException(status_code=400, detail="Track title cannot be empty")
 
-    updated_ep = scanner.update_episode_title(
-        show_id=show_id, episode_id=episode_id, new_title=title
-    )
+    try:
+        updated_ep = scanner.update_episode_title(
+            show_id=show_id, episode_id=episode_id, new_title=title
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err))
+
     if not updated_ep:
         raise HTTPException(status_code=404, detail="Track or show not found")
 

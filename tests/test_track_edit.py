@@ -189,3 +189,130 @@ def test_api_reindex_tracks_success():
             mock_reset.assert_called_once_with("show-1")
 
 
+def test_scanner_reset_show_track_titles_duplicate_fallback(tmp_path: Path):
+    """Test that when 2 tracks have duplicate tag titles, reset_show_track_titles falls back to filename stems."""
+    db_path = tmp_path / "test_cache.db"
+    cache = ScannerCache(db_path)
+
+    show_dir = tmp_path / "show_dup"
+    show_dir.mkdir(parents=True, exist_ok=True)
+    audio1 = show_dir / "01_intro.mp3"
+    audio2 = show_dir / "02_outro.mp3"
+    audio1.write_bytes(b"dummy")
+    audio2.write_bytes(b"dummy")
+
+    show_data = {
+        "show_id": "show-dup",
+        "section": "books",
+        "title": "Dup Show",
+        "folder_path": str(show_dir),
+        "total_duration": 100.0,
+        "formatted_duration": "01:40",
+        "added_timestamp": 123456.0,
+        "fuzzy_added_date": "Today",
+    }
+    # Both episodes currently have the SAME title
+    episodes = [
+        {
+            "episode_id": "ep-1",
+            "show_id": "show-dup",
+            "title": "Same Title",
+            "filename": "01_intro.mp3",
+            "file_path": str(audio1),
+            "duration": 50.0,
+            "formatted_duration": "00:50",
+            "file_size": 5000,
+            "added_timestamp": 123456.0,
+        },
+        {
+            "episode_id": "ep-2",
+            "show_id": "show-dup",
+            "title": "Same Title",
+            "filename": "02_outro.mp3",
+            "file_path": str(audio2),
+            "duration": 50.0,
+            "formatted_duration": "00:50",
+            "file_size": 5000,
+            "added_timestamp": 123456.0,
+        },
+    ]
+    cache.save_show(show_data, episodes)
+
+    from lissn.scanner import LibraryScanner, get_audio_title
+
+    with patch("lissn.scanner.get_audio_title", return_value="Same Title"):
+        scanner_inst = LibraryScanner(books_dir=tmp_path, podcasts_dir=tmp_path, db_path=db_path)
+        scanner_inst.cache = cache
+
+        updated_show = scanner_inst.reset_show_track_titles("show-dup")
+        assert updated_show is not None
+        eps = {ep["episode_id"]: ep["title"] for ep in updated_show["episodes"]}
+
+        # Both had tag title "Same Title" -> fallback to filename stems "01_intro" and "02_outro"
+        assert eps["ep-1"] == "01_intro"
+        assert eps["ep-2"] == "02_outro"
+
+
+def test_update_episode_title_duplicate_error(tmp_path: Path):
+    """Test that ScannerCache.update_episode_title raises ValueError on duplicate title in the same show."""
+    db_path = tmp_path / "test_cache.db"
+    cache = ScannerCache(db_path)
+
+    show_data = {
+        "show_id": "show-1",
+        "section": "books",
+        "title": "Test Show",
+        "folder_path": str(tmp_path),
+        "total_duration": 100.0,
+        "formatted_duration": "01:40",
+        "added_timestamp": 123456.0,
+        "fuzzy_added_date": "Today",
+    }
+    episodes = [
+        {
+            "episode_id": "ep-1",
+            "show_id": "show-1",
+            "title": "Track One",
+            "filename": "track1.mp3",
+            "file_path": str(tmp_path / "track1.mp3"),
+            "duration": 50.0,
+            "formatted_duration": "00:50",
+            "file_size": 5000,
+            "added_timestamp": 123456.0,
+        },
+        {
+            "episode_id": "ep-2",
+            "show_id": "show-1",
+            "title": "Track Two",
+            "filename": "track2.mp3",
+            "file_path": str(tmp_path / "track2.mp3"),
+            "duration": 50.0,
+            "formatted_duration": "00:50",
+            "file_size": 5000,
+            "added_timestamp": 123456.0,
+        },
+    ]
+    cache.save_show(show_data, episodes)
+
+    import pytest
+    with pytest.raises(ValueError, match="already exists"):
+        cache.update_episode_title("show-1", "ep-2", "Track One")
+
+
+def test_api_edit_episode_duplicate_title():
+    """Test POST /api/shows/{show_id}/episodes/{episode_id}/edit returns 400 when duplicate title is given."""
+    client = TestClient(app)
+    from lissn.app import config
+
+    with patch.object(config, "password", ""):
+        with patch.object(scanner, "update_episode_title", side_effect=ValueError("Track title 'Track One' already exists in this show")):
+            res = client.post(
+                "/api/shows/show-1/episodes/ep-2/edit",
+                json={"title": "Track One"},
+            )
+            assert res.status_code == 400
+            data = res.json()
+            assert "already exists" in data["detail"]
+
+
+

@@ -2138,6 +2138,22 @@ function activateInlineTrackEdit(wrapper) {
       return;
     }
 
+    // Client-side check for duplicate track title in same show table
+    const currentTrackRow = wrapper.closest('.track-row');
+    const isDuplicate = Array.from(document.querySelectorAll('.track-row')).some(
+      (row) => {
+        if (row === currentTrackRow) return false;
+        const titleAttr = row.getAttribute('data-track-title') || '';
+        return titleAttr.trim().toLowerCase() === newTitle.toLowerCase();
+      },
+    );
+
+    if (isDuplicate) {
+      showToast(`⚠️ Track title '${newTitle}' already exists in this show`);
+      cancelEdit();
+      return;
+    }
+
     try {
       const res = await fetch(
         `/api/shows/${showId}/episodes/${episodeId}/edit`,
@@ -2166,7 +2182,7 @@ function activateInlineTrackEdit(wrapper) {
         showToast('✓ Track title updated');
       } else {
         const errData = await res.json().catch(() => ({}));
-        showToast(`❌ ${errData.detail || 'Failed to update track title'}`);
+        showToast(`⚠️ ${errData.detail || 'Track title already exists in this show'}`);
       }
     } catch (err) {
       console.error('Failed to update track title:', err);
