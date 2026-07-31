@@ -106,9 +106,9 @@ def test_version_and_git_headers_and_html_elements(client: TestClient) -> None:
     assert '<link rel="revision"' in response.text
     assert '<link rel="repository"' in response.text
 
-    # Verify tooltips and GitHub link
+    # Verify tooltips and GitHub link in footer
     assert 'title="lissn v' in response.text
-    assert 'class="github-link-btn"' in response.text
+    assert 'class="github-link-btn"' not in response.text
     assert 'href="https://github.com/jakobbg/lissn"' in response.text
 
     # Verify footer interactive links
@@ -1524,13 +1524,13 @@ def test_client_navigation_syncs_header_nav_actions(client: TestClient) -> None:
 
 
 def test_mobile_header_buttons_and_back_button_scoping(client: TestClient) -> None:
-    """Test mobile header buttons include GitHub button in icon-only styling and back button is scoped to show detail page."""
+    """Test mobile header buttons and back button is scoped to show detail page."""
     # Front page checks
     index_res = client.get("/")
     assert index_res.status_code == 200
     assert 'class="show-page"' not in index_res.text
     assert 'class="nav-back-btn"' not in index_res.text
-    assert 'class="github-link-btn"' in index_res.text
+    assert 'class="github-link-btn"' not in index_res.text
 
     # Show detail page checks
     shows_res = client.get("/api/shows")
@@ -1548,8 +1548,6 @@ def test_mobile_header_buttons_and_back_button_scoping(client: TestClient) -> No
     assert css_res.status_code == 200
     css_text = css_res.text
     assert "body:not(.show-page) .nav-back-btn" in css_text
-    assert ".github-link-btn" in css_text
-    assert ".github-link-btn svg.btn-icon" in css_text
 
 
 def test_track_title_visual_cropping_and_fixed_table_layout(client: TestClient) -> None:

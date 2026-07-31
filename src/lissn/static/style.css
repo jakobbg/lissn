@@ -323,7 +323,6 @@ input:focus-visible {
 }
 
 .nav-back-btn,
-.github-link-btn,
 .theme-toggle-btn,
 .auth-btn {
   background: var(--bg-surface-elevated);
@@ -345,7 +344,6 @@ input:focus-visible {
 }
 
 .nav-back-btn:hover,
-.github-link-btn:hover,
 .theme-toggle-btn:hover,
 .auth-btn:hover {
   background-color: var(--border-color);
@@ -1896,7 +1894,6 @@ tr.track-row.active-track {
   }
 
   .nav-back-btn,
-  .github-link-btn,
   .theme-toggle-btn,
   .auth-btn {
     padding: 0;
@@ -1908,11 +1905,6 @@ tr.track-row.active-track {
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-full);
-  }
-
-  .github-link-btn svg.btn-icon {
-    display: block;
-    flex-shrink: 0;
   }
 
   /* Compact single-line section filter tabs */
