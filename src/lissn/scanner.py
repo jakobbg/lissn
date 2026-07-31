@@ -723,7 +723,7 @@ class LibraryScanner:
                 ):
                     duration = float(cached_ep.get("duration", 0.0))
                     bitrate_kbps = int(cached_ep.get("bitrate", 0))
-                    title = clean_track_title(str(cached_ep.get("title", "")), show_title=display_title)
+                    title = str(cached_ep.get("title", ""))
                 else:
                     duration = get_audio_duration(audio_path)
                     bitrate_kbps = get_audio_bitrate(audio_path, file_size, duration)

@@ -1644,14 +1644,21 @@ function initMediaPlayer() {
     closeBtn.addEventListener('click', closePlayer);
   }
 
-  // Global Keyboard Shortcuts (Left/Right seek, N next, P prev, Esc close)
+  // Global Keyboard Shortcuts (Left/Right seek, N next, P prev, Space play/pause, Esc close)
   document.addEventListener('keydown', (e) => {
-    if (
-      ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)
-    )
-      return;
+    const activeTag = document.activeElement?.tagName;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) return;
+    if (document.activeElement?.isContentEditable) return;
+    if (isAnyModalOpen()) return;
 
-    if (e.code === 'ArrowLeft') {
+    if (e.code === 'Space' && bottomPlayer.classList.contains('visible')) {
+      e.preventDefault();
+      if (audioElement.paused) {
+        audioElement.play();
+      } else {
+        audioElement.pause();
+      }
+    } else if (e.code === 'ArrowLeft') {
       e.preventDefault();
       skipBackBtn?.click();
     } else if (e.code === 'ArrowRight') {
@@ -2082,6 +2089,7 @@ function initMarkdownEditor() {
       }
     }
   });
+}
 
 function activateInlineTrackEdit(wrapper) {
   if (!wrapper || wrapper.querySelector('.inline-track-title-input')) return;
@@ -2209,7 +2217,7 @@ function initInlineTrackTitleEditing() {
   });
 }
 
-  // Tab switching between Write and Preview
+// Tab switching between Write and Preview
   document.addEventListener('click', (e) => {
     if (e.target.closest('#tab-write-btn')) {
       switchToWriteTab();
@@ -2509,7 +2517,6 @@ function initInlineTrackTitleEditing() {
       }
     }
   });
-}
 
 async function openEditModal(btn) {
   const editModal = document.getElementById('edit-modal');
