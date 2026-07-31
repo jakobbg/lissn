@@ -243,6 +243,14 @@ def test_clean_track_title() -> None:
         == "01"
     )
 
+    # Test cassette, tape, and side auto-renaming
+    assert clean_track_title("kass1sideaA") == "Kassett 1 side A"
+    assert clean_track_title("Kass1sideB") == "Kassett 1 side B"
+    assert clean_track_title("Kass2sideA") == "Kassett 2 side A"
+    assert clean_track_title("kass 1 side a") == "Kassett 1 side A"
+    assert clean_track_title("kass1a") == "Kassett 1 side A"
+    assert clean_track_title("tape1sideA") == "Tape 1 side A"
+
 
 def test_get_audio_title_and_norwegian_characters(tmp_path: Path) -> None:
     """Test get_audio_title preserves Norwegian characters in titles and filenames and cleans x-delimited titles."""

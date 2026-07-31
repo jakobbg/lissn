@@ -247,6 +247,47 @@ def clean_track_title(title: str, show_title: str = "") -> str:
             if cleaned_s:
                 s = cleaned_s
 
+    # 4. Normalize cassette / tape / CD / side patterns (e.g. 'kass1sideaA' -> 'Kassett 1 side A')
+    if s:
+        def _replace_kass_side(m):
+            num = m.group(1)
+            side_letter = m.group(2).upper()
+            return f"Kassett {num} side {side_letter}"
+
+        # Pattern 4a: kass/kassett + number + side + (optional extra 'a'/'A') + letter (A-D)
+        s = re.sub(
+            r"(?i)\bkas[s]?(?:ett|ette)?[\s_\.-]*(\d+)[\s_\.-]*side[\s_\.-]*[aA]*([a-dA-D])\b",
+            _replace_kass_side,
+            s,
+        )
+
+        # Pattern 4b: kass/kassett + number + letter (A-D) without explicit 'side' word
+        s = re.sub(
+            r"(?i)\bkas[s]?(?:ett|ette)?[\s_\.-]*(\d+)[\s_\.-]*([a-dA-D])\b",
+            _replace_kass_side,
+            s,
+        )
+
+        # Pattern 4c: tape/CD/disc + number + side + letter
+        def _replace_media_side(m):
+            media = m.group(1).upper() if m.group(1).lower() in ("cd", "dvd") else m.group(1).capitalize()
+            num = m.group(2)
+            side_letter = m.group(3).upper()
+            return f"{media} {num} side {side_letter}"
+
+        s = re.sub(
+            r"(?i)\b(tape|cd|disc|disk)[\s_\.-]*(\d+)[\s_\.-]*side[\s_\.-]*[aA]*([a-dA-D])\b",
+            _replace_media_side,
+            s,
+        )
+
+        # Pattern 4d: standalone side + (optional extra 'a'/'A') + letter (A-D)
+        s = re.sub(
+            r"(?i)\bside[\s_\.-]*[aA]*([a-dA-D])\b",
+            lambda m: f"side {m.group(1).upper()}",
+            s,
+        )
+
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
