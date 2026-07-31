@@ -766,6 +766,8 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
     assert "js-edit-track-btn" not in unauth_show.text
     assert "js-track-title-wrapper" not in unauth_show.text
     assert 'id="bottom-player"' not in unauth_show.text
+    assert 'data-audio-src="' not in unauth_show.text
+    assert 'id="global-audio-element"' not in unauth_show.text
 
     # 2. Log in successfully
     login_res = client.post("/api/login", json={"password": "auth_secret_999"})
@@ -776,6 +778,7 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
     assert auth_index.status_code == 200
     assert 'id="rescan-btn"' in auth_index.text
     assert 'id="bottom-player"' in auth_index.text
+    assert 'id="global-audio-element"' in auth_index.text
 
     auth_show = client.get(f"/show/{show_id}")
     assert auth_show.status_code == 200
@@ -787,6 +790,8 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
     assert "js-edit-track-btn" in auth_show.text
     assert "js-track-title-wrapper" in auth_show.text
     assert 'id="bottom-player"' in auth_show.text
+    assert 'data-audio-src="' in auth_show.text
+    assert 'id="global-audio-element"' in auth_show.text
 
 
 def test_edit_show_markdown_and_notes_file(client: TestClient) -> None:
