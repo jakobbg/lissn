@@ -158,10 +158,10 @@
                   <th style="width: 40px; text-align: center;" aria-label="Play"></th>
                 {% endif %}
                 <th style="width: 40px; text-align: center;">#</th>
-                <th>Track Title</th>
-                <th>Duration</th>
-                <th>Size</th>
-                <th>Bitrate</th>
+                <th style="width: auto;">Track Title</th>
+                <th style="width: 90px;">Duration</th>
+                <th style="width: 85px;">Size</th>
+                <th style="width: 80px;">Bitrate</th>
                 {% if authenticated %}
                   <th style="text-align: right; width: 40px;" aria-label="Download"></th>
                 {% endif %}
@@ -190,8 +190,8 @@
                     </td>
                   {% endif %}
                   <td style="width: 40px; text-align: center; color: var(--text-muted); vertical-align: middle;">{{ loop.index }}</td>
-                  <td style="vertical-align: middle;" title="{{ ep.filename }}">
-                    <strong class="track-title-text" title="File: {{ ep.filename }}">{{ ep.title }}</strong>
+                  <td class="track-title-cell" style="vertical-align: middle;" title="File: {{ ep.filename }}">
+                    <strong class="track-title-text" title="{{ ep.title }} (File: {{ ep.filename }})">{{ ep.title }}</strong>
                   </td>
                   <td style="vertical-align: middle;"><span class="duration-badge">{{ ep.formatted_duration }}</span></td>
                   <td style="vertical-align: middle;"><span class="size-badge">{{ ep.formatted_file_size or '—' }}</span></td>

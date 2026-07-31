@@ -994,6 +994,7 @@ button.detail-cover-link {
 
 .track-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   text-align: left;
 }
@@ -1026,9 +1027,20 @@ button.detail-cover-link {
   background-color: var(--bg-surface-elevated, rgba(255, 255, 255, 0.04));
 }
 
+.track-title-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .track-title-text {
+  display: block;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .track-table tr:last-child td {
@@ -1864,8 +1876,8 @@ tr.track-row.active-track {
   }
 
   .track-title-text {
-    display: inline-block;
-    max-width: 130px;
+    display: block;
+    max-width: 100%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1913,7 +1925,7 @@ tr.track-row.active-track {
   }
 
   .track-title-text {
-    max-width: 105px;
+    max-width: 100%;
   }
 }
 

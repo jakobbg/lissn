@@ -1538,6 +1538,27 @@ def test_mobile_header_buttons_and_back_button_scoping(client: TestClient) -> No
     assert ".github-link-btn svg.btn-icon" in css_text
 
 
+def test_track_title_visual_cropping_and_fixed_table_layout(client: TestClient) -> None:
+    """Test that track listing table uses fixed layout and track title CSS applies visual cropping via ellipsis."""
+    css_res = client.get("/static/style.css")
+    assert css_res.status_code == 200
+    css_text = css_res.text
+
+    assert "table-layout: fixed;" in css_text
+    assert ".track-title-cell" in css_text
+    assert "text-overflow: ellipsis;" in css_text
+    assert "white-space: nowrap;" in css_text
+
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+    show_res = client.get(f"/show/{show_id}")
+    assert show_res.status_code == 200
+    html = show_res.text
+
+    assert 'class="track-title-cell"' in html
+    assert 'class="track-title-text"' in html
+
+
 def test_show_page_and_api_episodes_folder_first_naturally_sorted(tmp_path: Path, client: TestClient) -> None:
     """Test that /show/{show_id} HTML track listing and /api/shows/{show_id} return episodes sorted by folder first, then naturally by filename."""
     from lissn.scanner import LibraryScanner
