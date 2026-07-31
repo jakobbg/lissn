@@ -2486,28 +2486,34 @@ tr.track-row.active-track {
   margin: 0;
   font-size: 0.85em;
   opacity: 0;
+  visibility: hidden;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.15s ease;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.15s ease;
   line-height: 1;
   user-select: none;
 }
 
+.track-row:hover .inline-edit-icon-btn,
 .track-title-wrapper:hover .inline-edit-icon-btn {
   opacity: 0.7;
+  visibility: visible;
 }
 
 .inline-edit-icon-btn:hover {
   opacity: 1 !important;
+  visibility: visible !important;
   transform: scale(1.15);
 }
 
-/* Subtle single-line edit input */
+/* Subtle translucent single-line edit input */
 .inline-track-title-input {
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
   color: var(--text-main, inherit);
-  background: var(--bg-hover, rgba(255, 255, 255, 0.08));
+  background: rgba(127, 127, 127, 0.12) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border: 1px solid var(--accent-color, #3b82f6);
   border-radius: 4px;
   padding: 2px 6px;
@@ -2517,9 +2523,12 @@ tr.track-row.active-track {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
   outline: none;
   box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .inline-track-title-input:focus {
+  background: rgba(127, 127, 127, 0.18) !important;
   border-color: var(--accent-color, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
