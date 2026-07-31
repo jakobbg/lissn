@@ -757,6 +757,8 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
     assert "Edit Details" not in unauth_show.text
     assert "js-play-track" not in unauth_show.text
     assert "js-download-track" not in unauth_show.text
+    assert "js-edit-track-btn" not in unauth_show.text
+    assert "js-track-title-wrapper" not in unauth_show.text
     assert 'id="bottom-player"' not in unauth_show.text
 
     # 2. Log in successfully
@@ -776,6 +778,8 @@ def test_all_authenticated_options_hidden_until_login(unauthenticated_client: Te
     assert "Edit Details" in auth_show.text
     assert "js-play-track" in auth_show.text
     assert "js-download-track" in auth_show.text
+    assert "js-edit-track-btn" in auth_show.text
+    assert "js-track-title-wrapper" in auth_show.text
     assert 'id="bottom-player"' in auth_show.text
 
 

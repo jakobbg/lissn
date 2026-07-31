@@ -534,18 +534,27 @@ function initPageShortcuts() {
       if (copyRssBtn) {
         e.preventDefault();
         copyRssBtn.click();
+      } else if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+        e.preventDefault();
+        openPasswordModal();
       }
     } else if (key === 'e') {
       const editBtn = document.querySelector('.js-edit-show');
       if (editBtn) {
         e.preventDefault();
         editBtn.click();
+      } else if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+        e.preventDefault();
+        openPasswordModal();
       }
     } else if (key === 'd') {
       const downloadBtn = document.querySelector('.js-download-show');
       if (downloadBtn) {
         e.preventDefault();
         downloadBtn.click();
+      } else if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+        e.preventDefault();
+        openPasswordModal();
       }
     }
   });
@@ -1071,11 +1080,6 @@ function initMediaPlayer() {
   }
 
   function handleTrackActivation(trackRow) {
-    if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
-      openPasswordModal();
-      return;
-    }
-
     // Auto-resync DOM tracks if activePlaylist is empty or out of sync
     if (activePlaylist.length === 0) {
       syncPlayerWithPage();
@@ -2105,9 +2109,18 @@ function activateInlineTrackEdit(wrapper) {
   input.select();
 
   let isSaving = false;
+  let isCancelled = false;
+
+  function cancelEdit() {
+    if (isCancelled) return;
+    isCancelled = true;
+    input.remove();
+    titleTextEl.style.display = '';
+    if (btn) btn.style.display = '';
+  }
 
   async function saveTitle() {
-    if (isSaving) return;
+    if (isSaving || isCancelled) return;
     isSaving = true;
 
     const newTitle = input.value.trim();
@@ -2137,18 +2150,21 @@ function activateInlineTrackEdit(wrapper) {
           trackRow.setAttribute('data-track-title', updatedTitle);
           trackRow.setAttribute('aria-label', `Play track ${updatedTitle}`);
         }
+
+        if (typeof window.syncPlayerWithPage === 'function') {
+          window.syncPlayerWithPage();
+        }
+        showToast('✓ Track title updated');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        showToast(`❌ ${errData.detail || 'Failed to update track title'}`);
       }
     } catch (err) {
       console.error('Failed to update track title:', err);
+      showToast('❌ Error updating track title');
     } finally {
       cancelEdit();
     }
-  }
-
-  function cancelEdit() {
-    input.remove();
-    titleTextEl.style.display = '';
-    if (btn) btn.style.display = '';
   }
 
   input.addEventListener('keydown', (evt) => {
