@@ -198,13 +198,12 @@ def decode_metadata_text(val: Any) -> str:
     return s
 
 
-def clean_track_title(title: str) -> str:
+def clean_track_title(title: str, show_title: str = "") -> str:
     """
-    Clean track titles automatically by normalizing delimiter artifacts (such as 'x' separated titles).
-    For example:
-      '01xMennxsomxhaterxkvinner' -> '01 Menn som hater kvinner'
-      '04xPROLOGxxFredagx1xxnovember' -> '04 PROLOG Fredag 1 november'
-      '08xKapittelx3xxFredagx20xxdesemberxxxlxrdagx21xxdesember' -> '08 Kapittel 3 Fredag 20 desember lxrdag 21 desember'
+    Clean track titles automatically by:
+      1. Normalizing delimiter artifacts (such as 'x' separated titles).
+      2. Renaming 'trk' / 'Trk' / 'TRK' variants to 'Track'.
+      3. Removing redundant book/show title from per-track title.
     """
     if not title:
         return ""
@@ -213,7 +212,7 @@ def clean_track_title(title: str) -> str:
     if not s:
         return ""
 
-    # Check if string uses 'x' or 'X' as a space/word delimiter.
+    # 1. Check if string uses 'x' or 'X' as a space/word delimiter.
     is_x_delimited = False
     if re.match(r"^\d+[xX]+", s):
         is_x_delimited = True
@@ -223,29 +222,40 @@ def clean_track_title(title: str) -> str:
         elif s.lower().count("x") >= 2 and re.search(r"[a-zA-Z0-9][xX][a-zA-Z0-9]", s):
             is_x_delimited = True
 
-    if not is_x_delimited:
-        return s
+    if is_x_delimited:
+        res = re.sub(r"[xX]{2,}", " ", s)
+        res = re.sub(r"(\d)[xX]", r"\1 ", res)
+        res = re.sub(r"[xX](\d)", r" \1", res)
+        res = re.sub(r"(?<=[a-zA-Z]{2})[xX](?=[a-zA-Z]{2})", " ", res)
+        s = re.sub(r"\s+", " ", res).strip()
 
-    # 1. Replace multiple consecutive x's (xx, xxx, etc.) with a single space
-    res = re.sub(r"[xX]{2,}", " ", s)
+    # 2. Rename 'trk' / 'Trk' / 'TRK' variants to 'Track'
+    if s:
+        s = re.sub(r"\b[tT][rR][kK][._\-\s]+(?=\d)", "Track ", s)
+        s = re.sub(r"\b[tT][rR][kK](?=\d)", "Track ", s)
+        s = re.sub(r"\b[tT][rR][kK]\b", "Track", s)
+        s = re.sub(r"\s+", " ", s).strip()
 
-    # 2. Replace x adjacent to digits (e.g. 01x, x1, 20x) with space
-    res = re.sub(r"(\d)[xX]", r"\1 ", res)
-    res = re.sub(r"[xX](\d)", r" \1", res)
+    # 3. Automatically remove redundant book/show title from per-track title
+    if show_title and s:
+        st = show_title.strip()
+        if st and len(st) > 1:
+            pattern = re.compile(re.escape(st), re.IGNORECASE)
+            cleaned_s = pattern.sub("", s).strip()
+            # Clean up residual leading/trailing separators (- : _ | , .)
+            cleaned_s = re.sub(r"^[\s\-_:|,.]+|[\s\-_:|,.]+$", "", cleaned_s).strip()
+            if cleaned_s:
+                s = cleaned_s
 
-    # 3. Replace single x between two words of length >= 2 with space (e.g. Mennxsom -> Menn som)
-    #    This preserves single-letter prefix occurrences like 'lxrdag'.
-    res = re.sub(r"(?<=[a-zA-Z]{2})[xX](?=[a-zA-Z]{2})", " ", res)
-
-    cleaned = re.sub(r"\s+", " ", res).strip()
-    return cleaned if cleaned else s
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
 
 
-def get_audio_title(file_path: Path) -> str:
+def get_audio_title(file_path: Path, show_title: str = "") -> str:
     """
     Extract audio track title from ID3 / metadata tags with safe UTF-8 decoding.
     Falls back to unquoted filename stem if metadata tag is missing or empty.
-    Automatically normalizes track titles formatted with 'x' delimiters.
+    Automatically normalizes track titles, renames 'trk' to 'Track', and removes redundant book title.
     """
     raw_title = ""
     try:
@@ -266,7 +276,7 @@ def get_audio_title(file_path: Path) -> str:
         from urllib.parse import unquote
         raw_title = unquote(file_path.stem)
 
-    return clean_track_title(raw_title)
+    return clean_track_title(raw_title, show_title=show_title)
 
 
 
@@ -642,6 +652,10 @@ class LibraryScanner:
             # Limit number of episodes per show based on max_episodes_per_show setting
             audio_files = audio_files[: self.max_episodes_per_show]
 
+            # Fetch existing cached show metadata from SQLite to preserve custom cover BLOB & metadata across scans
+            cached_show = self.cache.get_show(show_id, include_cover_data=True)
+            display_title = (cached_show.get("title") if (cached_show and not force) else None) or show_dir.name
+
             # Fetch existing cached episode metadata for incremental scanning
             cached_episodes_map = {} if force else self.cache.get_episodes_map(show_id)
 
@@ -668,11 +682,11 @@ class LibraryScanner:
                 ):
                     duration = float(cached_ep.get("duration", 0.0))
                     bitrate_kbps = int(cached_ep.get("bitrate", 0))
-                    title = clean_track_title(str(cached_ep.get("title", "")))
+                    title = clean_track_title(str(cached_ep.get("title", "")), show_title=display_title)
                 else:
                     duration = get_audio_duration(audio_path)
                     bitrate_kbps = get_audio_bitrate(audio_path, file_size, duration)
-                    title = get_audio_title(audio_path)
+                    title = get_audio_title(audio_path, show_title=display_title)
 
                 total_duration += duration
                 total_file_size += file_size

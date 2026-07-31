@@ -222,6 +222,27 @@ def test_clean_track_title() -> None:
     assert clean_track_title("Taxi Driver") == "Taxi Driver"
     assert clean_track_title("") == ""
 
+    # Test renaming 'trk' / 'Trk' / 'TRK' variants to 'Track'
+    assert clean_track_title("trk 01") == "Track 01"
+    assert clean_track_title("Trk 1") == "Track 1"
+    assert clean_track_title("trk01") == "Track 01"
+    assert clean_track_title("Trk_02") == "Track 02"
+    assert clean_track_title("trk. 03") == "Track 03"
+
+    # Test automatic removal of redundant book title from per-track title
+    assert (
+        clean_track_title("The Great Gatsby - Chapter 1", show_title="The Great Gatsby")
+        == "Chapter 1"
+    )
+    assert (
+        clean_track_title("Menn som hater kvinner - trk 05", show_title="Menn som hater kvinner")
+        == "Track 05"
+    )
+    assert (
+        clean_track_title("The Great Gatsby - 01", show_title="The Great Gatsby")
+        == "01"
+    )
+
 
 def test_get_audio_title_and_norwegian_characters(tmp_path: Path) -> None:
     """Test get_audio_title preserves Norwegian characters in titles and filenames and cleans x-delimited titles."""
