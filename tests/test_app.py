@@ -64,6 +64,27 @@ def test_index_page(client: TestClient) -> None:
     assert 'tabindex="-1"' in response.text
 
 
+def test_index_page_author_listing_without_by_prefix(client: TestClient) -> None:
+    """Test main page listings display author name directly without 'by ' prefix."""
+    shows_res = client.get("/api/shows")
+    show_id = shows_res.json()["shows"][0]["show_id"]
+
+    # Set show author
+    client.post(
+        f"/api/shows/{show_id}/edit",
+        json={
+            "title": "Sample Show",
+            "author": "Jane Doe Author",
+            "description": "Sample description",
+        },
+    )
+
+    index_res = client.get("/")
+    assert index_res.status_code == 200
+    assert "Jane Doe Author" in index_res.text
+    assert "by Jane Doe Author" not in index_res.text
+
+
 def test_version_and_git_headers_and_html_elements(client: TestClient) -> None:
     """Test response headers, head meta elements, logo tooltips, and GitHub link on HTML pages."""
     response = client.get("/")
