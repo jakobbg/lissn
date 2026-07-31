@@ -12,6 +12,7 @@ import logging
 from pathlib import Path, PurePath
 import re
 import sqlite3
+import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import markdown
@@ -636,10 +637,13 @@ class LibraryScanner:
 
     def scan_folder(self, section: str, root_dir: Path, force: bool = False) -> List[Dict[str, Any]]:
         """Scan a top-level media directory (Books or Podcasts)."""
+        start_time = time.perf_counter()
         logger.info(f"Scanning '{section}' media directory at {root_dir}")
         scanned_shows = []
         if not root_dir.exists() or not root_dir.is_dir():
+            elapsed = time.perf_counter() - start_time
             logger.debug(f"Media directory {root_dir} does not exist or is not a directory")
+            logger.info(f"Finished scanning '{section}' in {elapsed:.2f}s: indexed {len(scanned_shows)} shows")
             return scanned_shows
 
         for show_dir in sorted(root_dir.iterdir()):
@@ -791,18 +795,23 @@ class LibraryScanner:
             self.cache.save_show(show_data, episodes)
             scanned_shows.append(show_data)
 
-        logger.info(f"Finished scanning '{section}': indexed {len(scanned_shows)} shows")
+        elapsed = time.perf_counter() - start_time
+        logger.info(f"Finished scanning '{section}' in {elapsed:.2f}s: indexed {len(scanned_shows)} shows")
         return scanned_shows
 
     def scan_all(self, force: bool = False) -> Dict[str, Any]:
         """Scan both Books and Podcasts sections, optionally forcing full metadata re-parse."""
+        start_time = time.perf_counter()
         logger.info(f"Starting complete library scan (force={force})")
         books = self.scan_folder("books", self.books_dir, force=force)
         podcasts = self.scan_folder("podcasts", self.podcasts_dir, force=force)
         active_ids = [s["show_id"] for s in books + podcasts]
         self.cache.prune_deleted_shows(active_ids)
         total_count = len(books) + len(podcasts)
-        logger.info(f"Library scan complete: {len(books)} books, {len(podcasts)} podcasts ({total_count} total)")
+        elapsed = time.perf_counter() - start_time
+        logger.info(
+            f"Library scan complete in {elapsed:.2f}s: {len(books)} books, {len(podcasts)} podcasts ({total_count} total)"
+        )
         return {"books": books, "podcasts": podcasts, "total": total_count}
 
 

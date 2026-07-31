@@ -3,7 +3,9 @@ Unit tests for scanner.py module.
 """
 
 from datetime import datetime, timezone
+import logging
 from pathlib import Path
+import re
 import tempfile
 import time
 import pytest
@@ -550,6 +552,22 @@ def test_library_scanner_sorts_episodes_folder_first_naturally(tmp_path: Path) -
         "CD 10/01.wav",
     ]
     assert filenames == expected_filenames
+
+
+def test_scan_logs_execution_time(temp_library, caplog: pytest.LogCaptureFixture) -> None:
+    """Test that scanning outputs log messages with elapsed execution time for show types and total summary."""
+    books_dir, podcasts_dir, cache_dir, cache_db = temp_library
+    scanner = LibraryScanner(
+        books_dir=books_dir, podcasts_dir=podcasts_dir, db_path=cache_db
+    )
+    with caplog.at_level(logging.INFO, logger="lissn.scanner"):
+        scanner.scan_all()
+
+    log_records = caplog.text
+    assert re.search(r"Finished scanning 'books' in \d+\.\d{2}s: indexed \d+ shows", log_records)
+    assert re.search(r"Finished scanning 'podcasts' in \d+\.\d{2}s: indexed \d+ shows", log_records)
+    assert re.search(r"Library scan complete in \d+\.\d{2}s: \d+ books, \d+ podcasts \(\d+ total\)", log_records)
+
 
 
 
