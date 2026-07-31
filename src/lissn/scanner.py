@@ -506,6 +506,17 @@ class ScannerCache:
             ep_row = ep_cursor.fetchone()
             return dict(ep_row) if ep_row else None
 
+    def reset_track_titles_for_show(self, show_id: str, title_updates: List[Tuple[str, str]]) -> None:
+        """Batch update episode titles for a show. title_updates is a list of (episode_id, new_title) tuples."""
+        if not title_updates:
+            return
+        with self._get_connection() as conn:
+            conn.executemany(
+                "UPDATE episodes SET title = ? WHERE show_id = ? AND episode_id = ?",
+                [(new_title, show_id, ep_id) for ep_id, new_title in title_updates],
+            )
+
+
     def prune_deleted_shows(self, active_show_ids: List[str]) -> None:
         """Remove shows and episodes from database cache if no longer present on disk."""
         with self._get_connection() as conn:
@@ -829,4 +840,45 @@ class LibraryScanner:
     ) -> Optional[Dict[str, Any]]:
         """Update track/episode title in SQLite cache database."""
         return self.cache.update_episode_title(show_id, episode_id, new_title)
+
+    def reset_show_track_titles(self, show_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Reset all track titles for a show back to '<potential subfolder>/track title'
+        where track title first tries media info tags or falls back to filename stem.
+        """
+        show = self.cache.get_show(show_id)
+        if not show:
+            return None
+
+        show_dir = Path(show["folder_path"])
+        title_updates = []
+        for ep in show.get("episodes", []):
+            audio_path = Path(ep["file_path"])
+            if not audio_path.is_file():
+                audio_path = show_dir / ep["filename"]
+
+            rel_filename = ep.get("filename", "")
+            if audio_path.is_file():
+                try:
+                    rel_filename = str(audio_path.relative_to(show_dir))
+                except ValueError:
+                    pass
+                track_name = get_audio_title(audio_path)
+            else:
+                track_name = Path(rel_filename).stem
+
+            folder_parts = PurePath(rel_filename).parts[:-1]
+            if folder_parts:
+                subfolder = "/".join(folder_parts)
+                new_title = f"{subfolder}/{track_name}"
+            else:
+                new_title = track_name
+
+            title_updates.append((ep["episode_id"], new_title))
+
+        if title_updates:
+            self.cache.reset_track_titles_for_show(show_id, title_updates)
+
+        return self.cache.get_show(show_id)
+
 

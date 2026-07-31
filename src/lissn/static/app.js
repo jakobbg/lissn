@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuthSystem();
   initMarkdownEditor();
   initInlineTrackTitleEditing();
+  initReindexTracksButton();
   initSectionFiltering();
   initCopyButtons();
   initSubscribeButtons();
@@ -2216,6 +2217,87 @@ function initInlineTrackTitleEditing() {
     activateInlineTrackEdit(wrapper);
   });
 }
+
+/**
+ * Handle reindexing / resetting track titles for a show back to media tags or filenames.
+ */
+function initReindexTracksButton() {
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.js-reindex-tracks-btn');
+    if (!btn) return;
+
+    const showId = btn.getAttribute('data-show-id');
+    if (!showId) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (globalAuthState.passwordRequired && !globalAuthState.authenticated) {
+      openPasswordModal(() => {
+        reindexShowTracks(btn, showId);
+      });
+      return;
+    }
+
+    reindexShowTracks(btn, showId);
+  });
+}
+
+async function reindexShowTracks(btn, showId) {
+  if (btn.disabled || btn.classList.contains('is-loading')) return;
+
+  btn.disabled = true;
+  btn.classList.add('is-loading');
+
+  try {
+    const res = await fetch(`/api/shows/${showId}/reindex-tracks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const updatedShow = data.show;
+      if (updatedShow && Array.isArray(updatedShow.episodes)) {
+        updatedShow.episodes.forEach((ep) => {
+          const wrapper = document.querySelector(
+            `.js-track-title-wrapper[data-episode-id="${ep.episode_id}"]`,
+          );
+          if (wrapper) {
+            const titleTextEl = wrapper.querySelector('.track-title-text');
+            if (titleTextEl) {
+              titleTextEl.textContent = ep.title;
+              titleTextEl.title = `Click to edit title (File: ${ep.filename || ep.title})`;
+            }
+            const trackRow = wrapper.closest('.track-row');
+            if (trackRow) {
+              trackRow.setAttribute('data-track-title', ep.title);
+              trackRow.setAttribute('aria-label', `Play track ${ep.title}`);
+              const playBtn = trackRow.querySelector('.js-play-track');
+              if (playBtn) {
+                playBtn.setAttribute('aria-label', `Play ${ep.title}`);
+                playBtn.setAttribute('title', `Play ${ep.title}`);
+              }
+            }
+          }
+        });
+      }
+      showToast('✅ Track titles reset to media tags/filenames');
+      const announcer = document.getElementById('aria-announcer');
+      if (announcer) {
+        announcer.textContent = 'Track titles reset to media tags or filenames';
+      }
+    } else {
+      showToast('❌ Failed to reset track titles');
+    }
+  } catch (err) {
+    showToast('❌ Error connecting to server');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('is-loading');
+  }
+}
+
 
 // Tab switching between Write and Preview
   document.addEventListener('click', (e) => {

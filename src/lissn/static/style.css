@@ -1011,6 +1011,52 @@ button.detail-cover-link {
   opacity: 0.85;
 }
 
+.track-title-header-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reindex-tracks-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: var(--border-radius-sm, 4px);
+  color: var(--text-muted);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--transition-fast, 0.15s ease), visibility var(--transition-fast, 0.15s ease), background-color var(--transition-fast, 0.15s ease);
+  line-height: 1;
+}
+
+.track-table thead tr:hover .reindex-tracks-btn,
+.reindex-tracks-btn:focus,
+.reindex-tracks-btn:focus-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.reindex-tracks-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-elevated, rgba(255, 255, 255, 0.12));
+}
+
+.reindex-tracks-btn.is-loading {
+  opacity: 1;
+  visibility: visible;
+  animation: spin-reindex 0.8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spin-reindex {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .track-table td {
   padding: 0.45rem 0.6rem;
   border-bottom: 1px solid var(--border-color);

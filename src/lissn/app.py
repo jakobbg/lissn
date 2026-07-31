@@ -739,6 +739,18 @@ def api_edit_episode(
     return {"status": "success", "episode": updated_ep}
 
 
+@app.post("/api/shows/{show_id}/reindex-tracks")
+def api_reindex_tracks(show_id: str, request: Request) -> Dict[str, Any]:
+    """REST API endpoint to reset/reindex track titles back to media info tags or filenames."""
+    require_auth(request)
+
+    updated_show = scanner.reset_show_track_titles(show_id)
+    if not updated_show:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    return {"status": "success", "show": updated_show}
+
+
 @app.get("/api/shows/{show_id}/images")
 def api_get_show_images(show_id: str, request: Request) -> Dict[str, Any]:
     """Get list of available image files in the show folder."""
