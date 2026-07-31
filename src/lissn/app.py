@@ -888,7 +888,12 @@ def api_auth_status(request: Request) -> Dict[str, Any]:
 def api_rescan_library(force: bool = Query(False)) -> dict:
     """REST API endpoint to trigger library rescan."""
     result = scanner.scan_all(force=force)
-    return {"status": "success", "scanned": result}
+    return {
+        "status": "success",
+        "total": result.get("total", 0),
+        "books": len(result.get("books", [])),
+        "podcasts": len(result.get("podcasts", [])),
+    }
 
 
 if __name__ == "__main__":
