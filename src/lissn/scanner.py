@@ -198,105 +198,10 @@ def decode_metadata_text(val: Any) -> str:
     return s
 
 
-def clean_track_title(title: str, show_title: str = "") -> str:
-    """
-    Clean track titles automatically by:
-      1. Normalizing delimiter artifacts (such as 'x' separated titles).
-      2. Renaming 'trk' / 'Trk' / 'TRK' variants to 'Track'.
-      3. Removing redundant book/show title from per-track title.
-    """
-    if not title:
-        return ""
-
-    s = title.strip()
-    if not s:
-        return ""
-
-    # 1. Check if string uses 'x' or 'X' as a space/word delimiter.
-    is_x_delimited = False
-    if re.match(r"^\d+[xX]+", s):
-        is_x_delimited = True
-    elif " " not in s:
-        if re.search(r"[xX]{2,}", s):
-            is_x_delimited = True
-        elif s.lower().count("x") >= 2 and re.search(r"[a-zA-Z0-9][xX][a-zA-Z0-9]", s):
-            is_x_delimited = True
-
-    if is_x_delimited:
-        res = re.sub(r"[xX]{2,}", " ", s)
-        res = re.sub(r"(\d)[xX]", r"\1 ", res)
-        res = re.sub(r"[xX](\d)", r" \1", res)
-        res = re.sub(r"(?<=[a-zA-Z]{2})[xX](?=[a-zA-Z]{2})", " ", res)
-        s = re.sub(r"\s+", " ", res).strip()
-
-    # 2. Rename 'trk' / 'Trk' / 'TRK' variants to 'Track'
-    if s:
-        s = re.sub(r"\b[tT][rR][kK][._\-\s]+(?=\d)", "Track ", s)
-        s = re.sub(r"\b[tT][rR][kK](?=\d)", "Track ", s)
-        s = re.sub(r"\b[tT][rR][kK]\b", "Track", s)
-        s = re.sub(r"\s+", " ", s).strip()
-
-    # 3. Automatically remove redundant book/show title from per-track title
-    if show_title and s:
-        st = show_title.strip()
-        if st and len(st) > 1:
-            pattern = re.compile(re.escape(st), re.IGNORECASE)
-            cleaned_s = pattern.sub("", s).strip()
-            # Clean up residual leading/trailing separators (- : _ | , .)
-            cleaned_s = re.sub(r"^[\s\-_:|,.]+|[\s\-_:|,.]+$", "", cleaned_s).strip()
-            if cleaned_s:
-                s = cleaned_s
-
-    # 4. Normalize cassette / tape / CD / side patterns (e.g. 'kass1sideaA' -> 'Kassett 1 side A')
-    if s:
-        def _replace_kass_side(m):
-            num = m.group(1)
-            side_letter = m.group(2).upper()
-            return f"Kassett {num} side {side_letter}"
-
-        # Pattern 4a: kass/kassett + number + side + (optional extra 'a'/'A') + letter (A-D)
-        s = re.sub(
-            r"(?i)\bkas[s]?(?:ett|ette)?[\s_\.-]*(\d+)[\s_\.-]*side[\s_\.-]*[aA]*([a-dA-D])\b",
-            _replace_kass_side,
-            s,
-        )
-
-        # Pattern 4b: kass/kassett + number + letter (A-D) without explicit 'side' word
-        s = re.sub(
-            r"(?i)\bkas[s]?(?:ett|ette)?[\s_\.-]*(\d+)[\s_\.-]*([a-dA-D])\b",
-            _replace_kass_side,
-            s,
-        )
-
-        # Pattern 4c: tape/CD/disc + number + side + letter
-        def _replace_media_side(m):
-            media = m.group(1).upper() if m.group(1).lower() in ("cd", "dvd") else m.group(1).capitalize()
-            num = m.group(2)
-            side_letter = m.group(3).upper()
-            return f"{media} {num} side {side_letter}"
-
-        s = re.sub(
-            r"(?i)\b(tape|cd|disc|disk)[\s_\.-]*(\d+)[\s_\.-]*side[\s_\.-]*[aA]*([a-dA-D])\b",
-            _replace_media_side,
-            s,
-        )
-
-        # Pattern 4d: standalone side + (optional extra 'a'/'A') + letter (A-D)
-        s = re.sub(
-            r"(?i)\bside[\s_\.-]*[aA]*([a-dA-D])\b",
-            lambda m: f"side {m.group(1).upper()}",
-            s,
-        )
-
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
-
-
-def get_audio_title(file_path: Path, show_title: str = "") -> str:
+def get_audio_title(file_path: Path) -> str:
     """
     Extract audio track title from ID3 / metadata tags with safe UTF-8 decoding.
     Falls back to unquoted filename stem if metadata tag is missing or empty.
-    Automatically normalizes track titles, renames 'trk' to 'Track', and removes redundant book title.
     """
     raw_title = ""
     try:
@@ -317,7 +222,7 @@ def get_audio_title(file_path: Path, show_title: str = "") -> str:
         from urllib.parse import unquote
         raw_title = unquote(file_path.stem)
 
-    return clean_track_title(raw_title, show_title=show_title)
+    return raw_title.strip()
 
 
 
@@ -723,11 +628,9 @@ class LibraryScanner:
                 ):
                     duration = float(cached_ep.get("duration", 0.0))
                     bitrate_kbps = int(cached_ep.get("bitrate", 0))
-                    title = clean_track_title(str(cached_ep.get("title", "")), show_title=display_title)
                 else:
                     duration = get_audio_duration(audio_path)
                     bitrate_kbps = get_audio_bitrate(audio_path, file_size, duration)
-                    title = get_audio_title(audio_path, show_title=display_title)
 
                 total_duration += duration
                 total_file_size += file_size
@@ -735,18 +638,12 @@ class LibraryScanner:
                 ep_id = f"{show_id}_ep_{idx}"
                 rel_filename = str(audio_path.relative_to(show_dir))
                 folder_parts = PurePath(rel_filename).parts[:-1]
+                track_name = get_audio_title(audio_path)
                 if folder_parts:
-                    subfolder_prefix = " / ".join(folder_parts)
-                    # Normalize: strip ALL leading subfolder-prefix repetitions then re-add exactly once.
-                    # This fixes accumulated titles like "CD1 - CD1 - CD1 - Spor 01" → "CD1 - Spor 01".
-                    escaped_prefix = re.escape(subfolder_prefix)
-                    dedup_re = re.compile(
-                        r"^(?:" + escaped_prefix + r"\s*[-/]\s*)+",
-                        re.IGNORECASE,
-                    )
-                    base_title = dedup_re.sub("", title).strip()
-                    base_title = re.sub(r"^[\s\-_:|,.]+", "", base_title).strip()
-                    title = f"{subfolder_prefix} - {base_title}" if base_title else subfolder_prefix
+                    subfolder = "/".join(folder_parts)
+                    title = f"{subfolder}/{track_name}"
+                else:
+                    title = track_name
 
                 episodes.append(
                     {
@@ -763,11 +660,6 @@ class LibraryScanner:
                         "added_timestamp": mtime,
                     }
                 )
-
-            # If track title is the same for all episodes, change track names to "Track 1", "Track 2", etc.
-            if len(episodes) > 1 and len({ep["title"].strip() for ep in episodes}) == 1:
-                for idx, ep in enumerate(episodes, 1):
-                    ep["title"] = f"Track {idx}"
 
             if earliest_timestamp == float("inf"):
                 earliest_timestamp = show_dir.stat().st_mtime

@@ -194,66 +194,8 @@ def test_decode_metadata_text() -> None:
     assert decode_metadata_text(double_encoded) == "Blodsbrødre"
 
 
-def test_clean_track_title() -> None:
-    """Test clean_track_title automatically cleans x-delimited track titles while preserving standard titles."""
-    from lissn.scanner import clean_track_title
-
-    # User provided examples
-    assert clean_track_title("01xMennxsomxhaterxkvinner") == "01 Menn som hater kvinner"
-    assert clean_track_title("02xBokinformasjon") == "02 Bokinformasjon"
-    assert clean_track_title("03xBokomtalexogxforfatteromtale") == "03 Bokomtale og forfatteromtale"
-    assert clean_track_title("04xPROLOGxxFredagx1xxnovember") == "04 PROLOG Fredag 1 november"
-    assert clean_track_title("05xDELx1xxINCITAMENTxx20xxdesemberxtilx3xxjanuar") == "05 DEL 1 INCITAMENT 20 desember til 3 januar"
-    assert clean_track_title("06xKapittelx1xFredagx20xxdesember") == "06 Kapittel 1 Fredag 20 desember"
-    assert clean_track_title("07xKapittelx2xxFredagx20xxdesember") == "07 Kapittel 2 Fredag 20 desember"
-    assert (
-        clean_track_title("08xKapittelx3xxFredagx20xxdesemberxxxlxrdagx21xxdesember")
-        == "08 Kapittel 3 Fredag 20 desember lxrdag 21 desember"
-    )
-    assert (
-        clean_track_title("09xKapittelx4xxMandagx23xxdesemberxxxtorsdagx26xxdesember")
-        == "09 Kapittel 4 Mandag 23 desember torsdag 26 desember"
-    )
-
-    # Standard titles should remain unchanged
-    assert clean_track_title("01 - Prologue") == "01 - Prologue"
-    assert clean_track_title("Track 01") == "Track 01"
-    assert clean_track_title("Index") == "Index"
-    assert clean_track_title("Taxi Driver") == "Taxi Driver"
-    assert clean_track_title("") == ""
-
-    # Test renaming 'trk' / 'Trk' / 'TRK' variants to 'Track'
-    assert clean_track_title("trk 01") == "Track 01"
-    assert clean_track_title("Trk 1") == "Track 1"
-    assert clean_track_title("trk01") == "Track 01"
-    assert clean_track_title("Trk_02") == "Track 02"
-    assert clean_track_title("trk. 03") == "Track 03"
-
-    # Test automatic removal of redundant book title from per-track title
-    assert (
-        clean_track_title("The Great Gatsby - Chapter 1", show_title="The Great Gatsby")
-        == "Chapter 1"
-    )
-    assert (
-        clean_track_title("Menn som hater kvinner - trk 05", show_title="Menn som hater kvinner")
-        == "Track 05"
-    )
-    assert (
-        clean_track_title("The Great Gatsby - 01", show_title="The Great Gatsby")
-        == "01"
-    )
-
-    # Test cassette, tape, and side auto-renaming
-    assert clean_track_title("kass1sideaA") == "Kassett 1 side A"
-    assert clean_track_title("Kass1sideB") == "Kassett 1 side B"
-    assert clean_track_title("Kass2sideA") == "Kassett 2 side A"
-    assert clean_track_title("kass 1 side a") == "Kassett 1 side A"
-    assert clean_track_title("kass1a") == "Kassett 1 side A"
-    assert clean_track_title("tape1sideA") == "Tape 1 side A"
-
-
 def test_get_audio_title_and_norwegian_characters(tmp_path: Path) -> None:
-    """Test get_audio_title preserves Norwegian characters in titles and filenames and cleans x-delimited titles."""
+    """Test get_audio_title preserves Norwegian characters in titles and filenames."""
     from lissn.scanner import get_audio_title
 
     # Test filename stem fallback with Norwegian characters
@@ -263,51 +205,9 @@ def test_get_audio_title_and_norwegian_characters(tmp_path: Path) -> None:
     title = get_audio_title(audio_file)
     assert title == "Blodsbrødre"
 
-    # Test x-delimited track title
-    x_file = tmp_path / "01xMennxsomxhaterxkvinner.mp3"
-    x_file.write_bytes(b"dummy mp3 data")
-
-    title_x = get_audio_title(x_file)
-    assert title_x == "01 Menn som hater kvinner"
-
-
-def test_identical_track_titles_renamed_to_track_n(tmp_path: Path) -> None:
-    """Test scanner renames track titles to 'Track 1', 'Track 2', etc. when all tracks in a show have identical metadata titles."""
-    from lissn.scanner import LibraryScanner
-
-    books_dir = tmp_path / "books"
-    podcasts_dir = tmp_path / "podcasts"
-    cache_dir = tmp_path / "cache"
-    db_path = cache_dir / "lissn.db"
-
-    show_folder = books_dir / "Identical Tracks Book"
-    show_folder.mkdir(parents=True)
-
-    # Create multiple audio files with identical names (or fallback stem if identical)
-    (show_folder / "SameName.mp3").write_bytes(b"dummy mp3 data 1")
-    (show_folder / "SameName.m4a").write_bytes(b"dummy mp3 data 2")
-
-    scanner = LibraryScanner(
-        books_dir=books_dir, podcasts_dir=podcasts_dir, cache_dir=cache_dir, db_path=db_path
-    )
-
-    scanned = scanner.scan_all()
-    assert scanned["total"] == 1
-
-    shows = scanner.cache.get_all_shows()
-    assert len(shows) == 1
-    show_id = shows[0]["show_id"]
-
-    show = scanner.cache.get_show(show_id)
-    assert show is not None
-    episodes = show["episodes"]
-    assert len(episodes) == 2
-    assert episodes[0]["title"] == "Track 1"
-    assert episodes[1]["title"] == "Track 2"
-
 
 def test_subfolder_scanning(tmp_path: Path) -> None:
-    """Test scanner indexes audio files located inside nested subfolders with relative filenames."""
+    """Test scanner indexes audio files located inside nested subfolders with relative filenames and <subfolder>/track name titles."""
     books_dir = tmp_path / "books"
     podcasts_dir = tmp_path / "podcasts"
     cache_dir = tmp_path / "cache"
@@ -333,11 +233,13 @@ def test_subfolder_scanning(tmp_path: Path) -> None:
     episodes = show["episodes"]
     assert len(episodes) == 2
     assert episodes[0]["filename"] == "Papaya.2026.1901-2101/Papaya.2026-01-19.mp3"
+    assert episodes[0]["title"] == "Papaya.2026.1901-2101/Papaya.2026-01-19"
     assert episodes[1]["filename"] == "Papaya.2026.1901-2101/Papaya.2026-01-20.mp3"
+    assert episodes[1]["title"] == "Papaya.2026.1901-2101/Papaya.2026-01-20"
 
 
 def test_multi_disc_folder_sorting_and_titles(tmp_path: Path) -> None:
-    """Test multi-disc folder scanning sorts discs naturally and prefixes subfolder names to track titles."""
+    """Test multi-disc folder scanning sorts discs naturally and prefixes subfolder names to track titles with a slash."""
     books_dir = tmp_path / "books"
     podcasts_dir = tmp_path / "podcasts"
     cache_dir = tmp_path / "cache"
@@ -366,13 +268,13 @@ def test_multi_disc_folder_sorting_and_titles(tmp_path: Path) -> None:
 
     assert len(episodes) == 4
     assert episodes[0]["filename"] == "Syden Disc 1/01 Spor 1.mp3"
-    assert episodes[0]["title"] == "Syden Disc 1 - 01 Spor 1"
+    assert episodes[0]["title"] == "Syden Disc 1/01 Spor 1"
     assert episodes[1]["filename"] == "Syden Disc 1/02 Spor 2.mp3"
-    assert episodes[1]["title"] == "Syden Disc 1 - 02 Spor 2"
+    assert episodes[1]["title"] == "Syden Disc 1/02 Spor 2"
     assert episodes[2]["filename"] == "Syden Disc 2/01 1.mp3"
-    assert episodes[2]["title"] == "Syden Disc 2 - 01 1"
+    assert episodes[2]["title"] == "Syden Disc 2/01 1"
     assert episodes[3]["filename"] == "Syden Disc 2/02 2.mp3"
-    assert episodes[3]["title"] == "Syden Disc 2 - 02 2"
+    assert episodes[3]["title"] == "Syden Disc 2/02 2"
 
 
 def test_update_show_metadata_and_cover_non_existent(tmp_path: Path) -> None:
