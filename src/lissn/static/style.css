@@ -1000,7 +1000,7 @@ button.detail-cover-link {
 }
 
 .track-table th {
-  padding: 0.4rem 0.6rem;
+  padding: 0.4rem 0.5rem;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-muted);
   font-size: 0.75rem;
@@ -1009,6 +1009,13 @@ button.detail-cover-link {
   font-weight: 600;
   vertical-align: middle;
   opacity: 0.85;
+}
+
+.track-action-cell {
+  width: 48px;
+  padding-left: 0.2rem !important;
+  padding-right: 0.2rem !important;
+  text-align: center !important;
 }
 
 .track-title-header-content {
@@ -1058,7 +1065,7 @@ button.detail-cover-link {
 }
 
 .track-table td {
-  padding: 0.45rem 0.6rem;
+  padding: 0.45rem 0.5rem;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
   font-size: 0.88rem;
