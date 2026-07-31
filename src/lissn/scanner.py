@@ -387,6 +387,7 @@ class ScannerCache:
                     bitrate INTEGER DEFAULT 0,
                     formatted_bitrate TEXT DEFAULT '',
                     added_timestamp REAL NOT NULL,
+                    is_custom_title INTEGER DEFAULT 0,
                     FOREIGN KEY(show_id) REFERENCES shows(show_id) ON DELETE CASCADE
                 );
 
@@ -418,6 +419,8 @@ class ScannerCache:
                 conn.execute("ALTER TABLE episodes ADD COLUMN bitrate INTEGER DEFAULT 0")
             if "formatted_bitrate" not in ep_cols:
                 conn.execute("ALTER TABLE episodes ADD COLUMN formatted_bitrate TEXT DEFAULT ''")
+            if "is_custom_title" not in ep_cols:
+                conn.execute("ALTER TABLE episodes ADD COLUMN is_custom_title INTEGER DEFAULT 0")
 
             # Clean up section metadata so podcasts only use publisher and books only use author
             if "author" in show_cols and "publisher" in show_cols:
@@ -475,8 +478,8 @@ class ScannerCache:
                     INSERT INTO episodes (
                         episode_id, show_id, title, filename, file_path,
                         duration, formatted_duration, file_size, formatted_file_size,
-                        bitrate, formatted_bitrate, added_timestamp
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        bitrate, formatted_bitrate, added_timestamp, is_custom_title
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         ep["episode_id"],
@@ -491,6 +494,7 @@ class ScannerCache:
                         ep.get("bitrate", 0),
                         ep.get("formatted_bitrate", ""),
                         ep["added_timestamp"],
+                        ep.get("is_custom_title", 0),
                     ),
                 )
 
@@ -561,7 +565,7 @@ class ScannerCache:
                 raise ValueError(f"Track title '{new_title}' already exists in this show")
 
             cursor = conn.execute(
-                "UPDATE episodes SET title = ? WHERE show_id = ? AND episode_id = ?",
+                "UPDATE episodes SET title = ?, is_custom_title = 1 WHERE show_id = ? AND episode_id = ?",
                 (new_title, show_id, episode_id),
             )
             if cursor.rowcount == 0:
@@ -579,7 +583,7 @@ class ScannerCache:
             return
         with self._get_connection() as conn:
             conn.executemany(
-                "UPDATE episodes SET title = ? WHERE show_id = ? AND episode_id = ?",
+                "UPDATE episodes SET title = ?, is_custom_title = 0 WHERE show_id = ? AND episode_id = ?",
                 [(new_title, show_id, ep_id) for ep_id, new_title in title_updates],
             )
 
@@ -742,13 +746,20 @@ class LibraryScanner:
                         "bitrate": bitrate_kbps,
                         "formatted_bitrate": format_bitrate(bitrate_kbps),
                         "added_timestamp": mtime,
+                        "cached_ep": cached_ep,
                     }
                 )
 
             unique_titles = resolve_unique_track_titles(episodes_info)
             episodes = []
             for ep_data, unique_title in zip(episodes_data, unique_titles):
-                ep_data["title"] = unique_title
+                cached_ep = ep_data.pop("cached_ep", None)
+                if cached_ep and (cached_ep.get("is_custom_title") or (not force and cached_ep.get("title"))):
+                    ep_data["title"] = cached_ep["title"]
+                    ep_data["is_custom_title"] = cached_ep.get("is_custom_title", 0)
+                else:
+                    ep_data["title"] = unique_title
+                    ep_data["is_custom_title"] = 0
                 episodes.append(ep_data)
 
             if earliest_timestamp == float("inf"):

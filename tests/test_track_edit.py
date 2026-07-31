@@ -315,4 +315,53 @@ def test_api_edit_episode_duplicate_title():
             assert "already exists" in data["detail"]
 
 
+def test_custom_track_title_persists_across_scans(tmp_path: Path):
+    """Test that editing a track title sets is_custom_title and persists across LibraryScanner scans."""
+    books_dir = tmp_path / "books"
+    podcasts_dir = tmp_path / "podcasts"
+    books_dir.mkdir()
+    podcasts_dir.mkdir()
+
+    book_dir = books_dir / "Neuromancer"
+    book_dir.mkdir()
+    audio_file = book_dir / "William Gibson - Neuromancer Part 1.mp3"
+    audio_file.write_bytes(b"dummy audio content")
+
+    db_path = tmp_path / "test_cache.db"
+    from lissn.scanner import LibraryScanner
+
+    scanner_inst = LibraryScanner(books_dir=books_dir, podcasts_dir=podcasts_dir, db_path=db_path)
+
+    # 1. Initial scan
+    scanner_inst.scan_all()
+    shows = scanner_inst.cache.get_all_shows()
+    assert len(shows) == 1
+    show_id = shows[0]["show_id"]
+    show = scanner_inst.cache.get_show(show_id)
+    ep = show["episodes"][0]
+    assert ep["title"] == "William Gibson - Neuromancer Part 1"
+    assert ep.get("is_custom_title", 0) == 0
+
+    # 2. Edit track title
+    updated_ep = scanner_inst.update_episode_title(show_id, ep["episode_id"], "Neuromancer Part 1 (Custom)")
+    assert updated_ep is not None
+    assert updated_ep["title"] == "Neuromancer Part 1 (Custom)"
+    assert updated_ep["is_custom_title"] == 1
+
+    # 3. Simulate server restart / re-scan (scan_all)
+    scanner_inst.scan_all()
+    rescanned_show = scanner_inst.cache.get_show(show_id)
+    rescanned_ep = rescanned_show["episodes"][0]
+    assert rescanned_ep["title"] == "Neuromancer Part 1 (Custom)"
+    assert rescanned_ep["is_custom_title"] == 1
+
+    # 4. Re-index / reset track titles
+    reset_show = scanner_inst.reset_show_track_titles(show_id)
+    assert reset_show is not None
+    reset_ep = reset_show["episodes"][0]
+    assert reset_ep["title"] == "William Gibson - Neuromancer Part 1"
+    assert reset_ep.get("is_custom_title", 0) == 0
+
+
+
 
