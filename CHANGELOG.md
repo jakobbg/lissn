@@ -5,6 +5,50 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v0.7.0] – 2026-07-31
+
+### ✏️ Inline Track Title Editing & Title Persistence
+
+- **Single-line inline track title editing** — authenticated users can edit track titles directly within table rows by clicking the hover pencil icon or track title. Saves automatically on `Enter` or input blur.
+- **SQLite title persistence** — manual title edits are saved in the `episodes` database table and preserved across library rescans and server restarts.
+- **Track title reload/reindex button** — added a header control on show pages to reset all track titles back to their default `<subfolder>/<filename>` structure.
+- **Rename validation & disambiguation** — prevents empty titles and handles duplicate track titles cleanly.
+
+### 🧹 Automatic Audio Track Title Normalization
+
+- **Cassette tape & side auto-renaming** — automatically detects and cleans digitized cassette naming patterns (e.g., `kass1sidea` -> `Kassett 1 side A`).
+- **Book title prefix stripping** — automatically strips redundant show/book title prefixes from episode titles.
+- **Track prefix normalization** — converts `trk` / `TRK` variants to standardized `Track`.
+- **Delimiter cleanup** — converts `x`-delimited title strings (e.g. `01xMennxsom...`) into clean space-separated text.
+
+### 🎵 Audio Player & Navigation Enhancements
+
+- **Instant & robust track playback** — fixed track selection index accuracy, bottom player auto-reveal on show pages, and initial track preloading.
+- **Playback control visibility** — audio player and play buttons are hidden for unauthenticated users and reveal automatically upon logging in.
+
+### 🎨 UI & Layout Optimizations
+
+- **Fixed table layout & ellipsis cropping** — applied `table-layout: fixed` and text ellipsis overflow to track tables to prevent horizontal overflow and inconsistent row heights on long titles.
+- **Download button clipping fix** — optimized track table widths and column padding to ensure download buttons remain fully visible on all viewports.
+- **Interactive footer links** — app name, version tag, and git commit ID in the footer are now clickable links pointing to the GitHub repository, release tag, and commit.
+- **Header cleanup** — removed redundant top-banner GitHub button in favor of footer repository links.
+- **Show card clean up** — removed redundant `by ` prefix on main page show cards.
+
+### ⏱️ Performance & API Fixes
+
+- **Rescan performance logging** — log elapsed media scanning duration per show type and total summary.
+- **Scan API fix** — resolved `/api/scan` 500 error by excluding binary cover data from JSON responses.
+
+---
+
+## [v0.6.0] – 2026-07-30
+
+### 🎵 Audio Player Reliability
+
+- **Fixed audio player flakiness** — eliminated playback initialization issues and guaranteed rock-solid track playback across navigation transitions.
+
+---
+
 ## [v0.5.3] – 2026-07-30
 
 ### 🎨 Desktop UI & Vertical Space Optimization
