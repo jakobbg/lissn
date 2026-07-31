@@ -723,7 +723,7 @@ class LibraryScanner:
                 ):
                     duration = float(cached_ep.get("duration", 0.0))
                     bitrate_kbps = int(cached_ep.get("bitrate", 0))
-                    title = str(cached_ep.get("title", ""))
+                    title = clean_track_title(str(cached_ep.get("title", "")), show_title=display_title)
                 else:
                     duration = get_audio_duration(audio_path)
                     bitrate_kbps = get_audio_bitrate(audio_path, file_size, duration)
@@ -737,8 +737,16 @@ class LibraryScanner:
                 folder_parts = PurePath(rel_filename).parts[:-1]
                 if folder_parts:
                     subfolder_prefix = " / ".join(folder_parts)
-                    if subfolder_prefix.lower() not in title.lower():
-                        title = f"{subfolder_prefix} - {title}"
+                    # Normalize: strip ALL leading subfolder-prefix repetitions then re-add exactly once.
+                    # This fixes accumulated titles like "CD1 - CD1 - CD1 - Spor 01" → "CD1 - Spor 01".
+                    escaped_prefix = re.escape(subfolder_prefix)
+                    dedup_re = re.compile(
+                        r"^(?:" + escaped_prefix + r"\s*[-/]\s*)+",
+                        re.IGNORECASE,
+                    )
+                    base_title = dedup_re.sub("", title).strip()
+                    base_title = re.sub(r"^[\s\-_:|,.]+", "", base_title).strip()
+                    title = f"{subfolder_prefix} - {base_title}" if base_title else subfolder_prefix
 
                 episodes.append(
                     {

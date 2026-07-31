@@ -42,7 +42,7 @@
   <link rel="alternate" type="application/rss+xml" title="{{ show.title }}" href="{{ base_url }}/rss/{{ show.show_id }}">
   {% endif %}
   <link rel="stylesheet" href="/static/style.css">
-  <script src="/static/app.js" defer></script>
+  <script src="/static/app.js?v={{ git_commit }}" defer></script>
   <script id="lissn-auth-state" type="application/json">
     {"authenticated": {{ 'true' if authenticated else 'false' }}, "password_required": {{ 'true' if password_required else 'false' }}}
   </script>
