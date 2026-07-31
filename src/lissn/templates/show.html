@@ -191,14 +191,10 @@
                   {% endif %}
                   <td style="width: 40px; text-align: center; color: var(--text-muted); vertical-align: middle;">{{ loop.index }}</td>
                   <td class="track-title-cell" style="vertical-align: middle;" title="File: {{ ep.filename }}">
-                    {% if authenticated %}
-                      <span class="track-title-wrapper js-track-title-wrapper" data-show-id="{{ show.show_id }}" data-episode-id="{{ ep.episode_id }}">
-                        <strong class="track-title-text" title="Click to edit title (File: {{ ep.filename }})">{{ ep.title }}</strong>
-                        <button type="button" class="inline-edit-icon-btn js-edit-track-btn" aria-label="Edit track title" title="Edit track title">✏️</button>
-                      </span>
-                    {% else %}
-                      <strong class="track-title-text" title="{{ ep.title }} (File: {{ ep.filename }})">{{ ep.title }}</strong>
-                    {% endif %}
+                    <span class="track-title-wrapper js-track-title-wrapper" data-show-id="{{ show.show_id }}" data-episode-id="{{ ep.episode_id }}">
+                      <strong class="track-title-text" title="Click to edit title (File: {{ ep.filename }})">{{ ep.title }}</strong>
+                      <button type="button" class="inline-edit-icon-btn js-edit-track-btn" aria-label="Edit track title" title="Edit track title" tabindex="-1">✏️</button>
+                    </span>
                   </td>
                   <td style="vertical-align: middle;"><span class="duration-badge">{{ ep.formatted_duration }}</span></td>
                   <td style="vertical-align: middle;"><span class="size-badge">{{ ep.formatted_file_size or '—' }}</span></td>
