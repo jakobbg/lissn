@@ -235,7 +235,13 @@
     </main>
 
     <footer class="site-footer">
-      <p>lissn &bull; Personal Audiobook & Podcast Hub</p>
+      <p>
+        <a href="{{ github_url }}" target="_blank" rel="noopener noreferrer" class="footer-link footer-title" title="lissn GitHub repository">{{ app_name }}</a>
+        &bull; Personal Audiobook & Podcast Hub &bull;
+        <a href="{{ release_url }}" target="_blank" rel="noopener noreferrer" class="footer-link footer-version" title="Release v{{ app_version }}">v{{ app_version }}</a>
+        &bull;
+        <a href="{{ git_commit_url }}" target="_blank" rel="noopener noreferrer" class="footer-link footer-commit" title="Git commit {{ git_commit_full if git_commit_full != 'unknown' else git_commit }}">{% if git_commit != 'unknown' %}{{ git_commit }}{% else %}commit unknown{% endif %}</a>
+      </p>
     </footer>
 
     {% if authenticated %}

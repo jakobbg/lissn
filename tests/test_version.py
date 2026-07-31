@@ -23,6 +23,7 @@ def test_get_app_metadata_keys():
     assert "git_commit_name" in meta
     assert "github_url" in meta
     assert "git_commit_url" in meta
+    assert meta["release_url"] == f"https://github.com/jakobbg/lissn/releases/tag/v{__version__}"
     assert "Served by lissn" in meta["served_by_info"]
     assert "lissn v" in meta["tooltip_info"]
 
@@ -36,6 +37,7 @@ def test_get_app_metadata_fallback():
         assert meta["git_commit_name"] == ""
         assert meta["github_url"] == "https://github.com/jakobbg/lissn"
         assert meta["git_commit_url"] == "https://github.com/jakobbg/lissn"
+        assert meta["release_url"] == f"https://github.com/jakobbg/lissn/releases/tag/v{__version__}"
         assert f"Served by lissn v{__version__} (commit unknown)" in meta["served_by_info"]
         assert f"lissn v{__version__} (commit unknown)" in meta["tooltip_info"]
     get_app_metadata.cache_clear()

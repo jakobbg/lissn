@@ -111,6 +111,12 @@ def test_version_and_git_headers_and_html_elements(client: TestClient) -> None:
     assert 'class="github-link-btn"' in response.text
     assert 'href="https://github.com/jakobbg/lissn"' in response.text
 
+    # Verify footer interactive links
+    assert 'class="footer-link footer-title"' in response.text
+    assert 'class="footer-link footer-version"' in response.text
+    assert 'class="footer-link footer-commit"' in response.text
+    assert '/releases/tag/v' in response.text
+
 
 def test_background_pattern_overlay_rendering(client: TestClient) -> None:
     """Test index and show detail pages render background pattern overlay element with configured SVG and opacity."""

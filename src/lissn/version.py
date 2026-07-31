@@ -95,6 +95,8 @@ def get_app_metadata() -> Dict[str, Any]:
     else:
         git_commit_url = github_url
 
+    release_url = f"{github_url}/releases/tag/v{__version__}"
+
     if git_commit_name:
         served_by_info = f"Served by lissn v{__version__} (commit {git_commit}: {git_commit_name})"
     else:
@@ -110,6 +112,8 @@ def get_app_metadata() -> Dict[str, Any]:
         "git_commit_name": git_commit_name,
         "github_url": github_url,
         "git_commit_url": git_commit_url,
+        "release_url": release_url,
         "served_by_info": served_by_info,
         "tooltip_info": tooltip_info,
     }
+

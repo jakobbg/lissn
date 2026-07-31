@@ -1282,6 +1282,32 @@ button.detail-cover-link {
   margin-bottom: 0;
 }
 
+.site-footer .footer-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.site-footer .footer-link:hover {
+  color: var(--accent-primary);
+  text-decoration: underline;
+}
+
+.site-footer .footer-title {
+  font-weight: 600;
+}
+
+.site-footer .footer-version {
+  font-weight: 500;
+}
+
+.site-footer .footer-commit {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
 body.has-active-player .site-footer {
   margin-bottom: 80px; /* Space for visible bottom player */
 }
