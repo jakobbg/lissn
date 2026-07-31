@@ -531,6 +531,25 @@ class ScannerCache:
             )
             return {row["file_path"]: dict(row) for row in cursor.fetchall()}
 
+    def update_episode_title(self, show_id: str, episode_id: str, new_title: str) -> Optional[Dict[str, Any]]:
+        """Update track/episode title in SQLite database and return updated episode dictionary."""
+        new_title = new_title.strip()
+        if not new_title:
+            return None
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "UPDATE episodes SET title = ? WHERE show_id = ? AND episode_id = ?",
+                (new_title, show_id, episode_id),
+            )
+            if cursor.rowcount == 0:
+                return None
+            ep_cursor = conn.execute(
+                "SELECT * FROM episodes WHERE show_id = ? AND episode_id = ?",
+                (show_id, episode_id),
+            )
+            ep_row = ep_cursor.fetchone()
+            return dict(ep_row) if ep_row else None
+
     def prune_deleted_shows(self, active_show_ids: List[str]) -> None:
         """Remove shows and episodes from database cache if no longer present on disk."""
         with self._get_connection() as conn:
@@ -849,4 +868,10 @@ class LibraryScanner:
             publisher=show.get("publisher", ""),
             cover=rel_cover,
         )
+
+    def update_episode_title(
+        self, show_id: str, episode_id: str, new_title: str
+    ) -> Optional[Dict[str, Any]]:
+        """Update track/episode title in SQLite cache database."""
+        return self.cache.update_episode_title(show_id, episode_id, new_title)
 

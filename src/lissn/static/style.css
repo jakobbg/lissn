@@ -2459,3 +2459,68 @@ tr.track-row.active-track {
   color: var(--text-muted);
   margin-top: 0.15rem;
 }
+
+/* Track Title Inline Editing */
+.track-title-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.track-title-wrapper .track-title-text {
+  cursor: pointer;
+  border-bottom: 1px dotted transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.track-title-wrapper:hover .track-title-text {
+  border-bottom-color: var(--accent-color, #3b82f6);
+}
+
+.inline-edit-icon-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85em;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  line-height: 1;
+  user-select: none;
+}
+
+.track-title-wrapper:hover .inline-edit-icon-btn {
+  opacity: 0.7;
+}
+
+.inline-edit-icon-btn:hover {
+  opacity: 1 !important;
+  transform: scale(1.15);
+}
+
+/* Subtle single-line edit input */
+.inline-track-title-input {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--text-main, inherit);
+  background: var(--bg-hover, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--accent-color, #3b82f6);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: -3px 0;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.inline-track-title-input:focus {
+  border-color: var(--accent-color, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+

@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initAuthSystem();
   initMarkdownEditor();
+  initInlineTrackTitleEditing();
   initSectionFiltering();
   initCopyButtons();
   initSubscribeButtons();
@@ -1118,7 +1119,9 @@ function initMediaPlayer() {
       e.target.closest('audio') ||
       e.target.closest('a') ||
       e.target.closest('button.btn-secondary') ||
-      e.target.closest('.js-copy-rss')
+      e.target.closest('.js-copy-rss') ||
+      e.target.closest('.js-track-title-wrapper') ||
+      e.target.closest('.inline-track-title-input')
     )
       return;
 
@@ -2076,6 +2079,108 @@ function initMarkdownEditor() {
     }
   });
 
+/**
+ * Handle inline single-line editing of track titles for authenticated users.
+ */
+function initInlineTrackTitleEditing() {
+  document.addEventListener('click', (e) => {
+    const editTrigger = e.target.closest(
+      '.js-track-title-wrapper .track-title-text, .js-edit-track-btn',
+    );
+    if (!editTrigger) return;
+
+    const wrapper = editTrigger.closest('.js-track-title-wrapper');
+    if (!wrapper) return;
+
+    const titleTextEl = wrapper.querySelector('.track-title-text');
+    if (!titleTextEl || wrapper.querySelector('.inline-track-title-input'))
+      return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const showId = wrapper.getAttribute('data-show-id');
+    const episodeId = wrapper.getAttribute('data-episode-id');
+    const currentTitle = titleTextEl.textContent.trim();
+
+    // Create single line input element
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'inline-track-title-input';
+    input.value = currentTitle;
+
+    // Temporarily hide title text and hover button
+    titleTextEl.style.display = 'none';
+    const btn = wrapper.querySelector('.js-edit-track-btn');
+    if (btn) btn.style.display = 'none';
+
+    wrapper.appendChild(input);
+    input.focus();
+    input.select();
+
+    let isSaving = false;
+
+    async function saveTitle() {
+      if (isSaving) return;
+      isSaving = true;
+
+      const newTitle = input.value.trim();
+      if (!newTitle || newTitle === currentTitle) {
+        cancelEdit();
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `/api/shows/${showId}/episodes/${episodeId}/edit`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle }),
+          },
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const updatedTitle = data.episode ? data.episode.title : newTitle;
+          titleTextEl.textContent = updatedTitle;
+          titleTextEl.title = `Click to edit title (File: ${updatedTitle})`;
+
+          const trackRow = wrapper.closest('.track-row');
+          if (trackRow) {
+            trackRow.setAttribute('data-track-title', updatedTitle);
+            trackRow.setAttribute('aria-label', `Play track ${updatedTitle}`);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to update track title:', err);
+      } finally {
+        cancelEdit();
+      }
+    }
+
+    function cancelEdit() {
+      input.remove();
+      titleTextEl.style.display = '';
+      if (btn) btn.style.display = '';
+    }
+
+    input.addEventListener('keydown', (evt) => {
+      if (evt.key === 'Enter') {
+        evt.preventDefault();
+        saveTitle();
+      } else if (evt.key === 'Escape') {
+        evt.preventDefault();
+        cancelEdit();
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      saveTitle();
+    });
+  });
+}
+
   // Tab switching between Write and Preview
   document.addEventListener('click', (e) => {
     if (e.target.closest('#tab-write-btn')) {
@@ -2095,6 +2200,17 @@ function initMarkdownEditor() {
 
     const action = btn.getAttribute('data-md-action');
     applyMarkdownFormatting(descInput, action);
+  });
+
+  // Automatically select all text when focus enters title or description input in edit modal
+  document.addEventListener('focusin', (e) => {
+    if (
+      e.target &&
+      (e.target.id === 'edit-title-input' ||
+        e.target.id === 'edit-description-input')
+    ) {
+      e.target.select();
+    }
   });
 
   // Ctrl+Enter / Cmd+Enter keyboard shortcut to submit edit form
@@ -2440,7 +2556,15 @@ async function openEditModal(btn) {
 
   editModal.removeAttribute('hidden');
   editModal.setAttribute('aria-hidden', 'false');
-  if (titleInput) titleInput.focus();
+  if (titleInput) {
+    titleInput.focus();
+    titleInput.select();
+    setTimeout(() => {
+      if (document.activeElement === titleInput) {
+        titleInput.select();
+      }
+    }, 0);
+  }
 }
 
 function switchToWriteTab() {

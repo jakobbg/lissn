@@ -265,6 +265,10 @@ class EditShowRequest(BaseModel):
     description: str = ""
 
 
+class EditEpisodeRequest(BaseModel):
+    title: str
+
+
 class SelectCoverRequest(BaseModel):
     filename: str
 
@@ -713,6 +717,26 @@ def api_edit_show(show_id: str, payload: EditShowRequest, request: Request) -> D
     cover_source = cover_info[0] if cover_info else (Path(updated_show["cover_path"]) if updated_show.get("cover_path") else None)
     updated_show["show_colors"] = get_show_colors(cover_source, show_id)
     return {"status": "success", "show": updated_show}
+
+
+@app.post("/api/shows/{show_id}/episodes/{episode_id}/edit")
+def api_edit_episode(
+    show_id: str, episode_id: str, payload: EditEpisodeRequest, request: Request
+) -> Dict[str, Any]:
+    """REST API endpoint to update track/episode title."""
+    require_auth(request)
+
+    title = payload.title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Track title cannot be empty")
+
+    updated_ep = scanner.update_episode_title(
+        show_id=show_id, episode_id=episode_id, new_title=title
+    )
+    if not updated_ep:
+        raise HTTPException(status_code=404, detail="Track or show not found")
+
+    return {"status": "success", "episode": updated_ep}
 
 
 @app.get("/api/shows/{show_id}/images")
