@@ -885,7 +885,7 @@ def api_auth_status(request: Request) -> Dict[str, Any]:
 
 
 @app.post("/api/scan")
-def api_rescan_library(force: bool = Query(False)) -> Response:
+def api_rescan_library(force: bool = Query(False)) -> dict:
     """REST API endpoint to trigger library rescan."""
     result = scanner.scan_all(force=force)
     return {"status": "success", "scanned": result}
