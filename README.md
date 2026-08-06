@@ -94,40 +94,10 @@ python3 -m pytest --cov=lissn --cov-report=term-missing
 
 ## 🔒 Production Deployment & Services
 
-For running **lissn** as a service daemon on **FreeBSD** (`rc.d`) or **Linux** (`systemd`) with automatic logging to `./logs/lissn.log`, see the [Running lissn as a Service Guide](docs/service.md).
+For production deployments:
 
-In production, run **lissn** behind a reverse proxy for HTTPS termination:
-
-### Caddy (Recommended)
-```caddyfile
-lissn.example.com {
-    reverse_proxy localhost:8000
-}
-```
-
-### Tailscale Serve (Private Network)
-```bash
-tailscale serve https / http://localhost:8000
-```
-
-### Nginx
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name lissn.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/lissn.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/lissn.example.com/privkey.pem;
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
+- **Daemon / Service Management**: Run **lissn** as a background service daemon on **FreeBSD** (`rc.d`) or **Linux** (`systemd`) with automatic log rotation. See the [Running lissn as a Service Guide](docs/service.md).
+- **Web Server Hosting & Reverse Proxy**: Host **lissn** behind a reverse proxy for HTTPS termination using **Caddy**, **Apache**, **Nginx**, or **Tailscale Serve**. See the [Web Server Hosting & Reverse Proxy Guide](docs/hosting.md).
 
 
 ---
